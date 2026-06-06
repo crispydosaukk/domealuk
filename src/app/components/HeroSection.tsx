@@ -5,7 +5,12 @@ import { ArrowRight, Star, Clock, Leaf } from 'lucide-react';
 
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1A2B5E 0%, #0F1A3E 50%, #1A2B5E 100%)' }}>
+    <section 
+      className="relative overflow-hidden bg-cover bg-center bg-no-repeat" 
+      style={{ 
+        backgroundImage: `linear-gradient(to right, rgba(20, 34, 73, 0.95) 0%, rgba(20, 34, 73, 0.5) 100%), url('/banner.png')` 
+      }}
+    >
       {/* Decorative blobs */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-0 left-0 w-96 h-96 bg-[#CC1B1B] rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />

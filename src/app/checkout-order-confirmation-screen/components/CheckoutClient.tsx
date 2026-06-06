@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { MapPin, Clock, CreditCard, Smartphone, CheckCircle, Package, ChevronRight, ChevronLeft, Leaf, CalendarDays, Home, Plus, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { getZoneFromPostcode } from '@/app/components/PostcodeSearch';
 
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -177,6 +178,21 @@ export default function CheckoutClient() {
       return;
     }
 
+    let finalAddress: AddressForm = data;
+    if (selectedAddressId !== 'new') {
+      const existing = savedAddresses.find(a => a.id === selectedAddressId);
+      if (existing) {
+        finalAddress = existing;
+      }
+    }
+
+    // Validate postcode
+    const zone = getZoneFromPostcode(finalAddress.postcode);
+    if (!zone || !zone.available) {
+      toast.error(`Currently not deliverable to ${finalAddress.postcode}.`);
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -187,11 +203,6 @@ export default function CheckoutClient() {
           const newAddress: SavedAddress = { ...data, id: `addr-${Date.now()}` };
           finalAddress = newAddress;
           await setDoc(doc(db, 'users', user.uid), { addresses: arrayUnion(newAddress) }, { merge: true });
-        } else {
-          const existing = savedAddresses.find(a => a.id === selectedAddressId);
-          if (existing) {
-            finalAddress = existing;
-          }
         }
         
         // Save Order

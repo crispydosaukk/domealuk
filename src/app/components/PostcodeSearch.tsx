@@ -16,7 +16,7 @@ const deliveryZones: Record<string, { area: string; available: boolean }> = {
   DA: { area: 'Dartford', available: false },
 };
 
-function getZoneFromPostcode(postcode: string): { area: string; available: boolean } | null {
+export function getZoneFromPostcode(postcode: string): { area: string; available: boolean } | null {
   const clean = postcode.trim().toUpperCase().replace(/\s+/g, '');
   const twoChar = clean.slice(0, 2).replace(/[0-9]/g, '');
   const oneChar = clean.slice(0, 1);
@@ -78,9 +78,9 @@ export default function PostcodeSearch() {
               </div>
             )}
             {result === 'unknown' && (
-              <div className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-600 bg-yellow-500/20 text-yellow-200">
-                <MapPin size={16} />
-                Postcode not recognised. Please contact us to check availability.
+              <div className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-600 bg-red-500/20 text-red-200">
+                <XCircle size={16} />
+                Currently not deliverable to this area.
               </div>
             )}
           </div>
