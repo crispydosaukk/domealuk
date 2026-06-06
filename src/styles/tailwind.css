@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F5F0E8;
+  --foreground: #0F1A3E;
+  --primary: #1A2B5E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #CC1B1B;
+  --secondary-foreground: #FFFFFF;
+  --accent: #4A90D9;
+  --accent-foreground: #FFFFFF;
+  --muted: #EDE8DC;
+  --muted-foreground: #5A6480;
+  --card: #FFFFFF;
+  --card-foreground: #0F1A3E;
+  --border: #D8D0C0;
+  --input: #EDE8DC;
+  --ring: #1A2B5E;
+  --radius: 12px;
+  --font-sans: var(--font-plus-jakarta-sans), sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
+  }
+}
+
+@layer utilities {
+  .text-primary { color: var(--primary); }
+  .text-secondary { color: var(--secondary); }
+  .text-muted-foreground { color: var(--muted-foreground); }
+  .bg-primary { background-color: var(--primary); }
+  .bg-secondary { background-color: var(--secondary); }
+  .bg-muted { background-color: var(--muted); }
+  .bg-card { background-color: var(--card); }
+  .border-border { border-color: var(--border); }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+}
