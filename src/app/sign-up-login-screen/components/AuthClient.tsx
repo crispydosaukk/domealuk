@@ -54,7 +54,12 @@ export default function AuthClient() {
     setIsLoading(true);
     signupForm.clearErrors('root');
     try {
-      await signup(data.email, data.password, data.name, data.phone);
+      const formattedPhone = data.phone.startsWith('+44') 
+        ? data.phone 
+        : data.phone.startsWith('0') 
+          ? `+44${data.phone.substring(1)}` 
+          : `+44${data.phone}`;
+      await signup(data.email, data.password, data.name, formattedPhone);
       toast.success('Account created! Welcome to DoMeal 🍱');
       router.push('/menu-ordering-screen');
     } catch (error: unknown) {
@@ -81,7 +86,7 @@ export default function AuthClient() {
           <Link href="/" className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/30 shadow-lg flex-shrink-0">
               <img
-                src="/assets/images/Adobe_Express_-_file-1778877049653.jpg"
+                src="/DOMEAL_Logo.jpg"
                 alt="DoMeal logo"
                 className="w-full h-full object-cover"
               />
@@ -124,7 +129,7 @@ export default function AuthClient() {
           <div className="lg:hidden flex items-center gap-2 mb-8">
             <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-primary/20 flex-shrink-0">
               <img
-                src="/assets/images/Adobe_Express_-_file-1778877049653.jpg"
+                src="/DOMEAL_Logo.jpg"
                 alt="DoMeal logo"
                 className="w-full h-full object-cover"
               />
@@ -243,13 +248,14 @@ export default function AuthClient() {
 
               <div>
                 <label className="block text-sm font-600 text-foreground mb-1.5">Mobile Number</label>
-                <div className="relative">
-                  <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <div className="relative flex items-center">
+                  <Phone size={16} className="absolute left-3 text-muted-foreground z-10" />
+                  <span className="absolute left-9 text-sm font-600 text-foreground z-10">+44</span>
                   <input
-                    {...signupForm.register('phone', { required: 'Mobile number is required', pattern: { value: /^[6-9]\d{9}$/, message: 'Enter valid 10-digit Indian mobile number' } })}
+                    {...signupForm.register('phone', { required: 'Mobile number is required', pattern: { value: /^(0?7\d{9}|7\d{9})$/, message: 'Enter a valid UK mobile number (e.g. 7448055754)' } })}
                     type="tel"
-                    placeholder="9876543210"
-                    className="w-full pl-9 pr-4 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                    placeholder="7448055754"
+                    className="w-full pl-16 pr-4 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors relative"
                   />
                 </div>
                 {signupForm.formState.errors.phone && <p className="text-red-500 text-xs mt-1">{signupForm.formState.errors.phone.message}</p>}

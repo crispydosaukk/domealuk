@@ -89,7 +89,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
             <div className="flex items-center gap-2 overflow-hidden">
               <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/20 shrink-0">
                 <Image
-                  src="/assets/images/Adobe_Express_-_file-1778877049653.jpg"
+                  src="/DOMEAL_Logo.jpg"
                   alt="DoMeal logo"
                   width={36}
                   height={36}
@@ -105,7 +105,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
           {collapsed && (
             <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/20">
               <Image
-                src="/assets/images/Adobe_Express_-_file-1778877049653.jpg"
+                src="/DOMEAL_Logo.jpg"
                 alt="DoMeal logo"
                 width={36}
                 height={36}

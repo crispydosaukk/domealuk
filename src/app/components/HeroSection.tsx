@@ -96,7 +96,7 @@ export default function HeroSection() {
                 {/* Logo */}
                 <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-[#CC1B1B]/50 shadow-xl mb-6">
                   <Image
-                    src="/assets/images/Adobe_Express_-_file-1778877049653.jpg"
+                    src="/DOMEAL_Logo.jpg"
                     alt="DoMeal — authentic Indian tiffin delivery London"
                     width={128}
                     height={128}

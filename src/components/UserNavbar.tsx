@@ -95,7 +95,7 @@ export default function UserNavbar() {
               <Link href="/" className="flex items-center">
                 <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary/20 shadow-md flex-shrink-0">
                   <Image
-                    src="/assets/images/Adobe_Express_-_file-1778877049653.jpg"
+                    src="/DOMEAL_Logo.png"
                     alt="DoMeal logo"
                     width={56}
                     height={56}

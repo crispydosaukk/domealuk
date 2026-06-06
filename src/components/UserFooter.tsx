@@ -39,7 +39,7 @@ export default function UserFooter() {
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 shadow-md flex-shrink-0">
                 <Image
-                  src="/assets/images/Adobe_Express_-_file-1778877049653.jpg"
+                  src="/DOMEAL_Logo.jpg"
                   alt="DoMeal logo"
                   width={48}
                   height={48}

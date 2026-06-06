@@ -67,7 +67,7 @@ export default function AdminLoginClient() {
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/20 shadow-md mb-4">
             <Image
-              src="/assets/images/Adobe_Express_-_file-1778877049653.jpg"
+              src="/DOMEAL_Logo.jpg"
               alt="DoMeal logo"
               width={64}
               height={64}
