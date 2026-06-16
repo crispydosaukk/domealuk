@@ -69,7 +69,7 @@ export default function FAQSection() {
             </p>
             <a
               href="mailto:orders@domeal.co.uk"
-              className="inline-flex items-center gap-2 bg-primary text-white font-700 px-5 py-3 rounded-xl hover:bg-[#142249] transition-all active:scale-95 text-sm"
+              className="inline-flex items-center gap-2 bg-primary text-white font-700 px-5 py-3 rounded-xl hover:bg-[#1E3B2B] transition-all active:scale-95 text-sm"
             >
               Contact Us
             </a>

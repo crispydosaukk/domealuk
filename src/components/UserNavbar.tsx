@@ -159,7 +159,7 @@ export default function UserNavbar() {
                   {user.email === 'domealuk79812@gmail.com' && (
                     <Link
                       href="/admin-dashboard"
-                      className="hidden sm:flex items-center gap-1.5 bg-secondary text-white text-sm font-600 px-4 py-2 rounded-lg hover:bg-[#142249] transition-all duration-150 active:scale-95 shadow-sm"
+                      className="hidden sm:flex items-center gap-1.5 bg-secondary text-white text-sm font-600 px-4 py-2 rounded-lg hover:bg-[#1E3B2B] transition-all duration-150 active:scale-95 shadow-sm"
                     >
                       Admin Panel
                     </Link>
@@ -174,7 +174,7 @@ export default function UserNavbar() {
               ) : (
                 <Link
                   href="/sign-up-login-screen"
-                  className="hidden sm:flex items-center gap-1.5 bg-primary text-white text-sm font-600 px-4 py-2 rounded-lg hover:bg-[#142249] transition-all duration-150 active:scale-95"
+                  className="hidden sm:flex items-center gap-1.5 bg-primary text-white text-sm font-600 px-4 py-2 rounded-lg hover:bg-[#1E3B2B] transition-all duration-150 active:scale-95"
                 >
                   <User size={14} />
                   Sign In
@@ -283,7 +283,7 @@ export default function UserNavbar() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {userOrders.slice(0, 3).map(order => (
+                    {userOrders.slice(0, 1).map(order => (
                       <div key={order.id} className="bg-white rounded-xl border border-border p-4 shadow-sm relative overflow-hidden group hover:border-primary/30 transition-colors">
                         <div className="flex justify-between items-start mb-3 border-b border-border/50 pb-3">
                           <div>

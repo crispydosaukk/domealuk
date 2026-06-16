@@ -3,21 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --background: #F5F0E8;
-  --foreground: #0F1A3E;
-  --primary: #1A2B5E;
+  --background: #FBFBF9;
+  --foreground: #1E3B2B;
+  --primary: #1E3B2B;
   --primary-foreground: #FFFFFF;
-  --secondary: #CC1B1B;
+  --secondary: #C39B54;
   --secondary-foreground: #FFFFFF;
-  --accent: #4A90D9;
+  --accent: #C39B54;
   --accent-foreground: #FFFFFF;
-  --muted: #EDE8DC;
-  --muted-foreground: #5A6480;
+  --muted: #E8EBE9;
+  --muted-foreground: #6B8E76;
   --card: #FFFFFF;
-  --card-foreground: #0F1A3E;
-  --border: #D8D0C0;
-  --input: #EDE8DC;
-  --ring: #1A2B5E;
+  --card-foreground: #1E3B2B;
+  --border: #D1D8D4;
+  --input: #E8EBE9;
+  --ring: #1E3B2B;
   --radius: 12px;
   --font-sans: var(--font-plus-jakarta-sans), sans-serif;
 }
@@ -51,4 +51,50 @@
   .bg-card { background-color: var(--card); }
   .border-border { border-color: var(--border); }
   .tabular-nums { font-variant-numeric: tabular-nums; }
+}
+
+/* Center the Toaster */
+[data-sonner-toaster] {
+  top: 40% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+/* Custom Toast Shape */
+.my-custom-toast {
+  width: 320px !important;
+  height: 320px !important;
+  border-radius: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  padding: 32px !important;
+  font-size: 1.125rem !important;
+  font-weight: 800 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  background: white !important;
+  border: 4px solid var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+.my-custom-toast [data-icon] {
+  margin-bottom: 20px !important;
+  margin-right: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.my-custom-toast [data-icon] svg {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.my-custom-toast [data-description] {
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  color: var(--muted-foreground) !important;
+  margin-top: 12px !important;
+  line-height: 1.5 !important;
 }

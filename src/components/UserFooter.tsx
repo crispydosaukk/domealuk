@@ -31,7 +31,7 @@ function WhatsAppIcon({ size = 16 }: { size?: number }) {
 
 export default function UserFooter() {
   return (
-    <footer style={{ backgroundColor: '#0F1A3E' }} className="text-white">
+    <footer style={{ backgroundColor: '#1E3B2B' }} className="text-white">
       <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}

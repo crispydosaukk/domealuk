@@ -28,7 +28,9 @@ export default function AuthClient() {
     loginForm.clearErrors('root');
     try {
       await login(data.email, data.password);
-      toast.success('Welcome back! 🎉');
+      toast.success('Welcome back to DoMeal! 🎉', {
+        description: 'Ready for your next authentic home-cooked tiffin? Explore our freshly prepared daily specials today.',
+      });
       router.push('/menu-ordering-screen');
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code || '';
@@ -54,13 +56,15 @@ export default function AuthClient() {
     setIsLoading(true);
     signupForm.clearErrors('root');
     try {
-      const formattedPhone = data.phone.startsWith('+44') 
-        ? data.phone 
-        : data.phone.startsWith('0') 
-          ? `+44${data.phone.substring(1)}` 
+      const formattedPhone = data.phone.startsWith('+44')
+        ? data.phone
+        : data.phone.startsWith('0')
+          ? `+44${data.phone.substring(1)}`
           : `+44${data.phone}`;
       await signup(data.email, data.password, data.name, formattedPhone);
-      toast.success('Account created! Welcome to DoMeal 🍱');
+      toast.success('Account Created Successfully! 🍱', {
+        description: 'Welcome to the DoMeal family! Start your journey of authentic, home-cooked Indian meals today.',
+      });
       router.push('/menu-ordering-screen');
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code || '';

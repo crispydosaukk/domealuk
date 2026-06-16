@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export interface CartItem {
   id: string;
@@ -16,7 +17,7 @@ export interface CartItem {
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (item: { id: string; cartItemId?: string; name: string; price: number; subItems?: { name: string; price: number }[] }) => void;
+  addToCart: (item: { id: string; cartItemId?: string; name: string; price: number; subItems?: { name: string; price: number }[] }) => boolean;
   updateQty: (idOrCartItemId: string, delta: number) => void;
   clearCart: () => void;
   cartCount: number;
@@ -27,7 +28,7 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType>({
   cart: [],
-  addToCart: () => {},
+  addToCart: () => false,
   updateQty: () => {},
   clearCart: () => {},
   cartCount: 0,
@@ -42,6 +43,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { user } = useAuth();
+  const router = useRouter();
 
   // Listen to Firestore cart when logged in
   useEffect(() => {
@@ -74,8 +76,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addToCart = (item: { id: string; cartItemId?: string; name: string; price: number; subItems?: { name: string; price: number }[] }) => {
     if (!user) {
-      toast.error('Please sign in to add items to your cart');
-      return;
+      router.push('/sign-up-login-screen');
+      return false;
     }
     
     setCart((prev) => {
@@ -99,7 +101,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       syncToFirestore(newCart);
       return newCart;
     });
-    toast.success(`${item.name} added to cart 🛒`);
+
+    return true;
   };
 
   const updateQty = (idOrCartItemId: string, delta: number) => {

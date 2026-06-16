@@ -73,8 +73,8 @@ export default function TestimonialsSection() {
           ))}
         </div>
 
-        <div className="mt-10 bg-gradient-to-r from-primary via-[#142249] to-[#0F1A3E] rounded-2xl p-8 text-white text-center relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #4A90D9 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="mt-10 bg-gradient-to-r from-primary via-[#10261A] to-[#0A160E] rounded-2xl p-8 text-white text-center relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #C39B54 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
           <div className="relative z-10">
             <h3 className="text-2xl font-extrabold mb-2">Ready to taste the difference?</h3>
             <p className="text-blue-200 mb-6 text-sm">Join 1,200+ happy customers. First week free on any subscription plan.</p>

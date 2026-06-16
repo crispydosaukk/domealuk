@@ -95,8 +95,8 @@ export default function PlansSection() {
                 href="/sign-up-login-screen"
                 className={`block text-center font-700 py-3 rounded-xl transition-all duration-150 active:scale-95 ${
                   plan?.highlight
-                    ? 'bg-secondary text-white hover:bg-red-700 shadow-md shadow-red-200'
-                    : 'bg-primary text-white hover:bg-[#142249]'
+                    ? 'bg-secondary text-white hover:bg-yellow-700 shadow-md shadow-yellow-200'
+                    : 'bg-primary text-white hover:bg-[#1E3B2B]'
                 }`}
               >
                 Subscribe Now

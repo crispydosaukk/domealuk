@@ -35,7 +35,7 @@ const paymentMethods = [
   { id: 'pay-cod', label: 'Cash on Delivery', icon: Package, desc: 'Pay when delivered' },
 ];
 
-function CustomDatePicker({ value, onChange }: { value: string, onChange: (date: string) => void }) {
+function CustomDatePicker({ values, onChange }: { values: string[], onChange: (dates: string[]) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -59,7 +59,7 @@ function CustomDatePicker({ value, onChange }: { value: string, onChange: (date:
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between px-4 py-3 border-2 border-border rounded-xl text-sm bg-background text-foreground font-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
       >
-        {value ? new Date(value).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'mm/dd/yyyy'}
+        {values.length > 0 ? values.map(d => new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })).join(', ') : 'Select dates'}
         <CalendarDays size={18} className="text-muted-foreground" />
       </button>
 
@@ -92,7 +92,7 @@ function CustomDatePicker({ value, onChange }: { value: string, onChange: (date:
                 
                 // create local iso string without timezone shifting
                 const dateStr = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-                const isSelected = value === dateStr;
+                const isSelected = values.includes(dateStr);
 
                 return (
                   <button
@@ -100,8 +100,11 @@ function CustomDatePicker({ value, onChange }: { value: string, onChange: (date:
                     type="button"
                     disabled={!isValid}
                     onClick={() => {
-                      onChange(dateStr);
-                      setIsOpen(false);
+                      if (isSelected) {
+                        onChange(values.filter(d => d !== dateStr));
+                      } else {
+                        onChange([...values, dateStr].sort());
+                      }
                     }}
                     className={`h-9 w-9 rounded-full flex items-center justify-center text-sm transition-all mx-auto
                       ${!isValid ? 'text-gray-200 font-700 cursor-not-allowed pointer-events-none' : ''}
@@ -130,7 +133,7 @@ export default function CheckoutClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [orderId] = useState(`VSL-${Math.floor(10000 + Math.random() * 90000)}`);
   
-  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryDates, setDeliveryDates] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
@@ -169,8 +172,8 @@ export default function CheckoutClient() {
   const today = new Date().toISOString().split('T')[0];
 
   const onSubmit = async (data: AddressForm) => {
-    if (!deliveryDate) {
-      toast.error('Please select a delivery date (Monday or Thursday).');
+    if (deliveryDates.length === 0) {
+      toast.error('Please select at least one delivery date (Monday or Thursday).');
       return;
     }
     if (cart.length === 0) {
@@ -210,9 +213,9 @@ export default function CheckoutClient() {
         await setDoc(orderRef, {
           userId: user.uid,
           items: cart,
-          total: cartTotal,
+          total: cartTotal * deliveryDates.length,
           address: finalAddress,
-          deliveryDate,
+          deliveryDates,
           deliverySlot: selectedSlot,
           notes,
           paymentMethod: selectedPayment,
@@ -266,8 +269,8 @@ export default function CheckoutClient() {
                 </div>
               ))}
               <div className="border-t border-border pt-2 flex justify-between font-700">
-                <span>Total Paid</span>
-                <span className="text-primary tabular-nums">£{cartTotal.toFixed(2)}</span>
+                <span>Total Paid ({deliveryDates.length} {deliveryDates.length === 1 ? 'day' : 'days'})</span>
+                <span className="text-primary tabular-nums">£{(cartTotal * deliveryDates.length).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -276,7 +279,7 @@ export default function CheckoutClient() {
             <Clock size={20} className="text-blue-600 shrink-0" />
             <div>
               <p className="text-sm font-700 text-foreground">Estimated Delivery</p>
-              <p className="text-xs text-muted-foreground">{deliveryDate} • {deliverySlots.find(s => s.id === selectedSlot)?.label}</p>
+              <p className="text-xs text-muted-foreground">{deliveryDates.map(d => new Date(d).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})).join(', ')} • {deliverySlots.find(s => s.id === selectedSlot)?.label}</p>
             </div>
           </div>
 
@@ -393,8 +396,11 @@ export default function CheckoutClient() {
                 <h2 className="font-700 text-base text-foreground">Choose Delivery Date</h2>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-600 text-foreground mb-2">Select a date (Mondays & Thursdays Only)</label>
-                <CustomDatePicker value={deliveryDate} onChange={setDeliveryDate} />
+                <label className="block text-sm font-600 text-foreground mb-1">Select Delivery Dates</label>
+                <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                  Plan ahead by selecting multiple delivery days (Mondays & Thursdays). Your cart items will be prepared fresh for each chosen date.
+                </p>
+                <CustomDatePicker values={deliveryDates} onChange={setDeliveryDates} />
               </div>
 
               <div className="flex items-center gap-2 mb-3 mt-4 border-t border-border pt-5">
@@ -500,8 +506,8 @@ export default function CheckoutClient() {
                   <span className="text-secondary font-600">Free</span>
                 </div>
                 <div className="flex justify-between font-800 text-base border-t border-border pt-2">
-                  <span>Total</span>
-                  <span className="text-primary tabular-nums">£{cartTotal.toFixed(2)}</span>
+                  <span>Total ({deliveryDates.length || 1} {deliveryDates.length === 1 ? 'day' : 'days'})</span>
+                  <span className="text-primary tabular-nums">£{(cartTotal * (deliveryDates.length || 1)).toFixed(2)}</span>
                 </div>
               </div>
 

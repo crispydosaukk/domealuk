@@ -5,36 +5,36 @@ import { ArrowRight, Star, Clock, Leaf } from 'lucide-react';
 
 export default function HeroSection() {
   return (
-    <section 
-      className="relative overflow-hidden bg-cover bg-center bg-no-repeat" 
-      style={{ 
-        backgroundImage: `linear-gradient(to right, rgba(20, 34, 73, 0.95) 0%, rgba(20, 34, 73, 0.5) 100%), url('/banner.png')` 
+    <section
+      className="relative overflow-hidden bg-[100%_100%] bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `linear-gradient(to right, rgba(30, 59, 43, 0.95) 0%, rgba(30, 59, 43, 0.5) 100%), url('/banner.png')`
       }}
     >
       {/* Decorative blobs */}
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-[#CC1B1B] rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#4A90D9] rounded-full blur-3xl translate-x-1/4 translate-y-1/4" />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-[#CC1B1B] rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 opacity-20" />
+        <div className="absolute top-0 left-0 w-96 h-96 bg-[#C39B54] rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#C39B54] rounded-full blur-3xl translate-x-1/4 translate-y-1/4" />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-[#C39B54] rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 opacity-20" />
       </div>
       {/* Subtle dot pattern */}
-      <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, #4A90D9 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+      <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, #C39B54 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
       <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10 py-20 lg:py-28 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
           {/* Left content */}
           <div>
-            <div className="inline-flex items-center gap-2 bg-[#CC1B1B]/20 text-red-300 text-xs font-700 px-3 py-1.5 rounded-full mb-6 border border-[#CC1B1B]/30">
-              <span className="w-2 h-2 bg-[#CC1B1B] rounded-full animate-pulse" />
+            <div className="inline-flex items-center gap-2 bg-[#C39B54]/20 text-yellow-300 text-xs font-700 px-3 py-1.5 rounded-full mb-6 border border-[#C39B54]/30">
+              <span className="w-2 h-2 bg-[#C39B54] rounded-full animate-pulse" />
               Home Food Away From Home · London
             </div>
 
             <h1 className="text-4xl lg:text-5xl xl:text-6xl font-extrabold text-white leading-tight mb-4">
               Authentic Indian
               <br />
-              <span className="text-[#CC1B1B]">Tiffin Delivered</span>
+              <span className="text-[#C39B54]">Tiffin Delivered</span>
               <br />
-              <span className="text-[#4A90D9]">Fresh Daily 🍱</span>
+              <span className="text-[#C39B54]">Fresh Daily 🍱</span>
             </h1>
 
             <p className="text-lg text-gray-300 leading-relaxed mb-8 max-w-lg">
@@ -44,7 +44,7 @@ export default function HeroSection() {
             <div className="flex flex-wrap gap-4 mb-10">
               <Link
                 href="/menu-ordering-screen"
-                className="inline-flex items-center gap-2 bg-[#CC1B1B] text-white font-700 px-6 py-3.5 rounded-xl hover:bg-red-700 transition-all duration-150 active:scale-95 shadow-lg shadow-red-900/40"
+                className="inline-flex items-center gap-2 bg-[#C39B54] text-white font-700 px-6 py-3.5 rounded-xl hover:bg-yellow-700 transition-all duration-150 active:scale-95 shadow-lg shadow-yellow-900/40"
               >
                 Order Today&apos;s Tiffin
                 <ArrowRight size={18} />
@@ -77,8 +77,8 @@ export default function HeroSection() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 bg-[#4A90D9]/20 rounded-lg flex items-center justify-center">
-                  <Clock size={16} className="text-[#4A90D9]" />
+                <div className="w-9 h-9 bg-[#C39B54]/20 rounded-lg flex items-center justify-center">
+                  <Clock size={16} className="text-[#C39B54]" />
                 </div>
                 <div>
                   <p className="text-sm font-700 text-white">On Time</p>
@@ -94,7 +94,7 @@ export default function HeroSection() {
               {/* Main card */}
               <div className="w-80 lg:w-96 bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8 shadow-2xl">
                 {/* Logo */}
-                <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-[#CC1B1B]/50 shadow-xl mb-6">
+                <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-[#C39B54]/50 shadow-xl mb-6">
                   <Image
                     src="/DOMEAL_Logo.jpg"
                     alt="DoMeal — authentic Indian tiffin delivery London"
@@ -104,7 +104,7 @@ export default function HeroSection() {
                   />
                 </div>
                 <h2 className="text-white text-2xl font-extrabold text-center mb-1">DoMeal</h2>
-                <p className="text-[#CC1B1B] text-xs font-600 text-center tracking-widest uppercase mb-6">Home Food Away From Home</p>
+                <p className="text-[#C39B54] text-xs font-600 text-center tracking-widest uppercase mb-6">Home Food Away From Home</p>
 
                 <div className="space-y-3">
                   {[
@@ -117,14 +117,14 @@ export default function HeroSection() {
                         <p className="text-white text-sm font-600">{slot?.label}</p>
                         <p className="text-gray-400 text-xs">{slot?.time}</p>
                       </div>
-                      <span className="text-[#CC1B1B] font-800 text-sm">{slot?.price}</span>
+                      <span className="text-[#C39B54] font-800 text-sm">{slot?.price}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Floating badge */}
-              <div className="absolute -top-4 -right-4 bg-[#CC1B1B] text-white rounded-2xl shadow-xl p-3 text-center border-2 border-red-400">
+              <div className="absolute -top-4 -right-4 bg-[#C39B54] text-white rounded-2xl shadow-xl p-3 text-center border-2 border-yellow-400">
                 <p className="text-2xl font-extrabold tabular-nums">500+</p>
                 <p className="text-xs font-600">Daily Orders</p>
               </div>

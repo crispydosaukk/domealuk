@@ -98,11 +98,11 @@ export default function MenuOrderingClient() {
       {cartCount > 0 && !isCartOpen && (
         <button
           onClick={() => setIsCartOpen(true)}
-          className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 bg-primary text-white p-4 rounded-full shadow-2xl flex items-center gap-3 hover:bg-[#142249] transition-all hover:scale-105 active:scale-95 z-40"
+          className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 bg-primary text-white p-4 rounded-full shadow-2xl flex items-center gap-3 hover:bg-[#1E3B2B] transition-all hover:scale-105 active:scale-95 z-40"
         >
           <div className="relative">
             <ShoppingCart size={24} />
-            <span className="absolute -top-2 -right-2 bg-[#142249] text-white text-[10px] font-800 w-5 h-5 flex items-center justify-center rounded-full border-2 border-primary">{cartCount}</span>
+            <span className="absolute -top-2 -right-2 bg-[#10261A] text-white text-[10px] font-800 w-5 h-5 flex items-center justify-center rounded-full border-2 border-primary">{cartCount}</span>
           </div>
           <span className="font-800 tabular-nums text-lg tracking-tight">£{cartTotal.toFixed(2)}</span>
         </button>
@@ -194,7 +194,7 @@ export default function MenuOrderingClient() {
 
                   <button 
                     onClick={() => setSelectedItem(item)}
-                    className="text-xs font-900 text-[#0066cc] underline decoration-2 underline-offset-4 hover:text-[#004c99] transition-colors self-start mb-4 flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-lg"
+                    className="text-xs font-900 text-primary hover:text-[#10261A] transition-colors self-start mb-4 flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-lg"
                   >
                     View Details & Ingredients <ChevronRight size={14} />
                   </button>
@@ -203,18 +203,18 @@ export default function MenuOrderingClient() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-baseline gap-1.5">
                         {item.originalPrice && (
-                          <span className="text-xl font-800 text-[#E26B8E] line-through tabular-nums opacity-60">£{item.originalPrice.toFixed(2)}</span>
+                          <span className="text-xl font-800 text-[#C39B54] line-through tabular-nums opacity-60">£{item.originalPrice.toFixed(2)}</span>
                         )}
-                        <span className="text-3xl font-900 text-[#E26B8E] tabular-nums tracking-tight">£{(item.price || 0).toFixed(2)}</span>
+                        <span className="text-3xl font-900 text-[#C39B54] tabular-nums tracking-tight">£{(item.price || 0).toFixed(2)}</span>
                       </div>
                       {item.portionPrice && (
-                        <span className="bg-[#F4B324] text-[#142249] text-xs font-800 px-3 py-1.5 rounded-full tracking-wide self-start mt-1">
+                        <span className="bg-[#C39B54] text-[#1E3B2B] text-xs font-800 px-3 py-1.5 rounded-full tracking-wide self-start mt-1">
                           {item.portionPrice}
                         </span>
                       )}
                     </div>
                     {item.offerText && (
-                      <p className="text-sm font-600 text-[#142249] mt-2">{item.offerText}</p>
+                      <p className="text-sm font-600 text-[#1E3B2B] mt-2">{item.offerText}</p>
                     )}
                   </div>
 
@@ -223,10 +223,14 @@ export default function MenuOrderingClient() {
                       if (item.subItems && item.subItems.length > 0) {
                         setExpandedMenus(prev => ({...prev, [item.id]: !prev[item.id]}));
                       } else {
-                        addToCart({ id: item.id, cartItemId: item.id, name: item.name, price: item.price });
-                        toast.success(`Added ${item.name} to cart`);
+                        const added = addToCart({ id: item.id, cartItemId: item.id, name: item.name, price: item.price });
+                        if (added) {
+                          toast.success(`Added ${item.name} to cart`, {
+                            description: 'Your tiffin has been successfully added. You can continue exploring the menu or proceed to checkout.',
+                          });
+                        }
                       }
-                    }} className={`w-full text-white text-sm font-700 py-2.5 rounded-xl transition-all active:scale-95 shadow-sm ${expandedMenus[item.id] ? 'bg-orange-700' : 'bg-[#142249] hover:bg-primary'}`}>
+                    }} className={`w-full text-white text-sm font-700 py-2.5 rounded-xl transition-all active:scale-95 shadow-sm ${expandedMenus[item.id] ? 'bg-[#C39B54]' : 'bg-[#10261A] hover:bg-primary'}`}>
                       {expandedMenus[item.id] ? 'Close Customization' : (itemQtyInCart > 0 ? `Add Another (${itemQtyInCart} in cart)` : 'Add to Order')}
                     </button>
                   </div>
@@ -261,7 +265,7 @@ export default function MenuOrderingClient() {
                             </div>
                           </div>
                           <div className="p-2.5 flex flex-col flex-1">
-                            <span className="text-sm font-800 text-[#142249] leading-tight line-clamp-2">{sub.name}</span>
+                            <span className="text-sm font-800 text-[#1E3B2B] leading-tight line-clamp-2">{sub.name}</span>
                             <div className="mt-auto pt-2 flex flex-col gap-1 items-start">
                               {sub.price > 0 ? (
                                 <span className="text-xs font-900 text-primary">+£{sub.price.toFixed(2)}</span>
@@ -291,17 +295,21 @@ export default function MenuOrderingClient() {
                       const configKey = Object.keys(selections).filter(k => selections[k]).sort().join(',');
                       const cartItemId = `${item.id}-${configKey}`;
 
-                      addToCart({
+                      const added = addToCart({
                         id: item.id,
                         cartItemId,
                         name: item.name,
                         price: item.price + extraPrice,
                         subItems: selectedSubItems
                       });
-                      toast.success(`Added customized ${item.name} to cart`);
-                      setExpandedMenus(prev => ({...prev, [item.id]: false}));
+                      if (added) {
+                        toast.success(`Added customized ${item.name} to cart`, {
+                          description: 'Your tailored package has been added. You can review all your inclusions in the cart sidebar.',
+                        });
+                        setExpandedMenus(prev => ({...prev, [item.id]: false}));
+                      }
                     }} 
-                    className="w-full bg-primary text-white font-800 py-3 rounded-xl hover:bg-orange-700 transition-colors mt-2"
+                    className="w-full bg-primary text-white font-800 py-3 rounded-xl hover:bg-[#C39B54] transition-colors mt-2"
                   >
                     Confirm & Add to Order
                   </button>
@@ -354,7 +362,7 @@ export default function MenuOrderingClient() {
                         <Minus size={10} />
                       </button>
                       <span className="text-sm font-700 w-5 text-center tabular-nums">{cItem.qty}</span>
-                      <button onClick={() => updateQty(cItem.cartItemId || cItem.id, 1)} className="w-6 h-6 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-orange-700 transition-colors">
+                      <button onClick={() => updateQty(cItem.cartItemId || cItem.id, 1)} className="w-6 h-6 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-[#C39B54] transition-colors">
                         <Plus size={10} />
                       </button>
                     </div>
@@ -376,10 +384,10 @@ export default function MenuOrderingClient() {
                 </div>
                 <div className="pt-3 border-t border-border flex justify-between items-end mb-4">
                   <span className="font-700 text-foreground">Total</span>
-                  <span className="text-xl font-900 tabular-nums text-[#142249]">£{cartTotal.toFixed(2)}</span>
+                  <span className="text-xl font-900 tabular-nums text-[#1E3B2B]">£{cartTotal.toFixed(2)}</span>
                 </div>
                 <Link href="/checkout-order-confirmation-screen" onClick={() => setIsCartOpen(false)}
-                  className="w-full bg-[#142249] text-white font-800 py-3.5 rounded-xl hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                  className="w-full bg-[#10261A] text-white font-800 py-3.5 rounded-xl hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
                   Proceed to Checkout <ChevronRight size={18} />
                 </Link>
               </div>
@@ -394,7 +402,7 @@ export default function MenuOrderingClient() {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedItem(null)} />
           <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-5 border-b border-border bg-gray-50/50">
-              <h2 className="font-800 text-lg text-[#142249]">{selectedItem.name}</h2>
+              <h2 className="font-800 text-lg text-[#1E3B2B]">{selectedItem.name}</h2>
               <button onClick={() => setSelectedItem(null)} className="p-1.5 rounded-full bg-white border border-border hover:bg-muted transition-colors text-muted-foreground">
                 <X size={18} />
               </button>
@@ -408,13 +416,13 @@ export default function MenuOrderingClient() {
               )}
               
               <div>
-                <h3 className="font-700 text-sm mb-2 text-[#142249] flex items-center gap-2"><Info size={14} className="text-primary"/> About this dish</h3>
+                <h3 className="font-700 text-sm mb-2 text-[#1E3B2B] flex items-center gap-2"><Info size={14} className="text-primary"/> About this dish</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{selectedItem.desc}</p>
               </div>
 
               {selectedItem.ingredients && (
                 <div>
-                  <h3 className="font-700 text-sm mb-2 text-[#142249] flex items-center gap-2"><Leaf size={14} className="text-primary"/> Ingredients</h3>
+                  <h3 className="font-700 text-sm mb-2 text-[#1E3B2B] flex items-center gap-2"><Leaf size={14} className="text-primary"/> Ingredients</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{selectedItem.ingredients}</p>
                 </div>
               )}

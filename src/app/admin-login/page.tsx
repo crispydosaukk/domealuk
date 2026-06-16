@@ -125,7 +125,7 @@ export default function AdminLoginClient() {
           <button
             type="submit"
             disabled={loadingAction}
-            className="w-full bg-[#1A2B5E] text-white font-700 py-3.5 rounded-xl hover:bg-[#0F1A3E] transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+            className="w-full bg-[#1E3B2B] text-white font-700 py-3.5 rounded-xl hover:bg-[#10261A] transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
           >
             {loadingAction ? (
               <>

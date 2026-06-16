@@ -81,7 +81,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
       <aside className={`fixed top-0 left-0 h-full z-50 flex flex-col transition-all duration-300 ease-in-out
         ${collapsed ? 'w-16' : 'w-60'}
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `} style={{ background: 'linear-gradient(180deg, #1A2B5E 0%, #0F1A3E 60%, #1A2B5E 100%)' }}>
+      `} style={{ background: 'linear-gradient(180deg, #1E3B2B 0%, #10261A 60%, #1E3B2B 100%)' }}>
         
         {/* Sidebar header */}
         <div className={`flex items-center border-b border-white/10 h-16 px-3 ${collapsed ? 'justify-center' : 'justify-between'}`}>
@@ -137,7 +137,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
                 href={item.href}
                 title={collapsed ? item.label : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative
-                  ${isActive ? 'bg-[#CC1B1B] text-white' : 'text-blue-100 hover:bg-white/10 hover:text-white'}
+                  ${isActive ? 'bg-[#C39B54] text-white' : 'text-blue-100 hover:bg-white/10 hover:text-white'}
                   ${collapsed ? 'justify-center' : ''}
                 `}
               >
@@ -146,14 +146,14 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
                   <>
                     <span className="text-sm font-600 flex-1">{item.label}</span>
                     {item.badge && (
-                      <span className="bg-[#CC1B1B] text-white text-xs font-700 w-5 h-5 rounded-full flex items-center justify-center">
+                      <span className="bg-[#C39B54] text-white text-xs font-700 w-5 h-5 rounded-full flex items-center justify-center">
                         {item.badge}
                       </span>
                     )}
                   </>
                 )}
                 {collapsed && item.badge && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#CC1B1B] rounded-full" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#C39B54] rounded-full" />
                 )}
               </Link>
             );
@@ -162,7 +162,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
 
         <div className="border-t border-white/10 p-3">
           <div className={`flex items-center gap-3 px-3 py-2 ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-8 h-8 rounded-full bg-[#CC1B1B] flex items-center justify-center text-white text-xs font-700 shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[#C39B54] flex items-center justify-center text-white text-xs font-700 shrink-0">
               DW
             </div>
             {!collapsed && (
@@ -200,7 +200,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
           <div className="flex items-center gap-3 ml-auto">
             <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
               <Bell size={18} className="text-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-[#CC1B1B] rounded-full" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#C39B54] rounded-full" />
             </button>
             <Link href="/" className="text-xs font-600 text-primary bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
               View Site

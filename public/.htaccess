@@ -1,0 +1,19 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  
+  # If the requested resource exists as a file or directory, serve it directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # If adding .html to the requested path makes it an existing file, serve the .html file
+  # This fixes the issue where /menu gives a 404, but /menu.html exists
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^(.*)$ $1.html [L]
+
+  # Optional fallback: If nothing else matches, serve index.html (useful for catch-all dynamic routes)
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Serve the Next.js custom 404 page if a file truly doesn't exist
+ErrorDocument 404 /404.html

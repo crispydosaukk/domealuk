@@ -36,13 +36,13 @@ export default function PostcodeSearch() {
   };
 
   return (
-    <section className="py-10" style={{ background: 'linear-gradient(135deg, #1A2B5E 0%, #0F1A3E 50%, #1A2B5E 100%)' }}>
+    <section className="py-10" style={{ background: 'linear-gradient(135deg, #1E3B2B 0%, #10261A 50%, #1E3B2B 100%)' }}>
       <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10">
         <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
           <div className="text-white text-center lg:text-left">
             <div className="flex items-center gap-2 justify-center lg:justify-start mb-1">
-              <MapPin size={18} className="text-[#CC1B1B]" />
-              <span className="text-sm font-700 uppercase tracking-widest text-[#CC1B1B]">Delivery Checker</span>
+              <MapPin size={18} className="text-[#C39B54]" />
+              <span className="text-sm font-700 uppercase tracking-widest text-[#C39B54]">Delivery Checker</span>
             </div>
             <h3 className="text-xl font-extrabold">Do we deliver to you?</h3>
             <p className="text-blue-200 text-sm mt-1">Enter your London postcode to find out</p>
@@ -57,12 +57,12 @@ export default function PostcodeSearch() {
                   onChange={e => setPostcode(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleCheck()}
                   placeholder="e.g. E1 6RF, N1 9GU..."
-                  className="w-full pl-9 pr-4 py-3 rounded-xl border border-white/20 bg-white/10 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-[#CC1B1B] focus:bg-white/20 text-sm"
+                  className="w-full pl-9 pr-4 py-3 rounded-xl border border-white/20 bg-white/10 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-[#C39B54] focus:bg-white/20 text-sm"
                 />
               </div>
               <button
                 onClick={handleCheck}
-                className="flex items-center gap-2 bg-[#CC1B1B] text-white font-700 px-5 py-3 rounded-xl hover:bg-red-700 transition-all active:scale-95 text-sm whitespace-nowrap"
+                className="flex items-center gap-2 bg-[#C39B54] text-white font-700 px-5 py-3 rounded-xl hover:bg-yellow-700 transition-all active:scale-95 text-sm whitespace-nowrap"
               >
                 <Search size={16} />
                 Check

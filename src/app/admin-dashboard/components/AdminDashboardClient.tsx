@@ -206,7 +206,7 @@ export default function AdminDashboardClient() {
           <div className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
             <div className="p-5 border-b border-border bg-gray-50 flex items-center justify-between shrink-0">
               <div>
-                <h2 className="font-800 text-lg text-[#142249]">Order Summary: {selectedOrder.id}</h2>
+                <h2 className="font-800 text-lg text-[#1E3B2B]">Order Summary: {selectedOrder.id}</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">Placed on {selectedOrder.createdAt?.toDate ? selectedOrder.createdAt.toDate().toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'}</p>
               </div>
               <button onClick={() => setSelectedOrder(null)} className="p-2 bg-white rounded-full text-muted-foreground hover:text-foreground shadow-sm border border-border transition-colors">
@@ -237,7 +237,7 @@ export default function AdminDashboardClient() {
 
               {/* Order Items */}
               <div>
-                <h3 className="font-800 text-sm text-[#142249] mb-3 border-b border-border pb-2">Order Items</h3>
+                <h3 className="font-800 text-sm text-[#1E3B2B] mb-3 border-b border-border pb-2">Order Items</h3>
                 <div className="space-y-3">
                   {selectedOrder.items?.map((item: any, idx: number) => {
                     const extraPriceTotal = item.subItems?.reduce((sum: number, sub: any) => sum + (sub.price || 0), 0) || 0;
@@ -280,7 +280,7 @@ export default function AdminDashboardClient() {
                   <span className="font-600 tabular-nums">£{(selectedOrder.deliveryFee || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-base font-800 border-t border-border/50 pt-3">
-                  <span className="text-[#142249]">Total Amount Paid</span>
+                  <span className="text-[#1E3B2B]">Total Amount Paid</span>
                   <span className="text-primary tabular-nums text-lg">£{(selectedOrder.total || 0).toFixed(2)}</span>
                 </div>
               </div>

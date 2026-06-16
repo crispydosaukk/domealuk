@@ -33,8 +33,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             {children}
           </CartProvider>
         </AuthProvider>
-        <Toaster position="bottom-right" richColors />
-</body>
+        <Toaster position="top-center" toastOptions={{ className: 'my-custom-toast' }} richColors visibleToasts={1} />
+      </body>
     </html>
   );
 }
