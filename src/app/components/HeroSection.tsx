@@ -1,12 +1,12 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Star, Clock, Leaf } from 'lucide-react';
+import { ArrowRight, Star, Clock, Leaf, Check } from 'lucide-react';
 
 export default function HeroSection() {
   return (
     <section
-      className="relative overflow-hidden bg-[100%_100%] bg-center bg-no-repeat"
+      className="relative overflow-hidden bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: `linear-gradient(to right, rgba(30, 59, 43, 0.95) 0%, rgba(30, 59, 43, 0.5) 100%), url('/banner.png')`
       }}
@@ -20,25 +20,20 @@ export default function HeroSection() {
       {/* Subtle dot pattern */}
       <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, #C39B54 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
-      <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10 py-20 lg:py-28 relative z-10">
+      <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10 pt-32 pb-12 lg:pt-40 lg:pb-16 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
           {/* Left content */}
           <div>
-            <div className="inline-flex items-center gap-2 bg-[#C39B54]/20 text-yellow-300 text-xs font-700 px-3 py-1.5 rounded-full mb-6 border border-[#C39B54]/30">
-              <span className="w-2 h-2 bg-[#C39B54] rounded-full animate-pulse" />
-              Home Food Away From Home · London
-            </div>
+
 
             <h1 className="text-4xl lg:text-5xl xl:text-6xl font-extrabold text-white leading-tight mb-4">
-              Authentic Indian
+              Fresh Indian Food,
               <br />
-              <span className="text-[#C39B54]">Tiffin Delivered</span>
-              <br />
-              <span className="text-[#C39B54]">Fresh Daily 🍱</span>
+              <span className="text-[#C39B54]">Delivered with Love</span>
             </h1>
 
             <p className="text-lg text-gray-300 leading-relaxed mb-8 max-w-lg">
-              Home-cooked Indian meals delivered to your door across London. No preservatives, no shortcuts — just the taste of home, every single day.
+              Drawing on 21 years of restaurant expertise, we prepare nutritious vegetarian meals using authentic recipes, fresh ingredients, and sustainable packaging.
             </p>
 
             <div className="flex flex-wrap gap-4 mb-10">
@@ -46,7 +41,7 @@ export default function HeroSection() {
                 href="/menu-ordering-screen"
                 className="inline-flex items-center gap-2 bg-[#C39B54] text-white font-700 px-6 py-3.5 rounded-xl hover:bg-yellow-700 transition-all duration-150 active:scale-95 shadow-lg shadow-yellow-900/40"
               >
-                Order Today&apos;s Tiffin
+                Start Your DoMeal Journey
                 <ArrowRight size={18} />
               </Link>
               <Link
@@ -92,7 +87,7 @@ export default function HeroSection() {
           <div className="flex justify-center lg:justify-end">
             <div className="relative">
               {/* Main card */}
-              <div className="w-80 lg:w-96 bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8 shadow-2xl">
+              <div className="w-full max-w-sm sm:max-w-lg lg:max-w-[520px] bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl">
                 {/* Logo */}
                 <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-[#C39B54]/50 shadow-xl mb-6">
                   <Image
@@ -106,18 +101,19 @@ export default function HeroSection() {
                 <h2 className="text-white text-2xl font-extrabold text-center mb-1">DoMeal</h2>
                 <p className="text-[#C39B54] text-xs font-600 text-center tracking-widest uppercase mb-6">Home Food Away From Home</p>
 
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                   {[
-                    { label: 'Breakfast Tiffin', time: '7:30 AM', price: '£3.99' },
-                    { label: 'Lunch Thali', time: '12:00 PM', price: '£6.99' },
-                    { label: 'Dinner Special', time: '7:30 PM', price: '£5.99' },
-                  ]?.map((slot) => (
-                    <div key={slot?.label} className="flex items-center justify-between bg-white/10 rounded-xl px-4 py-2.5">
-                      <div>
-                        <p className="text-white text-sm font-600">{slot?.label}</p>
-                        <p className="text-gray-400 text-xs">{slot?.time}</p>
+                    'Freshly Cooked Daily',
+                    'Vegetarian & Vegan Options',
+                    'Balanced Nutrition',
+                    'Reusable Packaging',
+                    '21 Years of Culinary Excellence',
+                  ].map((point, idx) => (
+                    <div key={idx} className={`flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3 ${idx === 4 ? 'sm:col-span-2 sm:justify-center' : ''}`}>
+                      <div className="w-6 h-6 rounded-full bg-[#C39B54]/20 flex items-center justify-center flex-shrink-0">
+                        <Check size={14} className="text-[#C39B54]" />
                       </div>
-                      <span className="text-[#C39B54] font-800 text-sm">{slot?.price}</span>
+                      <p className="text-white text-xs sm:text-sm font-600 leading-snug">{point}</p>
                     </div>
                   ))}
                 </div>

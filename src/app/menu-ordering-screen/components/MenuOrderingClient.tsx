@@ -121,7 +121,7 @@ export default function MenuOrderingClient() {
                   : 'bg-white text-foreground border border-border hover:border-primary hover:text-primary'
               }`}
             >
-              {cat}
+              {cat === 'Snacks' ? 'Extras' : cat}
             </button>
           ))}
         </div>
@@ -163,7 +163,7 @@ export default function MenuOrderingClient() {
                 ) : (
                   <div className={`h-40 w-full bg-orange-50 flex flex-col items-center justify-center text-primary/40 relative overflow-hidden ${expandedMenus[item.id] ? 'rounded-t-2xl' : 'rounded-t-2xl'}`}>
                     <Leaf size={32} className="mb-2 opacity-50" />
-                    <span className="text-xs font-600 uppercase tracking-widest">{item.category}</span>
+                    <span className="text-xs font-600 uppercase tracking-widest">{item.category === 'Snacks' ? 'Extras' : item.category}</span>
                     {item.tag && (
                       <span className="absolute top-2 left-2 text-xs font-700 bg-primary text-white px-2 py-0.5 rounded-full shadow">{item.tag}</span>
                     )}
@@ -194,7 +194,7 @@ export default function MenuOrderingClient() {
 
                   <button 
                     onClick={() => setSelectedItem(item)}
-                    className="text-xs font-900 text-primary hover:text-[#10261A] transition-colors self-start mb-4 flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-lg"
+                    className="text-[11px] sm:text-xs font-800 text-[#b58b42] hover:text-white hover:bg-[#C39B54] transition-all self-start mb-4 flex items-center gap-1.5 border-2 border-[#C39B54]/50 hover:border-[#C39B54] px-3 py-1.5 rounded-lg uppercase tracking-wide shadow-sm"
                   >
                     View Details & Ingredients <ChevronRight size={14} />
                   </button>
@@ -410,8 +410,8 @@ export default function MenuOrderingClient() {
             
             <div className="overflow-y-auto p-5 space-y-5">
               {selectedItem.images && selectedItem.images.length > 0 && (
-                <div className="w-full h-48 rounded-xl overflow-hidden mb-4">
-                  <img src={selectedItem.images[0]} alt={selectedItem.name} className="w-full h-full object-cover" />
+                <div className="w-full rounded-xl overflow-hidden mb-4 bg-muted/20 flex items-center justify-center">
+                  <img src={selectedItem.images[0]} alt={selectedItem.name} className="w-full h-auto max-h-72 object-contain" />
                 </div>
               )}
               

@@ -45,7 +45,7 @@ export default function HowItWorksSection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-          <div className="hidden md:block absolute top-12 left-1/3 right-1/3 h-0.5 bg-gradient-to-r from-primary via-secondary to-accent opacity-30" />
+
 
           {steps?.map((step, idx) => (
             <div key={step?.id} className={`relative flex flex-col items-center text-center group p-6 rounded-2xl border-2 ${step?.border} hover:shadow-lg transition-all duration-200`}>

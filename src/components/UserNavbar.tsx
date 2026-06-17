@@ -18,51 +18,18 @@ export default function UserNavbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [userOrders, setUserOrders] = useState<any[]>([]);
-  const [currentLocation, setCurrentLocation] = useState<string>('Detecting location...');
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          try {
-            const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`);
-            const data = await res.json();
-            if (data.results && data.results.length > 0) {
-              let locationName = '';
-              const addressComponents = data.results[0].address_components;
-              
-              const cityObj = addressComponents.find((c: any) => c.types.includes('locality') || c.types.includes('postal_town'));
-              const sublocalityObj = addressComponents.find((c: any) => c.types.includes('sublocality') || c.types.includes('neighborhood'));
-              
-              if (sublocalityObj && cityObj) {
-                locationName = `${sublocalityObj.short_name}, ${cityObj.short_name}`;
-              } else if (cityObj) {
-                locationName = cityObj.short_name;
-              } else {
-                locationName = data.results[0].formatted_address.split(',')[0];
-              }
-              
-              setCurrentLocation(locationName);
-            } else {
-              setCurrentLocation('Location unknown');
-            }
-          } catch (error) {
-            console.error('Error fetching location', error);
-            setCurrentLocation('Location unknown');
-          }
-        },
-        (error) => {
-          console.error('Geolocation error', error);
-          setCurrentLocation('Select delivery location');
-        }
-      );
-    } else {
-      setCurrentLocation('Location not supported');
-    }
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const isHome = pathname === '/';
+  const isTransparent = isHome && !scrolled;
   useEffect(() => {
     if (!user) {
       setUserOrders([]);
@@ -82,45 +49,44 @@ export default function UserNavbar() {
     { label: 'Home', href: '/' },
     { label: 'Menu', href: '/menu-ordering-screen' },
     { label: 'Plans', href: '/#plans' },
+    { label: 'Refer a Friend', href: '/refer-a-friend' },
+    { label: 'How to Heat', href: '/how-to-heat' },
+    { label: 'Student Discounts', href: '/student-discounts' },
+    { label: 'Gift', href: '/gift' },
+    { label: 'Reviews', href: '/#reviews' },
     { label: 'FAQ', href: '/#faq' },
   ];
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-white border-b border-border shadow-sm">
+      {!isHome && <div className="h-16" />}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isTransparent ? 'bg-transparent' : 'bg-white border-b border-border shadow-sm'}`}>
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo and Location */}
+          <div className={`flex items-center justify-between transition-all duration-300 ${isTransparent ? 'h-24' : 'h-16'}`}>
+            {/* Logo */}
             <div className="flex items-center gap-4">
               <Link href="/" className="flex items-center">
-                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary/20 shadow-md flex-shrink-0">
+                <div className={`rounded-full overflow-hidden border-2 shadow-md flex-shrink-0 transition-all duration-300 bg-white ${isTransparent ? 'w-20 h-20 border-white/40' : 'w-14 h-14 border-primary/20'}`}>
                   <Image
                     src="/DOMEAL_Logo.png"
                     alt="DoMeal logo"
-                    width={56}
-                    height={56}
+                    width={80}
+                    height={80}
                     className="w-full h-full object-cover"
                   />
                 </div>
               </Link>
-              
-              <div className="hidden sm:flex flex-col">
-                <span className="text-[10px] font-800 text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                  <MapPin size={10} className="text-primary" /> Your Current Location
-                </span>
-                <span className="text-sm font-700 text-foreground truncate max-w-[200px]">
-                  {currentLocation}
-                </span>
-              </div>
             </div>
 
             {/* Desktop nav */}
-            <div className="hidden md:flex items-center gap-6">
+            <div className="hidden lg:flex items-center gap-3 xl:gap-5">
               {navLinks.map((link) => (
                 <Link
                   key={`nav-${link.label}`}
                   href={link.href}
-                  className="text-sm font-500 text-foreground hover:text-primary transition-colors duration-150"
+                  className={`relative text-xs xl:text-sm font-bold transition-colors duration-300 whitespace-nowrap 
+                    after:absolute after:-bottom-1.5 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full
+                    ${isTransparent ? 'text-white hover:text-white/90' : 'text-foreground hover:text-primary'}`}
                 >
                   {link.label}
                 </Link>
@@ -131,7 +97,7 @@ export default function UserNavbar() {
             <div className="flex items-center gap-3">
               <a
                 href="tel:+447700900123"
-                className="hidden lg:flex items-center gap-1 text-sm text-secondary font-600"
+                className={`hidden lg:flex items-center gap-1 text-sm font-bold ${isTransparent ? 'text-white' : 'text-secondary'}`}
               >
                 <Phone size={14} />
                 +44 7700 900123
@@ -143,12 +109,12 @@ export default function UserNavbar() {
                     router.push('/menu-ordering-screen');
                   }
                 }}
-                className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+                className={`relative p-2 rounded-lg transition-colors ${isTransparent ? 'hover:bg-white/10' : 'hover:bg-muted'}`}
                 aria-label="Cart"
               >
-                <ShoppingCart size={20} className="text-foreground" />
+                <ShoppingCart size={20} className={isTransparent ? 'text-white' : 'text-foreground'} />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-700">
+                  <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                     {cartCount}
                   </span>
                 )}
@@ -159,14 +125,14 @@ export default function UserNavbar() {
                   {user.email === 'domealuk79812@gmail.com' && (
                     <Link
                       href="/admin-dashboard"
-                      className="hidden sm:flex items-center gap-1.5 bg-secondary text-white text-sm font-600 px-4 py-2 rounded-lg hover:bg-[#1E3B2B] transition-all duration-150 active:scale-95 shadow-sm"
+                      className="hidden sm:flex items-center gap-1.5 bg-secondary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-[#1E3B2B] transition-all duration-150 active:scale-95 shadow-sm"
                     >
                       Admin Panel
                     </Link>
                   )}
                   <button
                     onClick={() => setProfileOpen(true)}
-                    className="hidden sm:flex w-10 h-10 rounded-full bg-primary/10 items-center justify-center text-primary font-bold hover:bg-primary/20 transition-colors border border-primary/20"
+                    className={`hidden sm:flex w-10 h-10 rounded-full items-center justify-center font-bold transition-colors border ${isTransparent ? 'bg-white/20 text-white border-white/30 hover:bg-white/30' : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'}`}
                   >
                     {user.displayName ? user.displayName.charAt(0).toUpperCase() : <User size={18} />}
                   </button>
@@ -174,7 +140,7 @@ export default function UserNavbar() {
               ) : (
                 <Link
                   href="/sign-up-login-screen"
-                  className="hidden sm:flex items-center gap-1.5 bg-primary text-white text-sm font-600 px-4 py-2 rounded-lg hover:bg-[#1E3B2B] transition-all duration-150 active:scale-95"
+                  className={`hidden sm:flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-lg transition-all duration-150 active:scale-95 ${isTransparent ? 'bg-white text-primary hover:bg-gray-100 shadow-sm' : 'bg-primary text-white hover:bg-[#1E3B2B]'}`}
                 >
                   <User size={14} />
                   Sign In
@@ -183,7 +149,7 @@ export default function UserNavbar() {
 
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+                className={`md:hidden p-2 rounded-lg transition-colors ${isTransparent ? 'hover:bg-white/10 text-white' : 'hover:bg-muted text-foreground'}`}
                 aria-label="Toggle menu"
               >
                 {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -193,7 +159,7 @@ export default function UserNavbar() {
         </div>
 
         {mobileOpen && (
-          <div className="md:hidden bg-white border-t border-border px-4 py-4 space-y-3 shadow-lg absolute w-full">
+          <div className="md:hidden bg-white border-t border-border px-4 py-4 space-y-3 shadow-lg absolute w-full top-full left-0">
             {navLinks.map((link) => (
               <Link
                 key={`mobile-nav-${link.label}`}

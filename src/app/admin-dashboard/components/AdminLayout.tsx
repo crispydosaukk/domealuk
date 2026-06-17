@@ -15,7 +15,7 @@ const baseNavItems = [
   { id: 'nav-customers', label: 'Customers', href: '/admin-customers', icon: Users },
   { id: 'nav-analytics', label: 'Analytics', href: '/admin-analytics', icon: TrendingUp },
   { id: 'nav-menu', label: 'Menu Management', href: '/admin-menu', icon: UtensilsCrossed },
-  { id: 'nav-settings', label: 'Settings', href: '/admin-dashboard#settings', icon: Settings },
+  { id: 'nav-settings', label: 'Settings', href: '/admin-settings', icon: Settings },
 ];
 
 interface AdminLayoutProps {
