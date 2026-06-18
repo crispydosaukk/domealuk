@@ -1,9 +1,11 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
 import { ConciergeBell, Package, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const heatingData = [
   {
@@ -153,6 +155,27 @@ const heatingData = [
 
 export default function HowToHeatPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(0); // First item open by default
+  const [settings, setSettings] = useState({
+    heatTitle: 'Heating Instructions',
+    heatContent: 'Your DoMeal is delivered ice-packed and cold and lasts for 48 hours in the fridge.\n\nOur meals are best enjoyed heated. Our recommended heating method is the oven at 180°C until piping hot (usually around 30-40 minutes).',
+    heatBottomTitle: 'Find out if we deliver to your neighbourhood',
+    heatBottomDesc: 'Ready to enjoy piping hot, authentic Indian meals at home? Enter your postcode on our homepage to see if we deliver to you.',
+    heatBottomBtn: 'Get Started',
+    heatData: heatingData
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'global');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists() && docSnap.data().heatTitle !== undefined) {
+          setSettings(prev => ({ ...prev, ...docSnap.data() }));
+        }
+      } catch (error) {}
+    };
+    fetchSettings();
+  }, []);
 
   const toggleAccordion = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -166,20 +189,18 @@ export default function HowToHeatPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="mb-12 text-center">
-            <h1 className="text-4xl md:text-5xl font-900 text-[#1E3B2B] mb-6">Heating Instructions</h1>
-            <p className="text-lg text-muted-foreground mb-4 max-w-2xl mx-auto leading-relaxed">
-              Your DoMeal is delivered ice-packed and cold and lasts for 48 hours in the fridge.
-            </p>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Our meals are best enjoyed heated. Our recommended heating method is the oven at <span className="font-700 text-[#C39B54]">180°C until piping hot</span> (usually around 30-40 minutes).
+            <h1 className="text-4xl md:text-5xl font-900 text-[#1E3B2B] mb-6">{settings.heatTitle}</h1>
+            <p className="text-lg text-muted-foreground mb-4 max-w-3xl mx-auto leading-relaxed whitespace-pre-line">
+              {settings.heatContent}
             </p>
             <p className="text-sm font-600 text-primary mt-6">For detailed heating instructions per menu, please see below:</p>
           </div>
 
           <div className="bg-white rounded-3xl shadow-xl border border-border overflow-hidden">
-            {heatingData.map((item, index) => {
+            {settings.heatData.map((item, index) => {
               const isOpen = openIndex === index;
-              const Icon = item.icon;
+              // Map saved string icons or fallback
+              const Icon = (item.icon as any) === 'Package' || item.icon === Package ? Package : ConciergeBell;
               
               return (
                 <div key={index} className="border-b border-border last:border-0">
@@ -264,12 +285,12 @@ export default function HowToHeatPage() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#C39B54] rounded-full blur-3xl opacity-20 translate-x-1/2 -translate-y-1/2" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary rounded-full blur-3xl opacity-20 -translate-x-1/2 translate-y-1/2" />
             
-            <h2 className="text-3xl font-900 text-white mb-4 relative z-10">Find out if we deliver to your neighbourhood</h2>
-            <p className="text-blue-100 mb-8 max-w-xl mx-auto relative z-10">
-              Ready to enjoy piping hot, authentic Indian meals at home? Enter your postcode on our homepage to see if we deliver to you.
+            <h2 className="text-3xl font-900 text-white mb-4 relative z-10">{settings.heatBottomTitle}</h2>
+            <p className="text-blue-100 mb-8 max-w-xl mx-auto relative z-10 whitespace-pre-line">
+              {settings.heatBottomDesc}
             </p>
             <Link href="/" className="inline-block bg-[#C39B54] text-white font-800 px-8 py-4 rounded-xl hover:bg-[#a17e41] transition-all shadow-lg shadow-yellow-900/20 relative z-10">
-              Get Started
+              {settings.heatBottomBtn}
             </Link>
           </div>
 

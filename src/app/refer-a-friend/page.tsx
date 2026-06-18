@@ -8,20 +8,34 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 
 export default function ReferAFriendPage() {
-  const [rewardAmount, setRewardAmount] = useState<number>(10);
+  const [settings, setSettings] = useState({
+    referralAmount: 10,
+    referralTitle: 'Give £{amount}, Get £{amount}',
+    referralContent: 'Share the joy of authentic home-cooked Indian meals. Refer a friend to DoMeal and both of you will receive a £{amount} credit towards your next order!',
+    referralStep1Title: 'Share Your Link',
+    referralStep1Desc: "Send your unique referral link to friends who haven't tried DoMeal yet.",
+    referralStep2Title: 'They Order',
+    referralStep2Desc: 'Your friend gets £{amount} off their first authentic tiffin delivery.',
+    referralStep3Title: 'You Earn',
+    referralStep3Desc: 'Once their order is delivered, you get a £{amount} credit added to your account.'
+  });
   const { user } = useAuth();
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const docRef = doc(db, 'settings', 'referral');
+        const docRef = doc(db, 'settings', 'global');
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().amount) {
-          setRewardAmount(docSnap.data().amount);
+        if (docSnap.exists() && docSnap.data().referralAmount !== undefined) {
+          setSettings(prev => ({ ...prev, ...docSnap.data() }));
+        } else {
+          // Fallback to legacy
+          const oldRef = await getDoc(doc(db, 'settings', 'referral'));
+          if (oldRef.exists() && oldRef.data().amount) {
+            setSettings(prev => ({ ...prev, referralAmount: oldRef.data().amount }));
+          }
         }
-      } catch (error) {
-        // Silently fallback to default if permissions are insufficient
-      }
+      } catch (error) {}
     };
     fetchSettings();
   }, []);
@@ -36,9 +50,11 @@ export default function ReferAFriendPage() {
              <div className="absolute top-0 left-0 w-64 h-64 bg-[#C39B54] rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 opacity-20" />
              <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#C39B54] rounded-full blur-3xl translate-x-1/4 translate-y-1/4 opacity-20" />
             
-            <h1 className="text-4xl md:text-5xl font-extrabold mb-4 relative z-10">Give £{rewardAmount}, Get £{rewardAmount}</h1>
-            <p className="text-lg text-blue-100 max-w-2xl mx-auto relative z-10">
-              Share the joy of authentic home-cooked Indian meals. Refer a friend to DoMeal and both of you will receive a £{rewardAmount} credit towards your next order!
+            <h1 className="text-4xl md:text-5xl font-extrabold mb-4 relative z-10">
+              {settings.referralTitle.replace(/\{amount\}/g, settings.referralAmount.toString())}
+            </h1>
+            <p className="text-lg text-blue-100 max-w-2xl mx-auto relative z-10 whitespace-pre-line">
+              {settings.referralContent.replace(/\{amount\}/g, settings.referralAmount.toString())}
             </p>
           </div>
           
@@ -47,18 +63,18 @@ export default function ReferAFriendPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-50 text-primary font-900 text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100 shadow-sm">1</div>
-                <h3 className="font-800 text-lg mb-2 text-foreground">Share Your Link</h3>
-                <p className="text-muted-foreground text-sm">Send your unique referral link to friends who haven't tried DoMeal yet.</p>
+                <h3 className="font-800 text-lg mb-2 text-foreground">{settings.referralStep1Title}</h3>
+                <p className="text-muted-foreground text-sm whitespace-pre-line">{settings.referralStep1Desc}</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-50 text-primary font-900 text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100 shadow-sm">2</div>
-                <h3 className="font-800 text-lg mb-2 text-foreground">They Order</h3>
-                <p className="text-muted-foreground text-sm">Your friend gets £{rewardAmount} off their first authentic tiffin delivery.</p>
+                <h3 className="font-800 text-lg mb-2 text-foreground">{settings.referralStep2Title}</h3>
+                <p className="text-muted-foreground text-sm whitespace-pre-line">{settings.referralStep2Desc.replace(/\{amount\}/g, settings.referralAmount.toString())}</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-[#C39B54]/20 text-[#1E3B2B] font-900 text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#C39B54]/30 shadow-sm">3</div>
-                <h3 className="font-800 text-lg mb-2 text-foreground">You Earn</h3>
-                <p className="text-muted-foreground text-sm">Once their order is delivered, you get a £{rewardAmount} credit added to your account.</p>
+                <h3 className="font-800 text-lg mb-2 text-foreground">{settings.referralStep3Title}</h3>
+                <p className="text-muted-foreground text-sm whitespace-pre-line">{settings.referralStep3Desc.replace(/\{amount\}/g, settings.referralAmount.toString())}</p>
               </div>
             </div>
             

@@ -82,9 +82,9 @@ export default function UserFooter() {
           </div>
 
           {/* Quick Links */}
-          <div>
+          <div className="lg:col-span-2">
             <h4 className="font-700 text-sm uppercase tracking-wider text-gray-400 mb-4">Quick Links</h4>
-            <ul className="space-y-2">
+            <ul className="grid grid-cols-2 gap-y-2 gap-x-4">
               {[
                 { label: 'Home', href: '/' },
                 { label: 'Menu', href: '/menu-ordering-screen' },
@@ -107,19 +107,7 @@ export default function UserFooter() {
             </ul>
           </div>
 
-          {/* Our Menu */}
-          <div>
-            <h4 className="font-700 text-sm uppercase tracking-wider text-gray-400 mb-4">Our Menu</h4>
-            <ul className="space-y-2">
-              {['Breakfast Tiffin', 'Lunch Thali', 'Dinner Specials', 'Evening Snacks', 'Indian Sweets', 'Combo Packs']?.map((item) => (
-                <li key={`footer-menu-${item}`}>
-                  <Link href="/menu-ordering-screen" className="text-sm text-gray-300 hover:text-secondary transition-colors">
-                    {item}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+
 
           {/* Contact */}
           <div>
@@ -145,9 +133,9 @@ export default function UserFooter() {
         <div className="border-t border-white/10 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-gray-500">© 2026 DoMeal · domeal.co.uk · All rights reserved.</p>
           <div className="flex gap-4">
-            <Link href="#" className="text-xs text-gray-500 hover:text-gray-300">Privacy Policy</Link>
-            <Link href="#" className="text-xs text-gray-500 hover:text-gray-300">Terms of Service</Link>
-            <Link href="#" className="text-xs text-gray-500 hover:text-gray-300">Refund Policy</Link>
+            <Link href="/privacy-policy" className="text-xs text-gray-500 hover:text-gray-300">Privacy Policy</Link>
+            <Link href="/terms-of-service" className="text-xs text-gray-500 hover:text-gray-300">Terms of Service</Link>
+            <Link href="/terms-of-business" className="text-xs text-gray-500 hover:text-gray-300">Terms of Business</Link>
           </div>
         </div>
       </div>

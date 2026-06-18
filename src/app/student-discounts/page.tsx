@@ -1,11 +1,36 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
 import Image from 'next/image';
 import Link from 'next/link';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function StudentDiscountsPage() {
+  const [settings, setSettings] = useState({
+    studentDiscount: 30,
+    studentHeaderTitle: 'Student Deals',
+    studentHeaderDesc: "Are you a student looking to eat nutritious and delicious authentic Indian meals without lifting a finger? Try DoMeal and get a taste of South Asia delivered to your doorstep. And without fail, you'll make your DoMeal day, you, your friends, and flatmates' favourite day of the week.",
+    studentImage: '/banner.png',
+    studentTitle: '{percentage}% off all your DoMeal orders',
+    studentContent: 'Fuel your studies with our healthy, authentic, and delicious tiffins. Verify your student status to claim your exclusive discount code.',
+    studentBtnText: 'Verify Student Status',
+    studentTermsText: 'See discount Terms & Conditions'
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'global');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists() && docSnap.data().studentDiscount !== undefined) {
+          setSettings(prev => ({ ...prev, ...docSnap.data() }));
+        }
+      } catch (error) {}
+    };
+    fetchSettings();
+  }, []);
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <UserNavbar />
@@ -18,9 +43,9 @@ export default function StudentDiscountsPage() {
           <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#C39B54] rounded-full blur-3xl translate-x-1/4 translate-y-1/4 opacity-20" />
           
           <div className="max-w-4xl mx-auto relative z-10">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-900 text-white mb-6 tracking-tight">Student Deals</h1>
-            <p className="text-lg md:text-xl text-white/95 max-w-3xl mx-auto leading-relaxed font-500">
-              Are you a student looking to eat nutritious and delicious authentic Indian meals without lifting a finger? Try DoMeal and get a taste of South Asia delivered to your doorstep. And without fail, you'll make your DoMeal day, you, your friends, and flatmates' favourite day of the week.
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-900 text-white mb-6 tracking-tight">{settings.studentHeaderTitle}</h1>
+            <p className="text-lg md:text-xl text-white/95 max-w-3xl mx-auto leading-relaxed font-500 whitespace-pre-line">
+              {settings.studentHeaderDesc}
             </p>
           </div>
         </div>
@@ -32,7 +57,7 @@ export default function StudentDiscountsPage() {
             {/* Image Side */}
             <div className="relative w-full aspect-square md:aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
               <Image 
-                src="/banner.png" 
+                src={settings.studentImage || "/banner.png"} 
                 alt="DoMeal Student Feast"
                 fill
                 className="object-cover"
@@ -41,20 +66,19 @@ export default function StudentDiscountsPage() {
 
             {/* Discount Card Side */}
             <div className="bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-border flex flex-col justify-center">
-              <h2 className="text-4xl md:text-5xl font-900 text-[#1E3B2B] mb-6 leading-tight">
-                <span className="bg-[#C39B54] px-3 py-1 rounded-xl text-white inline-block mb-3 shadow-md shadow-yellow-900/10">30% off</span><br/>
-                all your DoMeal orders
+              <h2 className="text-4xl md:text-5xl font-900 text-[#1E3B2B] mb-6 leading-tight whitespace-pre-line">
+                {settings.studentTitle.replace(/\{percentage\}/g, settings.studentDiscount.toString())}
               </h2>
-              <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
-                Fuel your studies with our healthy, authentic, and delicious tiffins. Verify your student status to claim your exclusive discount code.
+              <p className="text-muted-foreground mb-8 text-lg leading-relaxed whitespace-pre-line">
+                {settings.studentContent}
               </p>
               
               <div className="flex flex-col items-start gap-5">
                 <Link href="/sign-up-login-screen" className="w-full sm:w-auto text-center bg-[#C39B54] text-white font-800 px-8 py-4 rounded-xl hover:bg-[#a17e41] transition-all shadow-lg shadow-yellow-900/20 text-lg">
-                  Verify Student Status
+                  {settings.studentBtnText}
                 </Link>
                 <Link href="#" className="text-sm font-700 text-muted-foreground hover:text-primary underline underline-offset-4 transition-colors">
-                  See discount Terms & Conditions
+                  {settings.studentTermsText}
                 </Link>
               </div>
             </div>

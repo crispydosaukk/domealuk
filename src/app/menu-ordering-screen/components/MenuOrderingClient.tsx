@@ -76,12 +76,13 @@ export default function MenuOrderingClient() {
     return () => unsub();
   }, []);
 
-  // Build category tabs dynamically from live data
-  const dynamicCategories = ['All', ...Array.from(new Set(menuItems.map(i => i.category)))];
+  // Build category tabs dynamically from live data and normalize Snacks to Extras
+  const normalizedCategories = menuItems.map(i => i.category === 'Snacks' ? 'Extras' : i.category);
+  const dynamicCategories = ['All', ...Array.from(new Set(normalizedCategories))];
 
   const filtered = activeCategory === 'All'
     ? menuItems
-    : menuItems.filter(i => i.category === activeCategory);
+    : menuItems.filter(i => (i.category === 'Snacks' ? 'Extras' : i.category) === activeCategory);
 
   const getQty = (id: string) => cart.filter(c => c.id === id).reduce((sum, c) => sum + c.qty, 0);
 

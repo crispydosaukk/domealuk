@@ -66,7 +66,7 @@ export default function UserNavbar() {
             {/* Logo */}
             <div className="flex items-center gap-4">
               <Link href="/" className="flex items-center">
-                <div className={`rounded-full overflow-hidden border-2 shadow-md flex-shrink-0 transition-all duration-300 bg-white ${isTransparent ? 'w-20 h-20 border-white/40' : 'w-14 h-14 border-primary/20'}`}>
+                <div className={`rounded-full overflow-hidden border-4 border-[#C39B54] shadow-md flex-shrink-0 transition-all duration-300 bg-white ${isTransparent ? 'w-20 h-20' : 'w-14 h-14'}`}>
                   <Image
                     src="/DOMEAL_Logo.png"
                     alt="DoMeal logo"
@@ -79,12 +79,12 @@ export default function UserNavbar() {
             </div>
 
             {/* Desktop nav */}
-            <div className="hidden lg:flex items-center gap-3 xl:gap-5">
+            <div className="hidden lg:flex items-center gap-10 xl:gap-14">
               {navLinks.map((link) => (
                 <Link
                   key={`nav-${link.label}`}
                   href={link.href}
-                  className={`relative text-xs xl:text-sm font-bold transition-colors duration-300 whitespace-nowrap 
+                  className={`relative text-sm xl:text-base font-bold transition-colors duration-300 whitespace-nowrap 
                     after:absolute after:-bottom-1.5 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full
                     ${isTransparent ? 'text-white hover:text-white/90' : 'text-foreground hover:text-primary'}`}
                 >
@@ -94,14 +94,7 @@ export default function UserNavbar() {
             </div>
 
             {/* Right actions */}
-            <div className="flex items-center gap-3">
-              <a
-                href="tel:+447700900123"
-                className={`hidden lg:flex items-center gap-1 text-sm font-bold ${isTransparent ? 'text-white' : 'text-secondary'}`}
-              >
-                <Phone size={14} />
-                +44 7700 900123
-              </a>
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => {
                   setIsCartOpen(true);

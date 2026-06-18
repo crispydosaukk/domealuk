@@ -1,20 +1,52 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
 import Image from 'next/image';
 import { CheckCircle2, ChevronDown, CalendarIcon, CreditCard } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function GiftPage() {
   const [deliveries, setDeliveries] = useState<number>(1);
   const [sides, setSides] = useState<string>('none');
   const [price, setPrice] = useState<number>(48.50);
 
-  const calculatePrice = (dels: number, sds: string) => {
-    let base = 48.50 * dels;
+  const [settings, setSettings] = useState({
+    giftBasePrice: 48.50,
+    giftStandardPrice: 8.50,
+    giftCompletePrice: 12.50,
+    giftImage: '/gift-card.png',
+    giftTitle: 'Good Things Are Meant to Be Shared!',
+    giftContent1: 'Treat your friends, family, lovers, aunties, and uncles to a taste of our banging authentic Indian meals - because great food is best enjoyed together.',
+    giftContent2: "Give the gift of a DoMeal delivery! We'll send the voucher straight to your giftee so they can start redeeming their tiffin delivery when it suits them.",
+    giftIncludesTitle: 'Each gift includes:',
+    giftInclude1: 'A reusable tiffin for them to keep (£15 value)',
+    giftInclude2: 'A meal for two (or two servings) packed with bold, fresh flavours',
+    giftNote: 'Gift subscriptions are delivered on a fortnightly basis (or can be customised based on preference and availability).',
+    giftClosing: "A simple, thoughtful, and waste-free way to spread the love of great food! We can't wait to feed your loved ones."
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'global');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists() && docSnap.data().giftBasePrice !== undefined) {
+          const data = docSnap.data() as any;
+          setSettings(prev => ({ ...prev, ...data }));
+          setPrice(data.giftBasePrice * deliveries);
+        }
+      } catch (error) {}
+    };
+    fetchSettings();
+  }, []);
+
+  const calculatePrice = (dels: number, sds: string, currentSettings = settings) => {
+    let base = currentSettings.giftBasePrice * dels;
     let extra = 0;
-    if (sds === 'standard') extra = 8.50 * dels;
-    if (sds === 'complete') extra = 12.50 * dels;
+    if (sds === 'standard') extra = currentSettings.giftStandardPrice * dels;
+    if (sds === 'complete') extra = currentSettings.giftCompletePrice * dels;
     setPrice(base + extra);
   };
 
@@ -45,7 +77,7 @@ export default function GiftPage() {
           <div className="space-y-8">
             <div className="relative w-full aspect-square md:aspect-[4/3] lg:aspect-square rounded-3xl overflow-hidden shadow-xl border border-border">
               <Image 
-                src="/gift-card.png"
+                src={settings.giftImage || "/gift-card.png"}
                 alt="DoMeal Delivery Gift Card"
                 fill
                 className="object-cover"
@@ -54,32 +86,32 @@ export default function GiftPage() {
             </div>
             
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-border">
-              <h3 className="text-xl font-800 text-[#1E3B2B] mb-4">Good Things Are Meant to Be Shared!</h3>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                Treat your friends, family, lovers, aunties, and uncles to a taste of our banging authentic Indian meals - because great food is best enjoyed together.
+              <h3 className="text-xl font-800 text-[#1E3B2B] mb-4">{settings.giftTitle}</h3>
+              <p className="text-muted-foreground leading-relaxed mb-4 whitespace-pre-line">
+                {settings.giftContent1}
               </p>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                Give the gift of a DoMeal delivery! We'll send the voucher straight to your giftee so they can start redeeming their tiffin delivery when it suits them.
+              <p className="text-muted-foreground leading-relaxed mb-6 whitespace-pre-line">
+                {settings.giftContent2}
               </p>
               
-              <h4 className="font-800 text-foreground mb-3">Each gift includes:</h4>
+              <h4 className="font-800 text-foreground mb-3">{settings.giftIncludesTitle}</h4>
               <ul className="space-y-3 mb-6">
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="text-[#C39B54] shrink-0 mt-0.5" size={20} />
-                  <span className="text-muted-foreground">A reusable tiffin for them to keep (£15 value)</span>
+                  <span className="text-muted-foreground whitespace-pre-line">{settings.giftInclude1}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="text-[#C39B54] shrink-0 mt-0.5" size={20} />
-                  <span className="text-muted-foreground">A meal for two (or two servings) packed with bold, fresh flavours</span>
+                  <span className="text-muted-foreground whitespace-pre-line">{settings.giftInclude2}</span>
                 </li>
               </ul>
               
-              <p className="text-sm text-muted-foreground italic mb-4 bg-gray-50 p-4 rounded-xl">
-                Gift subscriptions are delivered on a fortnightly basis (or can be customised based on preference and availability).
+              <p className="text-sm text-muted-foreground italic mb-4 bg-gray-50 p-4 rounded-xl whitespace-pre-line">
+                {settings.giftNote}
               </p>
               
-              <p className="font-700 text-[#1E3B2B]">
-                A simple, thoughtful, and waste-free way to spread the love of great food! We can't wait to feed your loved ones.
+              <p className="font-700 text-[#1E3B2B] whitespace-pre-line">
+                {settings.giftClosing}
               </p>
             </div>
           </div>
@@ -118,8 +150,8 @@ export default function GiftPage() {
                 <div className="space-y-3">
                   {[
                     { id: 'none', label: 'None', extra: 0 },
-                    { id: 'standard', label: 'Standard', extra: 8.50 },
-                    { id: 'complete', label: 'Complete', extra: 12.50 },
+                    { id: 'standard', label: 'Standard', extra: settings.giftStandardPrice },
+                    { id: 'complete', label: 'Complete', extra: settings.giftCompletePrice },
                   ].map(option => (
                     <div 
                       key={option.id}

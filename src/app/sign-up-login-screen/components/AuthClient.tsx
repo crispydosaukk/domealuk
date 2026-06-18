@@ -84,8 +84,8 @@ export default function AuthClient() {
   return (
     <div className="min-h-screen flex">
       {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1A2B5E 0%, #0F1A3E 50%, #1A2B5E 100%)' }}>
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #4A90D9 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1E3B2B 0%, #14281D 50%, #1E3B2B 100%)' }}>
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #C39B54 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
           <Link href="/" className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/30 shadow-lg flex-shrink-0">
@@ -97,7 +97,7 @@ export default function AuthClient() {
             </div>
             <div>
               <p className="font-extrabold text-2xl leading-tight">DoMeal</p>
-              <p className="text-blue-300 text-sm">domeal.co.uk</p>
+              <p className="text-[#C39B54]/80 text-sm">domeal.co.uk</p>
             </div>
           </Link>
 
@@ -105,7 +105,7 @@ export default function AuthClient() {
             <h2 className="text-4xl font-extrabold leading-tight mb-4">
               Home Food,<br />Away From Home 🍱
             </h2>
-            <p className="text-blue-200 text-lg leading-relaxed mb-8">
+            <p className="text-gray-300 text-lg leading-relaxed mb-8">
               Join 1,200+ happy customers who enjoy authentic Indian tiffin delivered fresh across London every day.
             </p>
             <div className="grid grid-cols-2 gap-4">
@@ -117,13 +117,13 @@ export default function AuthClient() {
               ].map(stat => (
                 <div key={`stat-${stat.label}`} className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
                   <p className="text-xl font-extrabold">{stat.label}</p>
-                  <p className="text-xs text-blue-200">{stat.sub}</p>
+                  <p className="text-xs text-gray-300">{stat.sub}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <p className="text-blue-300 text-xs">© 2026 DoMeal · domeal.co.uk · London</p>
+          <p className="text-gray-400 text-xs">© 2026 DoMeal · domeal.co.uk · London</p>
         </div>
       </div>
 

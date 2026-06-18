@@ -109,11 +109,11 @@ export default function HeroSection() {
                     'Reusable Packaging',
                     '21 Years of Culinary Excellence',
                   ].map((point, idx) => (
-                    <div key={idx} className={`flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3 ${idx === 4 ? 'sm:col-span-2 sm:justify-center' : ''}`}>
-                      <div className="w-6 h-6 rounded-full bg-[#C39B54]/20 flex items-center justify-center flex-shrink-0">
-                        <Check size={14} className="text-[#C39B54]" />
+                    <div key={idx} className={`flex items-center gap-3 bg-white/15 rounded-xl px-4 py-3 border border-white/10 shadow-sm ${idx === 4 ? 'sm:col-span-2 sm:justify-center' : ''}`}>
+                      <div className="w-7 h-7 rounded-full bg-[#1E3B2B] flex items-center justify-center flex-shrink-0">
+                        <Check size={16} strokeWidth={3} className="text-white" />
                       </div>
-                      <p className="text-white text-xs sm:text-sm font-600 leading-snug">{point}</p>
+                      <p className="text-white text-xs sm:text-sm font-bold leading-snug drop-shadow-sm">{point}</p>
                     </div>
                   ))}
                 </div>
