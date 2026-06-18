@@ -60,7 +60,6 @@ export default function MenuOrderingClient() {
   const [menuSelections, setMenuSelections] = useState<Record<string, Record<string, boolean>>>({});
   const { cart, addToCart, updateQty, cartCount, cartTotal, isCartOpen, setIsCartOpen } = useCart();
 
-  // Fetch only active items from Firestore (no orderBy = no composite index needed)
   useEffect(() => {
     const q = query(
       collection(db, 'menuItems'),
@@ -70,7 +69,29 @@ export default function MenuOrderingClient() {
       const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem));
       // Sort client-side by createdAt ascending
       items.sort((a: any, b: any) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
-      setMenuItems(items);
+      
+      // Filter out duplicate menu items that have no images if another item with the same name has images
+      const nameGroups: Record<string, MenuItem[]> = {};
+      items.forEach(item => {
+        const nameKey = item.name.toLowerCase().trim();
+        if (!nameGroups[nameKey]) nameGroups[nameKey] = [];
+        nameGroups[nameKey].push(item);
+      });
+
+      const cleanItems = items.filter(item => {
+        const nameKey = item.name.toLowerCase().trim();
+        const group = nameGroups[nameKey];
+        if (group.length > 1) {
+          const hasImages = item.images && item.images.length > 0;
+          const groupHasAnyWithImages = group.some(g => g.images && g.images.length > 0);
+          if (!hasImages && groupHasAnyWithImages) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      setMenuItems(cleanItems);
       setLoading(false);
     });
     return () => unsub();

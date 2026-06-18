@@ -7,152 +7,6 @@ import Link from 'next/link';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const heatingData = [
-  {
-    title: 'Golden',
-    icon: ConciergeBell,
-    serves: 2,
-    oven: [
-      'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-      'Unclip the dabba and remove the lid.',
-      "Place the two bottom tins, still stacked, onto an oven tray, along side the aubergine curry. The top tin can be eaten cold, however if you'd like it warmed it can go in for half the duration (15-20 minutes).",
-      'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-      'Check the temperature before serving—food should be steaming hot throughout.'
-    ],
-    microwave: [
-      'Transfer portions of all dishes into microwave-safe bowls.',
-      'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-      'Heat on high for 5-7 minutes, stirring halfway through - have the top tin cold if you wish.',
-      'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-    ],
-    tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
-  },
-  {
-    title: 'Sunshine',
-    icon: ConciergeBell,
-    serves: 2,
-    oven: [
-      'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-      'Unclip the dabba and remove the lid.',
-      'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins. Please note the top tin in this menu can be eaten cold if you wish, in the warmer months, we prefer it that way.',
-      'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-      'Check the temperature before serving—food should be steaming hot throughout.'
-    ],
-    microwave: [
-      'Transfer portions of all dishes into microwave-safe bowls.',
-      'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-      'Heat on high for 5-7 minutes, stirring halfway through.',
-      'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-    ],
-    tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
-  },
-  {
-    title: 'Comfort Classic',
-    icon: ConciergeBell,
-    serves: 2,
-    oven: [
-      'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-      'Unclip the dabba and remove the lid.',
-      'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins.',
-      'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-      'Check the temperature before serving - food should be steaming hot throughout.'
-    ],
-    microwave: [
-      'Transfer portions of all dishes into microwave-safe bowls.',
-      'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-      'Heat on high for 5-7 minutes, stirring halfway through.',
-      'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-    ],
-    tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
-  },
-  {
-    title: 'Bright & Fresh',
-    icon: ConciergeBell,
-    serves: 2,
-    oven: [
-      'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-      'Unclip the dabba and remove the lid.',
-      'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins. Please note the top tin in this menu can be eaten cold if you wish, in the warmer months, we prefer it that way.',
-      'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-      'Check the temperature before serving—food should be steaming hot throughout.'
-    ],
-    microwave: [
-      'Transfer portions of all dishes into microwave-safe bowls.',
-      'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-      'Heat on high for 5-7 minutes, stirring halfway through.',
-      'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-    ],
-    tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
-  },
-  {
-    title: 'A Proper Feast',
-    icon: ConciergeBell,
-    serves: 2,
-    oven: [
-      'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-      'Unclip the dabba and remove the lid.',
-      "Place the bottom two tins, still stacked, onto an oven tray, alongside the curry tin. The Top tin is best eaten cold in this weather, if you'd like it warm, please heat along with the rest of the dabba.",
-      'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-      'Check the temperature before serving—food should be steaming hot throughout.'
-    ],
-    microwave: [
-      'Transfer portions of all dishes into microwave-safe bowls or a plate (except the top tin which is best enjoyed cold in this weather).',
-      'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-      'Heat on high for 5-7 minutes, stirring halfway through.',
-      'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-    ],
-    tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
-  },
-  {
-    title: 'House Favourite',
-    icon: ConciergeBell,
-    serves: 2,
-    oven: [
-      'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-      'Unclip the dabba and remove the lid.',
-      'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins.',
-      'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-      'Check the temperature before serving—food should be steaming hot throughout.'
-    ],
-    microwave: [
-      'Transfer portions of all dishes into microwave-safe bowls.',
-      'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-      'Heat on high for 5-7 minutes, stirring halfway through.',
-      'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-    ],
-    tip: 'For best results, stir curries and dals halfway through to ensure even heating. If you prefer your rice less moist, uncover the rice tin for the last 5 minutes of heating.'
-  },
-  {
-    title: 'Tamil Prince',
-    icon: ConciergeBell,
-    serves: 2,
-    oven: [
-      'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-      'Unclip the dabba and remove the lid.',
-      'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins.',
-      'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-      'Check the temperature before serving—food should be steaming hot throughout.'
-    ],
-    microwave: [
-      'Transfer portions of all dishes into microwave-safe bowls.',
-      'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-      'Heat on high for 5-7 minutes, stirring halfway through.',
-      'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-    ],
-    tip: 'For best results, stir curries and dals halfway through to ensure even heating. If you prefer your rice less moist, uncover the rice tin for the last 5 minutes of heating.'
-  },
-  {
-    title: 'Naan',
-    icon: Package,
-    text: "To ensure your roti don't crisp up, we recommend just 2 minutes in the 180c oven. It can be enjoyed as it is, but its even better when warmed through."
-  },
-  {
-    title: 'Samosas, Spring Rolls and Katsu',
-    icon: Package,
-    text: "We recommend at least 10 minutes in the 180c oven to ensure they are crisp and piping hot."
-  }
-];
-
 export default function HowToHeatPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(0); // First item open by default
   const [settings, setSettings] = useState({
@@ -161,7 +15,7 @@ export default function HowToHeatPage() {
     heatBottomTitle: 'Find out if we deliver to your neighbourhood',
     heatBottomDesc: 'Ready to enjoy piping hot, authentic Indian meals at home? Enter your postcode on our homepage to see if we deliver to you.',
     heatBottomBtn: 'Get Started',
-    heatData: heatingData
+    heatData: [] as any[]
   });
 
   useEffect(() => {
@@ -169,7 +23,7 @@ export default function HowToHeatPage() {
       try {
         const docRef = doc(db, 'settings', 'global');
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().heatTitle !== undefined) {
+        if (docSnap.exists()) {
           setSettings(prev => ({ ...prev, ...docSnap.data() }));
         }
       } catch (error) {}
@@ -240,7 +94,7 @@ export default function HowToHeatPage() {
                                   <span className="w-2 h-2 rounded-full bg-[#C39B54]" /> Oven Heating (Recommended)
                                 </h3>
                                 <ul className="space-y-2 text-muted-foreground pl-4">
-                                  {item.oven?.map((step, i) => (
+                                  {item.oven?.map((step: string, i: number) => (
                                     <li key={i} className="flex gap-2">
                                       <span className="text-[#C39B54] font-800 select-none">{i + 1}.</span>
                                       <span className="leading-relaxed">{step}</span>
@@ -254,7 +108,7 @@ export default function HowToHeatPage() {
                                   <span className="w-2 h-2 rounded-full bg-primary" /> Microwave Heating (Quick & Convenient)
                                 </h3>
                                 <ul className="space-y-2 text-muted-foreground pl-4">
-                                  {item.microwave?.map((step, i) => (
+                                  {item.microwave?.map((step: string, i: number) => (
                                     <li key={i} className="flex gap-2">
                                       <span className="text-primary font-800 select-none">{i + 1}.</span>
                                       <span className="leading-relaxed">{step}</span>

@@ -15,6 +15,7 @@ interface MenuItem {
   spice: number;
   tag: string | null;
   active: boolean;
+  images?: string[];
   createdAt?: any;
 }
 
@@ -41,8 +42,30 @@ export default function FeaturedMenuSection() {
       const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem));
       // Sort client-side by createdAt ascending to keep order
       items.sort((a: any, b: any) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+      
+      // Filter out duplicate menu items that have no images if another item with the same name has images
+      const nameGroups: Record<string, MenuItem[]> = {};
+      items.forEach(item => {
+        const nameKey = item.name.toLowerCase().trim();
+        if (!nameGroups[nameKey]) nameGroups[nameKey] = [];
+        nameGroups[nameKey].push(item);
+      });
+
+      const cleanItems = items.filter(item => {
+        const nameKey = item.name.toLowerCase().trim();
+        const group = nameGroups[nameKey];
+        if (group.length > 1) {
+          const hasImages = item.images && item.images.length > 0;
+          const groupHasAnyWithImages = group.some(g => g.images && g.images.length > 0);
+          if (!hasImages && groupHasAnyWithImages) {
+            return false;
+          }
+        }
+        return true;
+      });
+
       // Only take the first 6 items for the featured section
-      setFeaturedItems(items.slice(0, 6));
+      setFeaturedItems(cleanItems.slice(0, 6));
       setLoading(false);
     });
     return () => unsub();
@@ -78,51 +101,73 @@ export default function FeaturedMenuSection() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredItems.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white rounded-2xl border border-border p-5 hover:shadow-lg hover:shadow-blue-100 hover:border-primary/30 transition-all duration-200 group"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded border-2 border-green-600 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-green-600" />
+            {featuredItems.map((item) => {
+              const hasImages = item.images && item.images.length > 0;
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-2xl border border-border hover:shadow-lg hover:shadow-blue-100 hover:border-primary/30 transition-all duration-200 group flex flex-col overflow-hidden h-full"
+                >
+                  {/* Image */}
+                  {hasImages ? (
+                    <div className="relative h-48 w-full bg-muted overflow-hidden">
+                      <img
+                        src={item.images![0]}
+                        alt={item.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
                     </div>
-                    <span className="text-xs font-600 text-green-700">Pure Veg</span>
-                  </div>
-                  {item.tag && (
-                    <span className="text-xs font-700 bg-blue-50 text-primary px-2 py-0.5 rounded-full">
-                      {item.tag}
-                    </span>
+                  ) : (
+                    <div className="h-48 w-full bg-orange-50 flex flex-col items-center justify-center text-primary/40 relative overflow-hidden">
+                      <span className="text-2xl">🍃</span>
+                      <span className="text-xs font-600 uppercase tracking-widest mt-1">{item.category}</span>
+                    </div>
                   )}
-                </div>
 
-                <h3 className="font-700 text-foreground text-base mb-1 group-hover:text-primary transition-colors">
-                  {item.name}
-                </h3>
-                <p className="text-xs text-muted-foreground mb-3 leading-relaxed line-clamp-2">{item.desc}</p>
+                  {/* Content */}
+                  <div className="p-5 flex flex-col flex-1">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded border-2 border-green-600 flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-green-600" />
+                        </div>
+                        <span className="text-xs font-600 text-green-700">Pure Veg</span>
+                      </div>
+                      {item.tag && (
+                        <span className="text-xs font-700 bg-blue-50 text-primary px-2 py-0.5 rounded-full">
+                          {item.tag}
+                        </span>
+                      )}
+                    </div>
 
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-xs text-muted-foreground">Spice:</span>
-                  <div className="flex gap-0.5">{spiceIcons(item.spice)}</div>
-                  <span className="ml-auto text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                    {item.category}
-                  </span>
-                </div>
+                    <h3 className="font-700 text-foreground text-base mb-1 group-hover:text-primary transition-colors">
+                      {item.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-3 leading-relaxed line-clamp-2">{item.desc}</p>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-extrabold text-foreground tabular-nums">
-                    £{item.price.toFixed(2)}
-                  </span>
-                  <Link
-                    href="/menu-ordering-screen"
-                    className="bg-secondary text-white text-xs font-700 px-4 py-2 rounded-lg hover:bg-red-700 transition-all active:scale-95"
-                  >
-                    Add to Cart
-                  </Link>
+                    <div className="flex items-center gap-2 mb-4 mt-auto">
+                      <span className="text-xs text-muted-foreground">Spice:</span>
+                      <div className="flex gap-0.5">{spiceIcons(item.spice)}</div>
+                      <span className="ml-auto text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                        {item.category}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xl font-extrabold text-foreground tabular-nums">
+                        £{item.price.toFixed(2)}
+                      </span>
+                      <Link
+                        href="/menu-ordering-screen"
+                        className="bg-secondary text-white text-xs font-700 px-4 py-2 rounded-lg hover:bg-red-700 transition-all active:scale-95"
+                      >
+                        Add to Cart
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../admin-dashboard/components/AdminLayout';
 import { Save, Users, Flame, GraduationCap, Gift, Plus, Trash2, ChevronDown, ChevronRight, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import Image from 'next/image';
@@ -51,7 +51,151 @@ const defaultSettings = {
   heatBottomTitle: 'Find out if we deliver to your neighbourhood',
   heatBottomDesc: 'Ready to enjoy piping hot, authentic Indian meals at home? Enter your postcode on our homepage to see if we deliver to you.',
   heatBottomBtn: 'Get Started',
-  heatData: [] as any[]
+  heatData: [
+    {
+      title: 'Golden',
+      icon: 'ConciergeBell',
+      serves: 2,
+      oven: [
+        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
+        'Unclip the dabba and remove the lid.',
+        "Place the two bottom tins, still stacked, onto an oven tray, along side the aubergine curry. The top tin can be eaten cold, however if you'd like it warmed it can go in for half the duration (15-20 minutes).",
+        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
+        'Check the temperature before serving—food should be steaming hot throughout.'
+      ],
+      microwave: [
+        'Transfer portions of all dishes into microwave-safe bowls.',
+        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
+        'Heat on high for 5-7 minutes, stirring halfway through - have the top tin cold if you wish.',
+        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
+      ],
+      tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
+    },
+    {
+      title: 'Sunshine',
+      icon: 'ConciergeBell',
+      serves: 2,
+      oven: [
+        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
+        'Unclip the dabba and remove the lid.',
+        'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins. Please note the top tin in this menu can be eaten cold if you wish, in the warmer months, we prefer it that way.',
+        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
+        'Check the temperature before serving—food should be steaming hot throughout.'
+      ],
+      microwave: [
+        'Transfer portions of all dishes into microwave-safe bowls.',
+        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
+        'Heat on high for 5-7 minutes, stirring halfway through.',
+        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
+      ],
+      tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
+    },
+    {
+      title: 'Comfort Classic',
+      icon: 'ConciergeBell',
+      serves: 2,
+      oven: [
+        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
+        'Unclip the dabba and remove the lid.',
+        'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins.',
+        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
+        'Check the temperature before serving - food should be steaming hot throughout.'
+      ],
+      microwave: [
+        'Transfer portions of all dishes into microwave-safe bowls.',
+        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
+        'Heat on high for 5-7 minutes, stirring halfway through.',
+        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
+      ],
+      tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
+    },
+    {
+      title: 'Bright & Fresh',
+      icon: 'ConciergeBell',
+      serves: 2,
+      oven: [
+        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
+        'Unclip the dabba and remove the lid.',
+        'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins. Please note the top tin in this menu can be eaten cold if you wish, in the warmer months, we prefer it that way.',
+        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
+        'Check the temperature before serving—food should be steaming hot throughout.'
+      ],
+      microwave: [
+        'Transfer portions of all dishes into microwave-safe bowls.',
+        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
+        'Heat on high for 5-7 minutes, stirring halfway through.',
+        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
+      ],
+      tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
+    },
+    {
+      title: 'A Proper Feast',
+      icon: 'ConciergeBell',
+      serves: 2,
+      oven: [
+        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
+        'Unclip the dabba and remove the lid.',
+        "Place the bottom two tins, still stacked, onto an oven tray, alongside the curry tin. The Top tin is best eaten cold in this weather, if you'd like it warm, please heat along with the rest of the dabba.",
+        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
+        'Check the temperature before serving—food should be steaming hot throughout.'
+      ],
+      microwave: [
+        'Transfer portions of all dishes into microwave-safe bowls or a plate (except the top tin which is best enjoyed cold in this weather).',
+        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
+        'Heat on high for 5-7 minutes, stirring halfway through.',
+        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
+      ],
+      tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
+    },
+    {
+      title: 'House Favourite',
+      icon: 'ConciergeBell',
+      serves: 2,
+      oven: [
+        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
+        'Unclip the dabba and remove the lid.',
+        'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins.',
+        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
+        'Check the temperature before serving—food should be steaming hot throughout.'
+      ],
+      microwave: [
+        'Transfer portions of all dishes into microwave-safe bowls.',
+        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
+        'Heat on high for 5-7 minutes, stirring halfway through.',
+        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
+      ],
+      tip: 'For best results, stir curries and dals halfway through to ensure even heating. If you prefer your rice less moist, uncover the rice tin for the last 5 minutes of heating.'
+    },
+    {
+      title: 'Tamil Prince',
+      icon: 'ConciergeBell',
+      serves: 2,
+      oven: [
+        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
+        'Unclip the dabba and remove the lid.',
+        'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins.',
+        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
+        'Check the temperature before serving—food should be steaming hot throughout.'
+      ],
+      microwave: [
+        'Transfer portions of all dishes into microwave-safe bowls.',
+        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
+        'Heat on high for 5-7 minutes, stirring halfway through.',
+        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
+      ],
+      tip: 'For best results, stir curries and dals halfway through to ensure even heating. If you prefer your rice less moist, uncover the rice tin for the last 5 minutes of heating.'
+    },
+    {
+      title: 'Naan',
+      icon: 'Package',
+      text: "To ensure your roti don't crisp up, we recommend just 2 minutes in the 180c oven. It can be enjoyed as it is, but its even better when warmed through."
+    },
+    {
+      title: 'Samosas, Spring Rolls and Katsu',
+      icon: 'Package',
+      text: "We recommend at least 10 minutes in the 180c oven to ensure they are crisp and piping hot."
+    }
+  ] as any[]
 };
 
 export default function AdminSettingsPage() {
@@ -69,7 +213,11 @@ export default function AdminSettingsPage() {
         const docRef = doc(db, 'settings', 'global');
         const snap = await getDoc(docRef);
         if (snap.exists()) {
-          setSettings(prev => ({ ...prev, ...snap.data() }));
+          const data = snap.data();
+          if (!data.heatData || data.heatData.length === 0) {
+            data.heatData = defaultSettings.heatData;
+          }
+          setSettings(prev => ({ ...prev, ...data }));
         } else {
           const refDoc = await getDoc(doc(db, 'settings', 'referral'));
           if (refDoc.exists() && refDoc.data().amount) {
@@ -82,7 +230,35 @@ export default function AdminSettingsPage() {
         setLoading(false);
       }
     };
+
+    const deleteRepeated = async () => {
+      const ids = [
+        '0wYqije3RR4Fk1lTCEjA', // Veg Samosa (2 pcs) - no image
+        '2ISC6B3mPQ7af065Y17z', // Mango Ginger Chutney (100ml) - no image
+        '2LDZemJOujF6LXx8deQd', // Lentil Soup - no image
+        'LkVdgeWdKQSY30lYQ0Xk', // Andhra Peanut Chutney (100ml) - no image
+        'RlnZvLlpYfJxJGwE3xbT', // Rasam Shot - no image
+        'TYvkvtilS5JgJbpEW4Cd', // Curry Leaf Coconut Chutney (100ml) - no image
+        'ZAdnHsZ0bxvJNQr5IpHU', // Chettinad Tomato Chutney (100ml) - no image
+        'awnA7wvo3T6iQ7JL0eTU', // Madras Mint Chutney (100ml) - no image
+        'oIsoRIYOFnk0QYmhadEn', // Roasted Chana - no image
+        'yAF9Lr09FFcnWf8pdYWX', // Pineapple Kesari - no image
+        's47k0LGWzzvgtVTO5efa', // Roasted Peanuts Salt - no image
+        'xqBg2eMxmzUB0a8ylM3l'  // Extra Rice Bowl (Rice of the day) - no image
+      ];
+      console.log("Starting deletion of duplicate menu items...");
+      for (const id of ids) {
+        try {
+          await deleteDoc(doc(db, 'menuItems', id));
+          console.log(`Successfully deleted duplicate item: ${id}`);
+        } catch (e) {
+          console.error(`Error deleting duplicate item ${id}:`, e);
+        }
+      }
+    };
+
     fetchSettings();
+    deleteRepeated();
   }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

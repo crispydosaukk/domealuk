@@ -79,7 +79,7 @@ export default function UserNavbar() {
             </div>
 
             {/* Desktop nav */}
-            <div className="hidden lg:flex items-center gap-10 xl:gap-14">
+            <div className="hidden lg:flex items-center gap-5 xl:gap-8">
               {navLinks.map((link) => (
                 <Link
                   key={`nav-${link.label}`}
