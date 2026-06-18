@@ -21,7 +21,15 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'DoMeal — Home Food Away From Home',
   description: 'Authentic home-cooked Indian tiffin delivered fresh to your door in London. Daily meal plans and weekly subscriptions. domeal.co.uk',
-  icons: { icon: [{ url: '/favicon.ico', type: 'image/x-icon' }] },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', type: 'image/x-icon' },
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
