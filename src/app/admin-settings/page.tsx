@@ -52,150 +52,42 @@ const defaultSettings = {
   heatBottomDesc: 'Ready to enjoy piping hot, authentic Indian meals at home? Enter your postcode on our homepage to see if we deliver to you.',
   heatBottomBtn: 'Get Started',
   heatData: [
-    {
-      title: 'Golden',
-      icon: 'ConciergeBell',
-      serves: 2,
-      oven: [
-        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-        'Unclip the dabba and remove the lid.',
-        "Place the two bottom tins, still stacked, onto an oven tray, along side the aubergine curry. The top tin can be eaten cold, however if you'd like it warmed it can go in for half the duration (15-20 minutes).",
-        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-        'Check the temperature before serving—food should be steaming hot throughout.'
-      ],
-      microwave: [
-        'Transfer portions of all dishes into microwave-safe bowls.',
-        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-        'Heat on high for 5-7 minutes, stirring halfway through - have the top tin cold if you wish.',
-        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-      ],
-      tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
-    },
-    {
-      title: 'Sunshine',
-      icon: 'ConciergeBell',
-      serves: 2,
-      oven: [
-        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-        'Unclip the dabba and remove the lid.',
-        'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins. Please note the top tin in this menu can be eaten cold if you wish, in the warmer months, we prefer it that way.',
-        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-        'Check the temperature before serving—food should be steaming hot throughout.'
-      ],
-      microwave: [
-        'Transfer portions of all dishes into microwave-safe bowls.',
-        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-        'Heat on high for 5-7 minutes, stirring halfway through.',
-        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-      ],
-      tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
-    },
-    {
-      title: 'Comfort Classic',
-      icon: 'ConciergeBell',
-      serves: 2,
-      oven: [
-        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-        'Unclip the dabba and remove the lid.',
-        'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins.',
-        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-        'Check the temperature before serving - food should be steaming hot throughout.'
-      ],
-      microwave: [
-        'Transfer portions of all dishes into microwave-safe bowls.',
-        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-        'Heat on high for 5-7 minutes, stirring halfway through.',
-        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-      ],
-      tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
-    },
-    {
-      title: 'Bright & Fresh',
-      icon: 'ConciergeBell',
-      serves: 2,
-      oven: [
-        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-        'Unclip the dabba and remove the lid.',
-        'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins. Please note the top tin in this menu can be eaten cold if you wish, in the warmer months, we prefer it that way.',
-        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-        'Check the temperature before serving—food should be steaming hot throughout.'
-      ],
-      microwave: [
-        'Transfer portions of all dishes into microwave-safe bowls.',
-        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-        'Heat on high for 5-7 minutes, stirring halfway through.',
-        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-      ],
-      tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
-    },
-    {
-      title: 'A Proper Feast',
-      icon: 'ConciergeBell',
-      serves: 2,
-      oven: [
-        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-        'Unclip the dabba and remove the lid.',
-        "Place the bottom two tins, still stacked, onto an oven tray, alongside the curry tin. The Top tin is best eaten cold in this weather, if you'd like it warm, please heat along with the rest of the dabba.",
-        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-        'Check the temperature before serving—food should be steaming hot throughout.'
-      ],
-      microwave: [
-        'Transfer portions of all dishes into microwave-safe bowls or a plate (except the top tin which is best enjoyed cold in this weather).',
-        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-        'Heat on high for 5-7 minutes, stirring halfway through.',
-        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-      ],
-      tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
-    },
-    {
-      title: 'House Favourite',
-      icon: 'ConciergeBell',
-      serves: 2,
-      oven: [
-        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-        'Unclip the dabba and remove the lid.',
-        'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins.',
-        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-        'Check the temperature before serving—food should be steaming hot throughout.'
-      ],
-      microwave: [
-        'Transfer portions of all dishes into microwave-safe bowls.',
-        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-        'Heat on high for 5-7 minutes, stirring halfway through.',
-        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-      ],
-      tip: 'For best results, stir curries and dals halfway through to ensure even heating. If you prefer your rice less moist, uncover the rice tin for the last 5 minutes of heating.'
-    },
-    {
-      title: 'Tamil Prince',
-      icon: 'ConciergeBell',
-      serves: 2,
-      oven: [
-        'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
-        'Unclip the dabba and remove the lid.',
-        'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins.',
-        'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
-        'Check the temperature before serving—food should be steaming hot throughout.'
-      ],
-      microwave: [
-        'Transfer portions of all dishes into microwave-safe bowls.',
-        'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
-        'Heat on high for 5-7 minutes, stirring halfway through.',
-        'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
-      ],
-      tip: 'For best results, stir curries and dals halfway through to ensure even heating. If you prefer your rice less moist, uncover the rice tin for the last 5 minutes of heating.'
-    },
-    {
-      title: 'Naan',
-      icon: 'Package',
-      text: "To ensure your roti don't crisp up, we recommend just 2 minutes in the 180c oven. It can be enjoyed as it is, but its even better when warmed through."
-    },
-    {
-      title: 'Samosas, Spring Rolls and Katsu',
-      icon: 'Package',
-      text: "We recommend at least 10 minutes in the 180c oven to ensure they are crisp and piping hot."
-    }
-  ] as any[]
+    "Chickpea Salad, Aloo Fry, Aloo Gobi Masala & Jeera Rice",
+    "Tomato Cucumber Salad, Soya Chaap subzi, Tofu Jalfrezi & Jasmine Rice",
+    "Soya Chunks Salad, Kadai veg, Palak Tofu & Basmati Rice",
+    "Sprouted Green gram Salad, Baingan Bartha, Soya Chettinad & Sambar Rice",
+    "Quinoa Cucumber carrot salad, Cabbage Kootu, Dhall Palak & Veg Pulao Rice",
+    "Mexican Bean and Corn Salad, Mogo Masala Subzi, Rajma Masala & Saffron Rice",
+    "Chilly Garlic Broccoli, Mix Bean Subzi, Methi Mutter Thadka & Foxtail Millet Rice",
+    "Beans Usili, Dhall Palak, Channa Masala & Little Millet Rice"
+  ].map(title => ({
+    title,
+    icon: 'ConciergeBell',
+    serves: 2,
+    oven: [
+      'Preheat oven to 180°C (160°C fan) / Gas Mark 4.',
+      'Unclip the dabba and remove the lid.',
+      'Place the top two tins, still stacked, onto an oven tray, along side the (still stacked) bottom two tins.',
+      'Place dishes in the oven and heat for 30-40 minutes, or until piping hot. Stir halfway through for even heating.',
+      'Check the temperature before serving - food should be steaming hot throughout.'
+    ],
+    microwave: [
+      'Transfer portions of all dishes into microwave-safe bowls.',
+      'Cover the dishes with a microwave-safe lid or plate to prevent drying out.',
+      'Heat on high for 5-7 minutes, stirring halfway through.',
+      'Check the temperature and heat for an extra minute if needed—food should be piping hot throughout.'
+    ],
+    tip: 'For best results, stir curries and greens before serving to redistribute heat evenly.'
+  })) as any[],
+
+  // Popup
+  popupEnabled: true,
+  popupTitle: 'Exclusive Offer!',
+  popupDiscountPercentage: 25,
+  popupOrdersCount: 4,
+  popupImage: '/discount_poster.png',
+  popupDescription: 'Sign up today and get {percentage}% off your first {count} orders with DoMeal.',
+  popupBtnText: 'Claim Offer Now'
 };
 
 export default function AdminSettingsPage() {
@@ -214,9 +106,7 @@ export default function AdminSettingsPage() {
         const snap = await getDoc(docRef);
         if (snap.exists()) {
           const data = snap.data();
-          if (!data.heatData || data.heatData.length === 0) {
-            data.heatData = defaultSettings.heatData;
-          }
+          data.heatData = defaultSettings.heatData;
           setSettings(prev => ({ ...prev, ...data }));
         } else {
           const refDoc = await getDoc(doc(db, 'settings', 'referral'));
@@ -348,6 +238,7 @@ export default function AdminSettingsPage() {
     { id: 'student', label: 'Student Discounts', icon: GraduationCap, color: 'text-green-600', bg: 'bg-green-50' },
     { id: 'gift', label: 'Gift Vouchers', icon: Gift, color: 'text-purple-600', bg: 'bg-purple-50' },
     { id: 'heating', label: 'How to Heat', icon: Flame, color: 'text-orange-600', bg: 'bg-orange-50' },
+    { id: 'popup', label: 'Global Popup Ads', icon: ImageIcon, color: 'text-pink-600', bg: 'bg-pink-50' },
   ];
 
   return (
@@ -605,6 +496,87 @@ export default function AdminSettingsPage() {
                   )}
                 </div>
 
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'popup' && (
+            <div className="p-8">
+              <div className="mb-6 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-extrabold text-foreground mb-1">Global Popup Ad</h2>
+                  <p className="text-muted-foreground text-sm">Control the promotional popup that appears when visitors open the site.</p>
+                </div>
+                <label className="flex items-center gap-2 font-700 cursor-pointer">
+                  <span className={settings.popupEnabled ? 'text-primary' : 'text-muted-foreground'}>
+                    {settings.popupEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                  <div className={`relative w-12 h-6 rounded-full transition-colors ${settings.popupEnabled ? 'bg-primary' : 'bg-gray-300'}`}>
+                    <input type="checkbox" className="sr-only" checked={settings.popupEnabled} onChange={(e) => setSettings(prev => ({ ...prev, popupEnabled: e.target.checked }))} />
+                    <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.popupEnabled ? 'translate-x-6' : ''}`} />
+                  </div>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-800 text-foreground mb-1.5">Popup Title</label>
+                    <input type="text" name="popupTitle" value={settings.popupTitle || ''} onChange={handleChange} className="w-full border border-border rounded-xl px-4 py-3 text-sm font-700 focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-800 text-foreground mb-1.5">Popup Description</label>
+                    <textarea name="popupDescription" rows={3} value={settings.popupDescription || ''} onChange={handleChange} className="w-full border border-border rounded-xl px-4 py-3 text-sm font-500 focus:outline-none focus:border-primary resize-none" placeholder="Use {percentage} and {count} for dynamic values" />
+                    <p className="text-xs text-muted-foreground mt-1">Use <code>{'{percentage}'}</code> and <code>{'{count}'}</code> to dynamically insert values below.</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-800 text-foreground mb-1.5">Discount %</label>
+                      <input type="number" name="popupDiscountPercentage" value={settings.popupDiscountPercentage || 0} onChange={handleChange} className="w-full border border-border rounded-xl px-4 py-3 text-sm font-700 focus:outline-none focus:border-primary" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-800 text-foreground mb-1.5">Orders Count</label>
+                      <input type="number" name="popupOrdersCount" value={settings.popupOrdersCount || 0} onChange={handleChange} className="w-full border border-border rounded-xl px-4 py-3 text-sm font-700 focus:outline-none focus:border-primary" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-800 text-foreground mb-1.5">Button Text</label>
+                    <input type="text" name="popupBtnText" value={settings.popupBtnText || ''} onChange={handleChange} className="w-full border border-border rounded-xl px-4 py-3 text-sm font-700 focus:outline-none focus:border-primary" />
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-800 text-foreground mb-1.5">Popup Image</label>
+                    <div className="border-2 border-dashed border-border rounded-2xl p-6 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-gray-50 transition-colors relative h-64 overflow-hidden group">
+                      {settings.popupImage ? (
+                        <>
+                          <Image src={settings.popupImage} alt="Popup Image" fill className="object-cover" />
+                          <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <label className="cursor-pointer bg-white text-foreground font-700 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-100 transition-colors">
+                              <Upload size={16} />
+                              Change Image
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'popupImage')} disabled={uploadingImage === 'popupImage'} />
+                            </label>
+                          </div>
+                        </>
+                      ) : (
+                        <label className="cursor-pointer flex flex-col items-center text-muted-foreground hover:text-primary transition-colors">
+                          <Upload size={32} className="mb-2" />
+                          <span className="font-700 text-sm">Click to upload</span>
+                          <span className="text-xs">Recommended size: 600x800px</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'popupImage')} disabled={uploadingImage === 'popupImage'} />
+                        </label>
+                      )}
+                      {uploadingImage === 'popupImage' && (
+                        <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
+                          <Loader2 size={24} className="text-primary animate-spin mb-2" />
+                          <span className="text-sm font-700 text-foreground">Uploading...</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

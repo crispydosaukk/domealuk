@@ -6,9 +6,9 @@ import { ShoppingCart, Menu, X, User, Phone, LogOut, Clock, Heart, Settings } fr
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Package, MapPin, CreditCard } from 'lucide-react';
+import { Package, MapPin, CreditCard, Wallet, Gift } from 'lucide-react';
 
 export default function UserNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -30,25 +30,39 @@ export default function UserNavbar() {
 
   const isHome = pathname === '/';
   const isTransparent = isHome && !scrolled;
+  const [userData, setUserData] = useState<any>(null);
+
   useEffect(() => {
     if (!user) {
       setUserOrders([]);
+      setUserData(null);
       return;
     }
-    const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
-    const unsub = onSnapshot(q, (snap) => {
+    
+    // Fetch orders
+    const qOrders = query(collection(db, 'orders'), where('userId', '==', user.uid));
+    const unsubOrders = onSnapshot(qOrders, (snap) => {
       const fetched = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Sort manually to avoid needing a composite index in Firestore
       fetched.sort((a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
       setUserOrders(fetched);
     });
-    return () => unsub();
+
+    // Fetch user data for wallet and referral
+    const unsubUser = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        setUserData(docSnap.data());
+      }
+    });
+
+    return () => {
+      unsubOrders();
+      unsubUser();
+    };
   }, [user]);
 
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Menu', href: '/menu-ordering-screen' },
-    { label: 'Plans', href: '/#plans' },
     { label: 'Refer a Friend', href: '/refer-a-friend' },
     { label: 'How to Heat', href: '/how-to-heat' },
     { label: 'Student Discounts', href: '/student-discounts' },
@@ -95,6 +109,11 @@ export default function UserNavbar() {
 
             {/* Right actions */}
             <div className="flex items-center gap-4">
+              {user && userData && (
+                <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border ${isTransparent ? 'bg-white/10 border-white/20 text-white' : 'bg-green-50 border-green-100 text-green-700'} font-800 text-sm shadow-sm`}>
+                  <Wallet size={16} className={isTransparent ? 'text-white' : 'text-green-600'} /> £{(userData.walletBalance || 0).toFixed(2)}
+                </div>
+              )}
               <button
                 onClick={() => {
                   setIsCartOpen(true);
@@ -224,6 +243,24 @@ export default function UserNavbar() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 bg-muted/20">
+              {/* Wallet & Referral */}
+              <div className="mb-6 grid grid-cols-2 gap-3">
+                <div className="bg-white rounded-xl border border-border p-4 shadow-sm flex flex-col items-center justify-center text-center">
+                  <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 mb-1.5">
+                    <Wallet size={16} />
+                  </div>
+                  <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider mb-1">Wallet Balance</p>
+                  <p className="font-900 text-xl text-primary tabular-nums">£{(userData?.walletBalance || 0).toFixed(2)}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-border p-4 shadow-sm flex flex-col items-center justify-center text-center">
+                  <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-primary mb-1.5">
+                    <Gift size={16} />
+                  </div>
+                  <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider mb-1">Referral Code</p>
+                  <p className="font-900 text-base text-foreground tracking-widest">{userData?.referralCode || 'N/A'}</p>
+                </div>
+              </div>
+
               {/* Order History Preview */}
               <div className="mb-6 space-y-3">
                 <div className="flex items-center justify-between px-1">
@@ -312,6 +349,8 @@ export default function UserNavbar() {
                 onClick={async () => {
                   await logout();
                   setProfileOpen(false);
+                  router.push('/');
+                  router.refresh();
                 }}
                 className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 font-700 py-3.5 rounded-xl hover:bg-red-100 transition-colors active:scale-95"
               >

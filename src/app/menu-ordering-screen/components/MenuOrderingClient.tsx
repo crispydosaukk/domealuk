@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShoppingCart, Plus, Minus, X, Flame, Leaf, ChevronRight, ChevronDown, Loader2, Info } from 'lucide-react';
 import { toast } from 'sonner';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useCart } from '@/context/CartContext';
 
@@ -58,7 +58,26 @@ export default function MenuOrderingClient() {
   const [customizingItem, setCustomizingItem] = useState<{ item: MenuItem, selections: Record<string, boolean> } | null>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const [menuSelections, setMenuSelections] = useState<Record<string, Record<string, boolean>>>({});
+  const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4 });
   const { cart, addToCart, updateQty, cartCount, cartTotal, isCartOpen, setIsCartOpen } = useCart();
+
+  useEffect(() => {
+    const fetchGlobalSettings = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'global'));
+        if (snap.exists()) {
+          const data = snap.data();
+          setGlobalSettings({
+            discount: data.popupDiscountPercentage || 25,
+            count: data.popupOrdersCount || 4
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load global settings', error);
+      }
+    };
+    fetchGlobalSettings();
+  }, []);
 
   useEffect(() => {
     const q = query(
@@ -97,13 +116,21 @@ export default function MenuOrderingClient() {
     return () => unsub();
   }, []);
 
-  // Build category tabs dynamically from live data and normalize Snacks to Extras
-  const normalizedCategories = menuItems.map(i => i.category === 'Snacks' ? 'Extras' : i.category);
-  const dynamicCategories = ['All', ...Array.from(new Set(normalizedCategories))];
+  // Define allowed categories
+  const dynamicCategories = ['All', 'Menu', 'Extras'];
 
-  const filtered = activeCategory === 'All'
-    ? menuItems
-    : menuItems.filter(i => (i.category === 'Snacks' ? 'Extras' : i.category) === activeCategory);
+  const filtered = menuItems.filter(i => {
+    const cat = i.category === 'Snacks' ? 'Extras' : i.category;
+    if (cat === 'Combo Packs') return false; // Hide Combo Packs completely
+    if (activeCategory === 'All') return ['Menu', 'Extras'].includes(cat);
+    return cat === activeCategory;
+  }).sort((a, b) => {
+    const catA = a.category === 'Snacks' ? 'Extras' : a.category;
+    const catB = b.category === 'Snacks' ? 'Extras' : b.category;
+    if (catA === 'Menu' && catB !== 'Menu') return -1;
+    if (catA !== 'Menu' && catB === 'Menu') return 1;
+    return 0;
+  });
 
   const getQty = (id: string) => cart.filter(c => c.id === id).reduce((sum, c) => sum + c.qty, 0);
 
@@ -163,9 +190,28 @@ export default function MenuOrderingClient() {
       ) : (
         /* Menu grid */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map(item => {
+          {filtered.map((item, index) => {
             const itemQtyInCart = getQty(item.id);
             const hasImages = item.images && item.images.length > 0;
+            
+            // Calculate a sequence of delivery dates (Sundays and Wednesdays)
+            // Using a simple inline logic based on index to ensure we have enough dates
+            const getDeliveryDateForIndex = (idx: number) => {
+              const d = new Date();
+              d.setDate(d.getDate() + 1); // Start from tomorrow
+              let foundCount = 0;
+              while (true) {
+                if (d.getDay() === 0 || d.getDay() === 3) {
+                  if (foundCount === idx) {
+                    return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+                  }
+                  foundCount++;
+                }
+                d.setDate(d.getDate() + 1);
+              }
+            };
+            const assignedDate = getDeliveryDateForIndex(index);
+
             return (
               <div key={item.id} className="relative flex flex-col h-full">
                 <div className={`bg-white rounded-2xl border border-border hover:shadow-md hover:border-orange-200 transition-all duration-200 flex flex-col flex-1 relative z-20 ${expandedMenus[item.id] ? 'rounded-b-none border-b-transparent shadow-none' : ''}`}>
@@ -199,14 +245,18 @@ export default function MenuOrderingClient() {
                     {item.spice > 0 && <SpiceLevel level={item.spice} />}
                   </div>
 
-                  {/* Dietary Tags */}
-                  {item.dietaryTags && Object.values(item.dietaryTags).some(v => v) && (
-                    <div className="flex flex-wrap gap-1.5 mb-2.5">
-                      {item.dietaryTags.isVegan && <span className="bg-green-100 text-green-700 text-[10px] font-800 px-1.5 py-0.5 rounded">V</span>}
-                      {item.dietaryTags.isVegetarian && <span className="bg-green-100 text-green-700 text-[10px] font-800 px-1.5 py-0.5 rounded">VG</span>}
-                      {item.dietaryTags.isGlutenFree && <span className="bg-amber-100 text-amber-700 text-[10px] font-800 px-1.5 py-0.5 rounded">GF</span>}
-                      {item.dietaryTags.isDairyFree && <span className="bg-blue-100 text-blue-700 text-[10px] font-800 px-1.5 py-0.5 rounded">DF</span>}
-                      {item.dietaryTags.isNutFree && <span className="bg-purple-100 text-purple-700 text-[10px] font-800 px-1.5 py-0.5 rounded">NF</span>}
+                  {/* Delivery Date Badge & Offer */}
+                  {item.category === 'Menu' && (
+                    <div className="flex flex-col gap-1.5 mb-2.5">
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="bg-orange-100 text-[#b58b42] text-xs font-900 px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-sm border border-orange-200">
+                          📅 Delivery Date: {assignedDate}
+                        </span>
+                      </div>
+                      <div className="bg-green-50 text-green-700 text-[10px] font-800 px-2 py-1.5 rounded flex items-start gap-1 shadow-sm border border-green-100 leading-tight">
+                        <span className="text-xs">🎉</span> 
+                        <span>{globalSettings.discount}% off your first {globalSettings.count} deliveries, applied automatically. Pause or cancel anytime.</span>
+                      </div>
                     </div>
                   )}
 
@@ -247,9 +297,7 @@ export default function MenuOrderingClient() {
                       } else {
                         const added = addToCart({ id: item.id, cartItemId: item.id, name: item.name, price: item.price });
                         if (added) {
-                          toast.success(`Added ${item.name} to cart`, {
-                            description: 'Your tiffin has been successfully added. You can continue exploring the menu or proceed to checkout.',
-                          });
+                          toast.success(`Added ${item.name} to cart`);
                         }
                       }
                     }} className={`w-full text-white text-sm font-700 py-2.5 rounded-xl transition-all active:scale-95 shadow-sm ${expandedMenus[item.id] ? 'bg-[#C39B54]' : 'bg-[#10261A] hover:bg-primary'}`}>
@@ -325,9 +373,7 @@ export default function MenuOrderingClient() {
                         subItems: selectedSubItems
                       });
                       if (added) {
-                        toast.success(`Added customized ${item.name} to cart`, {
-                          description: 'Your tailored package has been added. You can review all your inclusions in the cart sidebar.',
-                        });
+                        toast.success(`Added customized ${item.name} to cart`);
                         setExpandedMenus(prev => ({...prev, [item.id]: false}));
                       }
                     }} 
@@ -408,7 +454,7 @@ export default function MenuOrderingClient() {
                   <span className="font-700 text-foreground">Total</span>
                   <span className="text-xl font-900 tabular-nums text-[#1E3B2B]">£{cartTotal.toFixed(2)}</span>
                 </div>
-                <Link href="/checkout-order-confirmation-screen" onClick={() => setIsCartOpen(false)}
+                <Link href="/basket" onClick={() => setIsCartOpen(false)}
                   className="w-full bg-[#10261A] text-white font-800 py-3.5 rounded-xl hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
                   Proceed to Checkout <ChevronRight size={18} />
                 </Link>
@@ -456,44 +502,36 @@ export default function MenuOrderingClient() {
                 </div>
               )}
 
-              {(selectedItem.nutritionalInfo || selectedItem.heatingInstructions) && (
+              {selectedItem.nutritionalInfo && (
                 <div className="flex flex-col gap-4">
-                  {selectedItem.nutritionalInfo && (
-                    <div className="bg-[#fcefe3] p-5 rounded-2xl border border-[#fadbc0] shadow-sm">
-                      <div className="flex justify-between items-end border-b border-primary/20 pb-3 mb-2">
-                        <h3 className="font-serif text-xl text-primary">Nutritional Information</h3>
-                        <span className="text-[10px] font-800 text-primary uppercase tracking-widest">per person</span>
-                      </div>
-                      <div className="flex flex-col">
-                        {selectedItem.nutritionalInfo.split('\n').map((line, idx) => {
-                          const tLine = line.trim();
-                          if (!tLine || tLine.toLowerCase().includes('nutritional information') || tLine.toLowerCase() === 'nutrition' || tLine.toLowerCase().includes('per person')) return null;
-                          
-                          const match = tLine.match(/(.*?)\s+([\d.]+\s*[a-zA-Z%]+)$/);
-                          let key = tLine;
-                          let val = '';
-                          if (match) {
-                            key = match[1];
-                            val = match[2];
-                          }
-                          const isIndented = key.toLowerCase().startsWith('of which');
-                          
-                          return (
-                            <div key={idx} className="flex justify-between items-center py-2.5 border-b border-primary/10 last:border-0">
-                              <span className={`text-sm text-primary/80 ${isIndented ? 'pl-5 font-400' : 'font-500'}`}>{key}</span>
-                              <span className="text-sm font-500 text-primary/80">{val}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                  <div className="bg-[#fcefe3] p-5 rounded-2xl border border-[#fadbc0] shadow-sm">
+                    <div className="flex justify-between items-end border-b border-primary/20 pb-3 mb-2">
+                      <h3 className="font-serif text-xl text-primary">Nutritional Information</h3>
+                      <span className="text-[10px] font-800 text-primary uppercase tracking-widest">per person</span>
                     </div>
-                  )}
-                  {selectedItem.heatingInstructions && (
-                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
-                      <h3 className="font-700 text-xs mb-1 text-blue-700 uppercase tracking-wider">Heating</h3>
-                      <p className="text-sm text-muted-foreground whitespace-pre-line">{selectedItem.heatingInstructions}</p>
+                    <div className="flex flex-col">
+                      {selectedItem.nutritionalInfo.split('\n').map((line, idx) => {
+                        const tLine = line.trim();
+                        if (!tLine || tLine.toLowerCase().includes('nutritional information') || tLine.toLowerCase() === 'nutrition' || tLine.toLowerCase().includes('per person')) return null;
+                        
+                        const match = tLine.match(/(.*?)\s+([\d.]+\s*[a-zA-Z%]+)$/);
+                        let key = tLine;
+                        let val = '';
+                        if (match) {
+                          key = match[1];
+                          val = match[2];
+                        }
+                        const isIndented = key.toLowerCase().startsWith('of which');
+                        
+                        return (
+                          <div key={idx} className="flex justify-between items-center py-2.5 border-b border-primary/10 last:border-0">
+                            <span className={`text-sm text-primary/80 ${isIndented ? 'pl-5 font-400' : 'font-500'}`}>{key}</span>
+                            <span className="text-sm font-500 text-primary/80">{val}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             </div>

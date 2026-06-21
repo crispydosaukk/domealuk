@@ -125,7 +125,7 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
 }
 
 export default function CheckoutClient() {
-  const { cart, cartTotal, clearCart } = useCart();
+  const { cart, cartTotal, clearCart, checkoutData } = useCart();
   const { user } = useAuth();
   const [step, setStep] = useState<'checkout' | 'confirmed'>('checkout');
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
@@ -133,14 +133,48 @@ export default function CheckoutClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [orderId] = useState(`VSL-${Math.floor(10000 + Math.random() * 90000)}`);
   
-  const [deliveryDates, setDeliveryDates] = useState<string[]>([]);
-  const [notes, setNotes] = useState('');
+  const [deliveryDates, setDeliveryDates] = useState<string[]>(checkoutData?.deliveryDates || []);
+  const [notes, setNotes] = useState(checkoutData?.notes || '');
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
+  const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4 });
+
+  useEffect(() => {
+    const fetchGlobalSettings = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'global'));
+        if (snap.exists()) {
+          const data = snap.data();
+          setGlobalSettings({
+            discount: data.popupDiscountPercentage || 25,
+            count: data.popupOrdersCount || 4
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load global settings', error);
+      }
+    };
+    fetchGlobalSettings();
+  }, []);
+
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountApplied, setDiscountApplied] = useState(false);
+  const discountAmount = 7.50; // Mock discount amount
+  const [finalOrderSummary, setFinalOrderSummary] = useState<{ total: number, items: any[] } | null>(null);
+
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [useWallet, setUseWallet] = useState(false);
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<AddressForm>({
-    defaultValues: { city: 'London' }
+    defaultValues: { city: 'London', postcode: checkoutData?.postcode || '' }
   });
+
+  // Handle late incoming checkoutData
+  useEffect(() => {
+    setDeliveryDates((d) => (d.length === 0 && checkoutData?.deliveryDates) ? checkoutData.deliveryDates : d);
+    setNotes((n) => (n === '' && checkoutData?.notes) ? checkoutData.notes : n);
+    if (checkoutData?.postcode) setValue('postcode', checkoutData.postcode);
+  }, [checkoutData?.deliveryDates, checkoutData?.notes, checkoutData?.postcode, setValue]);
 
   useEffect(() => {
     if (!user) return;
@@ -149,6 +183,7 @@ export default function CheckoutClient() {
         const docSnap = await getDoc(doc(db, 'users', user.uid));
         if (docSnap.exists()) {
           const data = docSnap.data();
+          setWalletBalance(data.walletBalance || 0);
           setValue('fullName', data.name || user.displayName || '');
           setValue('phone', data.phone || '');
           if (data.addresses) {
@@ -209,20 +244,46 @@ export default function CheckoutClient() {
         }
         
         // Save Order
+        const subtotal = cartTotal * (deliveryDates.length || 1);
+        let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
+        const appliedWalletAmount = useWallet ? Math.min(walletBalance, finalTotal) : 0;
+        finalTotal = finalTotal - appliedWalletAmount;
+
         const orderRef = doc(db, 'orders', orderId);
+
         await setDoc(orderRef, {
           userId: user.uid,
           items: cart,
-          total: cartTotal * deliveryDates.length,
+          total: finalTotal,
+          walletApplied: appliedWalletAmount,
+          discountApplied: discountApplied ? discountAmount : 0,
           address: finalAddress,
           deliveryDates,
           deliverySlot: selectedSlot,
           notes,
           paymentMethod: selectedPayment,
+          subscriptionFrequency: checkoutData?.subscriptionFrequency || 'Delivery every 1 Week',
+          allergiesInfo: checkoutData?.allergiesInfo || '',
           createdAt: serverTimestamp(),
           status: 'Order Received'
         });
+
+        if (appliedWalletAmount > 0) {
+          await updateDoc(doc(db, 'users', user.uid), {
+            walletBalance: walletBalance - appliedWalletAmount
+          });
+        }
       }
+
+      const subtotal = cartTotal * (deliveryDates.length || 1);
+      let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
+      const appliedWalletAmount = useWallet ? Math.min(walletBalance, finalTotal) : 0;
+      finalTotal = finalTotal - appliedWalletAmount;
+
+      setFinalOrderSummary({
+        total: finalTotal,
+        items: [...cart]
+      });
 
       setStep('confirmed');
       clearCart();
@@ -251,13 +312,13 @@ export default function CheckoutClient() {
               <span className="font-800 text-primary text-lg">{orderId}</span>
             </div>
             <div className="space-y-2">
-              {cart.map(item => (
+              {finalOrderSummary?.items.map(item => (
                 <div key={`conf-${item.cartItemId || item.id}`} className="flex justify-between text-sm items-start gap-4 mb-3 border-b border-border/30 pb-3 last:border-0">
                   <div>
                     <span className="text-foreground font-600">{item.name} × {item.qty}</span>
                     {item.subItems && item.subItems.length > 0 && (
                       <div className="mt-1 flex flex-col gap-0.5">
-                        {item.subItems.map((sub, i) => (
+                        {item.subItems.map((sub: any, i: number) => (
                           <span key={i} className="text-[10px] text-muted-foreground flex justify-between leading-tight">
                             <span>+ {sub.name}</span>
                           </span>
@@ -269,8 +330,8 @@ export default function CheckoutClient() {
                 </div>
               ))}
               <div className="border-t border-border pt-2 flex justify-between font-700">
-                <span>Total Paid ({deliveryDates.length} {deliveryDates.length === 1 ? 'day' : 'days'})</span>
-                <span className="text-primary tabular-nums">£{(cartTotal * deliveryDates.length).toFixed(2)}</span>
+                <span>Total Paid ({deliveryDates.length || 1} {(deliveryDates.length || 1) === 1 ? 'day' : 'days'})</span>
+                <span className="text-primary tabular-nums">£{(finalOrderSummary?.total || 0).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -304,6 +365,11 @@ export default function CheckoutClient() {
       </div>
     );
   }
+
+  const currentSubtotal = cartTotal * (deliveryDates.length || 1);
+  let finalDisplayTotal = discountApplied ? Math.max(0, currentSubtotal - discountAmount) : currentSubtotal;
+  const appliedWalletDisplay = useWallet ? Math.min(walletBalance, finalDisplayTotal) : 0;
+  finalDisplayTotal = finalDisplayTotal - appliedWalletDisplay;
 
   return (
     <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10 py-8">
@@ -496,18 +562,74 @@ export default function CheckoutClient() {
                 ))}
               </div>
 
-              <div className="border-t border-border pt-4 space-y-2 mb-5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="tabular-nums">£{cartTotal.toFixed(2)}</span>
+              <div className="border-t border-border pt-5 mb-5 space-y-4">
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value)}
+                    placeholder="Discount code or gift card" 
+                    className="flex-1 px-4 py-2.5 border border-[#e1d5c9] bg-[#faefe4]/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      if(discountCode.trim() !== '') setDiscountApplied(true);
+                    }}
+                    className="px-5 py-2.5 bg-[#f3e5d8] text-gray-700 font-700 text-sm rounded-lg hover:bg-[#ebd5c1] transition-colors"
+                  >
+                    Apply
+                  </button>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Delivery</span>
-                  <span className="text-secondary font-600">Free</span>
-                </div>
-                <div className="flex justify-between font-800 text-base border-t border-border pt-2">
-                  <span>Total ({deliveryDates.length || 1} {deliveryDates.length === 1 ? 'day' : 'days'})</span>
-                  <span className="text-primary tabular-nums">£{(cartTotal * (deliveryDates.length || 1)).toFixed(2)}</span>
+
+                <div className="pt-2">
+                  {walletBalance > 0 && (
+                    <label className="flex items-center gap-2 mb-4 p-3 border border-[#C39B54]/30 rounded-xl bg-[#C39B54]/5 cursor-pointer hover:bg-[#C39B54]/10 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={useWallet}
+                        onChange={(e) => setUseWallet(e.target.checked)}
+                        className="w-4 h-4 accent-[#b58b42]"
+                      />
+                      <span className="text-sm font-700 text-foreground flex-1">Use Wallet Balance (£{walletBalance.toFixed(2)})</span>
+                      <span className="text-sm font-900 text-[#b58b42]">
+                        {useWallet ? `-£${appliedWalletDisplay.toFixed(2)}` : 'Apply'}
+                      </span>
+                    </label>
+                  )}
+
+                  <div className="bg-green-50 text-green-700 text-[11px] font-800 px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm border border-green-100 mb-4">
+                    <span className="text-sm">🎉</span> {globalSettings.discount}% off your first {globalSettings.count} deliveries, applied automatically. Pause or cancel anytime.
+                  </div>
+
+                  <div className="flex justify-between text-[15px] font-500 mb-3">
+                    <span className="text-gray-800">Subtotal · {cart.length} items</span>
+                    <span className="tabular-nums">£{currentSubtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-[15px] font-500 mb-4">
+                    <span className="text-gray-800 flex items-center gap-1.5">Shipping <span className="text-gray-400 border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-800">?</span></span>
+                    <span className="text-gray-500 text-sm">{selectedAddressId ? 'Free' : 'Enter shipping address'}</span>
+                  </div>
+
+                  <div className="flex justify-between items-end border-t border-border/60 pt-4">
+                    <span className="font-800 text-lg text-gray-900">Total</span>
+                    <span className="font-800 text-xl text-gray-900 tabular-nums">
+                      <span className="text-xs text-gray-500 font-600 mr-2 uppercase">GBP</span>
+                      £{finalDisplayTotal.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {discountApplied && (
+                    <div className="flex items-center gap-2 mt-3 text-sm font-800 text-[#11261a]">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                      TOTAL SAVINGS £{discountAmount.toFixed(2)}
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center text-[15px] font-800 mt-5 border-t border-border/60 pt-4 text-gray-900">
+                    <span className="flex items-center gap-1.5">Recurring subtotal <span className="text-gray-400 border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-800">?</span></span>
+                    <span className="tabular-nums">£{cartTotal.toFixed(2)} {checkoutData?.subscriptionFrequency?.toLowerCase().replace('delivery ', '') || 'every 1 week'}</span>
+                  </div>
                 </div>
               </div>
 

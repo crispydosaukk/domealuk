@@ -4,7 +4,6 @@ import UserFooter from '@/components/UserFooter';
 import HeroSection from '@/app/components/HeroSection';
 import HowItWorksSection from '@/app/components/HowItWorksSection';
 import FeaturedMenuSection from '@/app/components/FeaturedMenuSection';
-import PlansSection from '@/app/components/PlansSection';
 import TestimonialsSection from '@/app/components/TestimonialsSection';
 import WhyChooseSection from '@/app/components/WhyChooseSection';
 import PostcodeSearch from '@/app/components/PostcodeSearch';
@@ -20,7 +19,6 @@ export default function HomePage() {
         <HowItWorksSection />
         <FeaturedMenuSection />
         <WhyChooseSection />
-        <PlansSection />
         <TestimonialsSection />
         <FAQSection />
       </main>

@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ChevronDown, Eye, X } from 'lucide-react';
+import { Search, Filter, ChevronDown, Eye, X, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, getDocs, where, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 
@@ -51,9 +51,60 @@ export default function OrdersTab() {
   const updateStatus = async (orderId: string, newStatus: string) => {
     try {
       await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
+      
+      if (newStatus === 'Delivered') {
+        const orderDoc = await getDoc(doc(db, 'orders', orderId));
+        if (orderDoc.exists()) {
+          const orderData = orderDoc.data();
+          if (orderData.userId && !orderData.referralRewarded) {
+            const userDoc = await getDoc(doc(db, 'users', orderData.userId));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              if (userData.referredBy && !userData.referralRewardClaimed) {
+                // Fetch the global referral amount
+                let referralAmount = 10;
+                const settingsDoc = await getDoc(doc(db, 'settings', 'global'));
+                if (settingsDoc.exists() && settingsDoc.data().referralAmount !== undefined) {
+                  referralAmount = settingsDoc.data().referralAmount;
+                } else {
+                  const oldRef = await getDoc(doc(db, 'settings', 'referral'));
+                  if (oldRef.exists() && oldRef.data().amount !== undefined) {
+                    referralAmount = oldRef.data().amount;
+                  }
+                }
+
+                // Reward the referred user
+                await updateDoc(doc(db, 'users', orderData.userId), {
+                  walletBalance: increment(referralAmount),
+                  referralRewardClaimed: true
+                });
+
+                // Reward the referrer
+                const qReferrer = query(collection(db, 'users'), where('referralCode', '==', userData.referredBy));
+                const referrerSnaps = await getDocs(qReferrer);
+                if (!referrerSnaps.empty) {
+                  const referrerDoc = referrerSnaps.docs[0];
+                  await updateDoc(doc(db, 'users', referrerDoc.id), {
+                    walletBalance: increment(referralAmount)
+                  });
+                }
+
+                // Mark order as rewarded
+                await updateDoc(doc(db, 'orders', orderId), {
+                  referralRewarded: true
+                });
+                
+                toast.success(`Referral reward of £${referralAmount} added to both wallets!`);
+              }
+            }
+          }
+        }
+      }
+
       setOpenStatusDropdown(null);
       toast.success(`Order ${orderId} → ${newStatus}`);
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error('Failed to update status');
     }
   };
@@ -251,16 +302,21 @@ export default function OrdersTab() {
             <div className="overflow-y-auto p-6 space-y-6 flex-1">
               {/* Customer Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 shadow-sm">
+                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 shadow-sm flex flex-col items-start">
                   <h3 className="font-800 text-xs text-blue-800 uppercase tracking-wider mb-2">Customer Info</h3>
                   <p className="font-700 text-sm text-foreground">{selectedOrder.address?.fullName || 'Unknown'}</p>
                   <p className="text-sm text-muted-foreground mt-1">{selectedOrder.address?.email}</p>
                   <p className="text-sm text-muted-foreground">{selectedOrder.address?.phone}</p>
+                  {selectedOrder.subscriptionFrequency && (
+                    <div className="mt-3 inline-block bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg text-xs font-800 border border-blue-200 shadow-sm">
+                      {selectedOrder.subscriptionFrequency}
+                    </div>
+                  )}
                 </div>
                 <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 shadow-sm">
-                  <h3 className="font-800 text-xs text-orange-800 uppercase tracking-wider mb-2">Delivery Address</h3>
+                  <h3 className="font-800 text-xs text-orange-800 uppercase tracking-wider mb-2">Delivery Details</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedOrder.address?.streetAddress}<br/>
+                    {selectedOrder.address?.addressLine1}{selectedOrder.address?.addressLine2 ? `, ${selectedOrder.address.addressLine2}` : ''}<br/>
                     {selectedOrder.address?.city}, {selectedOrder.address?.postcode}
                   </p>
                   {selectedOrder.deliveryDates && selectedOrder.deliveryDates.length > 0 ? (
@@ -273,6 +329,15 @@ export default function OrdersTab() {
                   )}
                 </div>
               </div>
+
+              {selectedOrder.allergiesInfo && (
+                <div className="bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm">
+                  <h3 className="font-800 text-xs text-red-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <span className="text-base">⚠️</span> Allergy Information
+                  </h3>
+                  <p className="text-sm font-600 text-red-900">{selectedOrder.allergiesInfo}</p>
+                </div>
+              )}
 
               {/* Order Items */}
               <div>
@@ -311,13 +376,15 @@ export default function OrdersTab() {
               {/* Summary */}
               <div className="bg-gray-50 p-5 rounded-xl border border-border shadow-sm">
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-muted-foreground font-500">Subtotal</span>
-                  <span className="font-600 tabular-nums">£{((selectedOrder.total || 0) - (selectedOrder.deliveryFee || 0)).toFixed(2)}</span>
+                  <span className="text-muted-foreground font-500">Subtotal (after discount/delivery)</span>
+                  <span className="font-600 tabular-nums">£{((selectedOrder.total || 0) + (selectedOrder.walletApplied || 0)).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm mb-3">
-                  <span className="text-muted-foreground font-500">Delivery Fee</span>
-                  <span className="font-600 tabular-nums">£{(selectedOrder.deliveryFee || 0).toFixed(2)}</span>
-                </div>
+                {selectedOrder.walletApplied > 0 && (
+                  <div className="flex justify-between text-sm mb-3">
+                    <span className="text-green-600 font-700 flex items-center gap-1.5"><Wallet size={16} /> Wallet Applied</span>
+                    <span className="font-800 text-green-700 tabular-nums">-£{(selectedOrder.walletApplied).toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-base font-800 border-t border-border/50 pt-3">
                   <span className="text-[#1E3B2B]">Total Amount Paid</span>
                   <span className="text-primary tabular-nums text-lg">£{(selectedOrder.total || 0).toFixed(2)}</span>

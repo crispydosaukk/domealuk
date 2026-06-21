@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Package, Clock, CheckCircle, Truck, XCircle, ChevronDown, ChevronUp, RotateCcw, Search, Filter, Bell, ShoppingCart, User } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck, XCircle, ChevronDown, ChevronUp, RotateCcw, Search, Filter, Bell, ShoppingCart, User, Wallet } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -222,9 +222,17 @@ export default function OrderHistoryClient() {
                               </div>
                             );
                           })}
-                          <div className="border-t border-border pt-3 flex justify-between font-800 text-sm mt-3">
-                            <span>Total Paid</span>
-                            <span className="text-primary tabular-nums">£{(order.total || 0).toFixed(2)}</span>
+                          <div className="border-t border-border pt-3 mt-3">
+                            {order.walletApplied > 0 && (
+                              <div className="flex justify-between font-700 text-sm mb-1.5 text-green-700">
+                                <span className="flex items-center gap-1.5"><Wallet size={16} /> Wallet Applied</span>
+                                <span className="tabular-nums">-£{(order.walletApplied).toFixed(2)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between font-800 text-sm">
+                              <span>Total Paid</span>
+                              <span className="text-primary tabular-nums">£{(order.total || 0).toFixed(2)}</span>
+                            </div>
                           </div>
                         </div>
                       </div>

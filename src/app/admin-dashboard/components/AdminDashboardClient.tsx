@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Package, PoundSterling, Users, Truck, TrendingUp, TrendingDown, AlertTriangle, Eye, X } from 'lucide-react';
+import { Package, PoundSterling, Users, Truck, TrendingUp, TrendingDown, AlertTriangle, Eye, X, Wallet } from 'lucide-react';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -272,13 +272,15 @@ export default function AdminDashboardClient() {
               {/* Summary */}
               <div className="bg-gray-50 p-5 rounded-xl border border-border shadow-sm">
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-muted-foreground font-500">Subtotal</span>
-                  <span className="font-600 tabular-nums">£{((selectedOrder.total || 0) - (selectedOrder.deliveryFee || 0)).toFixed(2)}</span>
+                  <span className="text-muted-foreground font-500">Subtotal (after discount/delivery)</span>
+                  <span className="font-600 tabular-nums">£{((selectedOrder.total || 0) + (selectedOrder.walletApplied || 0)).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm mb-3">
-                  <span className="text-muted-foreground font-500">Delivery Fee</span>
-                  <span className="font-600 tabular-nums">£{(selectedOrder.deliveryFee || 0).toFixed(2)}</span>
-                </div>
+                {selectedOrder.walletApplied > 0 && (
+                  <div className="flex justify-between text-sm mb-3">
+                    <span className="text-green-600 font-700 flex items-center gap-1.5"><Wallet size={16} /> Wallet Applied</span>
+                    <span className="font-800 text-green-700 tabular-nums">-£{(selectedOrder.walletApplied).toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-base font-800 border-t border-border/50 pt-3">
                   <span className="text-[#1E3B2B]">Total Amount Paid</span>
                   <span className="text-primary tabular-nums text-lg">£{(selectedOrder.total || 0).toFixed(2)}</span>

@@ -88,7 +88,6 @@ export default function UserFooter() {
               {[
                 { label: 'Home', href: '/' },
                 { label: 'Menu', href: '/menu-ordering-screen' },
-                { label: 'Meal Plans', href: '/#plans' },
                 { label: 'Refer a Friend', href: '/refer-a-friend' },
                 { label: 'How to Heat', href: '/how-to-heat' },
                 { label: 'Student Discounts', href: '/student-discounts' },

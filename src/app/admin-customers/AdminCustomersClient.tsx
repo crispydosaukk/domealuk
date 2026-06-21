@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Search, Users, Mail, Phone, MapPin, ShoppingBag, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Users, Mail, Phone, MapPin, ShoppingBag, Calendar, ChevronDown, ChevronUp, Wallet, Gift } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -152,6 +152,12 @@ export default function AdminCustomersClient() {
                             <Calendar size={15} className="shrink-0 text-primary" />
                             <span className="text-muted-foreground text-xs">Joined: {u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown'}</span>
                           </div>
+                          {u.referralCode && (
+                            <div className="flex items-center gap-2.5 pt-2 border-t border-border">
+                              <Gift size={15} className="shrink-0 text-primary" />
+                              <span className="text-foreground text-xs font-600">Referral Code: <span className="font-900 tracking-widest">{u.referralCode}</span></span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -178,17 +184,26 @@ export default function AdminCustomersClient() {
                       </div>
 
                       {/* Stats */}
-                      <div>
-                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground mb-3">Order Stats</p>
+                      <div className="flex flex-col gap-3">
+                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground">Order Stats</p>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="bg-white border border-border rounded-xl p-3 text-center shadow-sm">
-                            <p className="text-xs text-muted-foreground mb-1">Total Orders</p>
-                            <p className="text-2xl font-900 text-foreground">{u.orderCount}</p>
+                            <p className="text-[10px] font-700 uppercase tracking-wider text-muted-foreground mb-1">Total Orders</p>
+                            <p className="text-xl font-900 text-foreground">{u.orderCount}</p>
                           </div>
                           <div className="bg-white border border-border rounded-xl p-3 text-center shadow-sm">
-                            <p className="text-xs text-muted-foreground mb-1">Total Spent</p>
-                            <p className="text-2xl font-900 text-primary">£{u.totalSpent.toFixed(2)}</p>
+                            <p className="text-[10px] font-700 uppercase tracking-wider text-muted-foreground mb-1">Total Spent</p>
+                            <p className="text-xl font-900 text-primary">£{u.totalSpent.toFixed(2)}</p>
                           </div>
+                        </div>
+                        <div className="bg-white border border-border rounded-xl p-3 text-center shadow-sm flex items-center justify-between">
+                           <div>
+                             <p className="text-[10px] font-700 uppercase tracking-wider text-muted-foreground mb-0.5">Wallet Balance</p>
+                             <p className="text-xl font-900 text-green-600">£{(u.walletBalance || 0).toFixed(2)}</p>
+                           </div>
+                           <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                             <Wallet size={20} />
+                           </div>
                         </div>
                       </div>
                     </div>

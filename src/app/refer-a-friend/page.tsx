@@ -20,8 +20,17 @@ export default function ReferAFriendPage() {
     referralStep3Desc: 'Once their order is delivered, you get a £{amount} credit added to your account.'
   });
   const { user } = useAuth();
+  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
+    if (user) {
+      const fetchUserData = async () => {
+        const docSnap = await getDoc(doc(db, 'users', user.uid));
+        if (docSnap.exists()) setUserData(docSnap.data());
+      };
+      fetchUserData();
+    }
+
     const fetchSettings = async () => {
       try {
         const docRef = doc(db, 'settings', 'global');
@@ -38,7 +47,7 @@ export default function ReferAFriendPage() {
       } catch (error) {}
     };
     fetchSettings();
-  }, []);
+  }, [user]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -86,12 +95,12 @@ export default function ReferAFriendPage() {
               </div>
             ) : (
               <div className="mt-12 text-center">
-                <p className="text-sm font-800 text-muted-foreground mb-3">Your Unique Referral Link:</p>
+                <p className="text-sm font-800 text-muted-foreground mb-3">Your Unique Referral Code:</p>
                 <div className="inline-flex flex-col sm:flex-row items-center gap-3 bg-gray-50 p-2 sm:pr-2 rounded-xl border border-border shadow-sm">
-                  <span className="text-sm font-700 text-foreground px-4 py-2 select-all">https://domeal.co.uk/?ref={user.uid?.slice(0,8)}</span>
+                  <span className="text-2xl font-900 text-foreground px-6 py-2 select-all tracking-widest">{userData?.referralCode || '...'}</span>
                   <button 
                     onClick={(e) => {
-                      navigator.clipboard.writeText(`https://domeal.co.uk/?ref=${user.uid?.slice(0,8)}`);
+                      navigator.clipboard.writeText(userData?.referralCode || '');
                       const target = e.currentTarget;
                       const originalText = target.innerText;
                       target.innerText = 'Copied!';
@@ -99,7 +108,7 @@ export default function ReferAFriendPage() {
                     }}
                     className="w-full sm:w-auto bg-[#1E3B2B] text-white text-sm font-800 px-6 py-2.5 rounded-lg hover:bg-primary transition-colors"
                   >
-                    Copy Link
+                    Copy Code
                   </button>
                 </div>
               </div>

@@ -15,6 +15,14 @@ export interface CartItem {
   subItems?: { name: string; price: number }[];
 }
 
+export interface CheckoutData {
+  postcode?: string;
+  deliveryDates?: string[];
+  subscriptionFrequency?: string;
+  allergiesInfo?: string;
+  notes?: string;
+}
+
 interface CartContextType {
   cart: CartItem[];
   addToCart: (item: { id: string; cartItemId?: string; name: string; price: number; subItems?: { name: string; price: number }[] }) => boolean;
@@ -24,6 +32,8 @@ interface CartContextType {
   cartTotal: number;
   isCartOpen: boolean;
   setIsCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  checkoutData: CheckoutData;
+  setCheckoutData: React.Dispatch<React.SetStateAction<CheckoutData>>;
 }
 
 const CartContext = createContext<CartContextType>({
@@ -35,6 +45,8 @@ const CartContext = createContext<CartContextType>({
   cartTotal: 0,
   isCartOpen: false,
   setIsCartOpen: () => {},
+  checkoutData: {},
+  setCheckoutData: () => {},
 });
 
 export const useCart = () => useContext(CartContext);
@@ -42,6 +54,7 @@ export const useCart = () => useContext(CartContext);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [checkoutData, setCheckoutData] = useState<CheckoutData>({});
   const { user } = useAuth();
   const router = useRouter();
 
@@ -49,6 +62,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) {
       setCart([]);
+      setCheckoutData({});
       return;
     }
 
@@ -57,6 +71,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const userData = docSnap.data();
         if (userData.cart) {
           setCart(userData.cart);
+        }
+        if (userData.checkoutData) {
+          setCheckoutData(userData.checkoutData);
         }
       }
     });
@@ -72,6 +89,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Failed to sync cart:', error);
     }
+  };
+
+  const updateCheckoutData = async (newData: CheckoutData | ((prev: CheckoutData) => CheckoutData)) => {
+    setCheckoutData((prev) => {
+      const resolved = typeof newData === 'function' ? newData(prev) : newData;
+      if (user) {
+        setDoc(doc(db, 'users', user.uid), { checkoutData: resolved }, { merge: true }).catch(console.error);
+      }
+      return resolved;
+    });
   };
 
   const addToCart = (item: { id: string; cartItemId?: string; name: string; price: number; subItems?: { name: string; price: number }[] }) => {
@@ -124,7 +151,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, updateQty, clearCart, cartCount, cartTotal, isCartOpen, setIsCartOpen }}>
+    <CartContext.Provider value={{ cart, addToCart, updateQty, clearCart, cartCount, cartTotal, isCartOpen, setIsCartOpen, checkoutData, setCheckoutData: updateCheckoutData as any }}>
       {children}
     </CartContext.Provider>
   );

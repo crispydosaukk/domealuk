@@ -5,6 +5,7 @@ import '../styles/tailwind.css';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
+import GlobalPopup from '@/components/GlobalPopup';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -39,9 +40,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <AuthProvider>
           <CartProvider>
             {children}
+            <GlobalPopup />
           </CartProvider>
         </AuthProvider>
-        <Toaster position="top-center" toastOptions={{ className: 'my-custom-toast' }} richColors visibleToasts={1} />
+        <Toaster position="top-center" toastOptions={{ className: 'my-custom-toast', duration: 1500 }} richColors visibleToasts={1} />
       </body>
     </html>
   );

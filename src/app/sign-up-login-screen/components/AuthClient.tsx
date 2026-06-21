@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Phone, Mail, Lock, User } from 'lucide-react';
@@ -9,10 +9,12 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
 type LoginForm = { email: string; password: string; remember: boolean };
-type SignupForm = { name: string; phone: string; email: string; password: string; confirmPassword: string; terms: boolean };
+type SignupForm = { name: string; phone: string; email: string; password: string; confirmPassword: string; terms: boolean; referredBy?: string };
 
 export default function AuthClient() {
-  const [tab, setTab] = useState<'login' | 'signup'>('login');
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get('ref') || '';
+  const [tab, setTab] = useState<'login' | 'signup'>(refCode ? 'signup' : 'login');
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,15 +23,15 @@ export default function AuthClient() {
   const router = useRouter();
 
   const loginForm = useForm<LoginForm>({ defaultValues: { email: '', password: '', remember: false } });
-  const signupForm = useForm<SignupForm>({ defaultValues: { name: '', phone: '', email: '', password: '', confirmPassword: '', terms: false } });
+  const signupForm = useForm<SignupForm>({ defaultValues: { name: '', phone: '', email: '', password: '', confirmPassword: '', terms: false, referredBy: refCode } });
 
   const handleLoginSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     loginForm.clearErrors('root');
     try {
       await login(data.email, data.password);
-      toast.success('Welcome back to DoMeal! 🎉', {
-        description: 'Ready for your next authentic home-cooked tiffin? Explore our freshly prepared daily specials today.',
+      toast.success('Welcome back to DoMeal!', {
+        duration: 1500
       });
       router.push('/menu-ordering-screen');
     } catch (error: unknown) {
@@ -61,9 +63,9 @@ export default function AuthClient() {
         : data.phone.startsWith('0')
           ? `+44${data.phone.substring(1)}`
           : `+44${data.phone}`;
-      await signup(data.email, data.password, data.name, formattedPhone);
-      toast.success('Account Created Successfully! 🍱', {
-        description: 'Welcome to the DoMeal family! Start your journey of authentic, home-cooked Indian meals today.',
+      await signup(data.email, data.password, data.name, formattedPhone, data.referredBy);
+      toast.success('Account created successfully!', {
+        duration: 1500
       });
       router.push('/menu-ordering-screen');
     } catch (error: unknown) {
@@ -311,6 +313,18 @@ export default function AuthClient() {
                   </button>
                 </div>
                 {signupForm.formState.errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{signupForm.formState.errors.confirmPassword.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-600 text-foreground mb-1.5">Referral Code (Optional)</label>
+                <div className="relative">
+                  <input
+                    {...signupForm.register('referredBy')}
+                    type="text"
+                    placeholder="Enter referral code if you have one"
+                    className="w-full px-4 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  />
+                </div>
               </div>
 
               <label className="flex items-start gap-2 cursor-pointer">

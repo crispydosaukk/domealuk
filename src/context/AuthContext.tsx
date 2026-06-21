@@ -15,7 +15,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, phone: string) => Promise<void>;
+  signup: (email: string, password: string, name: string, phone: string, referredBy?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signup = async (email: string, password: string, name: string, phone: string) => {
+  const signup = async (email: string, password: string, name: string, phone: string, referredBy?: string) => {
     let credential;
     try {
       credential = await createUserWithEmailAndPassword(auth, email, password);
@@ -62,10 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      const generatedCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       await setDoc(doc(db, 'users', credential.user.uid), {
         name,
         email,
         phone,
+        referralCode: generatedCode,
+        referredBy: referredBy || null,
+        walletBalance: 0,
         createdAt: serverTimestamp(),
       });
     } catch (err: any) {
