@@ -140,7 +140,7 @@ export default function OrderHistoryClient() {
           <Package size={48} className="text-muted-foreground mx-auto mb-4 opacity-40" />
           <p className="font-700 text-foreground mb-1">No orders found</p>
           <p className="text-sm text-muted-foreground mb-6">Try adjusting your search or filter</p>
-          <Link href="/menu-ordering-screen" className="inline-flex items-center gap-2 bg-primary text-white font-700 px-5 py-3 rounded-xl hover:bg-red-900 transition-all active:scale-95 text-sm">
+          <Link href="/menu" className="inline-flex items-center gap-2 bg-primary text-white font-700 px-5 py-3 rounded-xl hover:bg-red-900 transition-all active:scale-95 text-sm">
             Browse Menu
           </Link>
         </div>
@@ -276,7 +276,7 @@ export default function OrderHistoryClient() {
                     <div className="flex flex-wrap gap-3 mt-6 pt-5 border-t border-border">
                       {order.status === 'Delivered' && (
                         <Link
-                          href="/menu-ordering-screen"
+                          href="/menu"
                           className="flex items-center gap-2 bg-primary text-white text-sm font-700 px-5 py-2.5 rounded-xl hover:bg-red-900 transition-all active:scale-95 shadow-sm shadow-red-200"
                         >
                           <RotateCcw size={14} />
@@ -284,7 +284,7 @@ export default function OrderHistoryClient() {
                         </Link>
                       )}
                       <Link
-                        href="/menu-ordering-screen"
+                        href="/menu"
                         className="flex items-center gap-2 bg-white border border-border text-foreground text-sm font-600 px-5 py-2.5 rounded-xl hover:border-primary/50 hover:bg-muted/50 transition-all shadow-sm"
                       >
                         <ShoppingCart size={14} />

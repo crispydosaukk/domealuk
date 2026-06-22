@@ -203,7 +203,7 @@ export default function MenuOrderingClient() {
               while (true) {
                 if (d.getDay() === 0 || d.getDay() === 3) {
                   if (foundCount === idx) {
-                    return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+                    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
                   }
                   foundCount++;
                 }
@@ -211,6 +211,9 @@ export default function MenuOrderingClient() {
               }
             };
             const assignedDate = getDeliveryDateForIndex(index);
+            const hasDiscountPrice = item.price > 0;
+            const activePrice = hasDiscountPrice ? item.price : (item.originalPrice || 0);
+            const showStrikethrough = hasDiscountPrice && item.originalPrice != null && item.originalPrice > 0;
 
             return (
               <div key={item.id} className="relative flex flex-col h-full">
@@ -274,10 +277,10 @@ export default function MenuOrderingClient() {
                   <div className="mb-4">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-baseline gap-1.5">
-                        {item.originalPrice && (
-                          <span className="text-xl font-800 text-[#C39B54] line-through tabular-nums opacity-60">£{item.originalPrice.toFixed(2)}</span>
+                        {showStrikethrough && (
+                          <span className="text-xl font-800 text-[#C39B54] line-through tabular-nums opacity-60">£{item.originalPrice!.toFixed(2)}</span>
                         )}
-                        <span className="text-3xl font-900 text-[#C39B54] tabular-nums tracking-tight">£{(item.price || 0).toFixed(2)}</span>
+                        <span className="text-3xl font-900 text-[#C39B54] tabular-nums tracking-tight">£{activePrice.toFixed(2)}</span>
                       </div>
                       {item.portionPrice && (
                         <span className="bg-[#C39B54] text-[#1E3B2B] text-xs font-800 px-3 py-1.5 rounded-full tracking-wide self-start mt-1">
@@ -295,7 +298,7 @@ export default function MenuOrderingClient() {
                       if (item.subItems && item.subItems.length > 0) {
                         setExpandedMenus(prev => ({...prev, [item.id]: !prev[item.id]}));
                       } else {
-                        const added = addToCart({ id: item.id, cartItemId: item.id, name: item.name, price: item.price });
+                        const added = addToCart({ id: item.id, cartItemId: item.id, name: item.name, price: activePrice });
                         if (added) {
                           toast.success(`Added ${item.name} to cart`);
                         }
@@ -369,7 +372,7 @@ export default function MenuOrderingClient() {
                         id: item.id,
                         cartItemId,
                         name: item.name,
-                        price: item.price + extraPrice,
+                        price: activePrice + extraPrice,
                         subItems: selectedSubItems
                       });
                       if (added) {
@@ -485,20 +488,20 @@ export default function MenuOrderingClient() {
               
               <div>
                 <h3 className="font-700 text-sm mb-2 text-[#1E3B2B] flex items-center gap-2"><Info size={14} className="text-primary"/> About this dish</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{selectedItem.desc}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedItem.desc}</p>
               </div>
 
               {selectedItem.ingredients && (
                 <div>
                   <h3 className="font-700 text-sm mb-2 text-[#1E3B2B] flex items-center gap-2"><Leaf size={14} className="text-primary"/> Ingredients</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{selectedItem.ingredients}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedItem.ingredients}</p>
                 </div>
               )}
 
               {selectedItem.allergens && (
                 <div className="bg-red-50 p-3 rounded-xl border border-red-100">
                   <h3 className="font-700 text-sm mb-1 text-red-800">Allergen Information</h3>
-                  <p className="text-sm text-red-700">{selectedItem.allergens}</p>
+                  <p className="text-sm text-red-700 whitespace-pre-wrap">{selectedItem.allergens}</p>
                 </div>
               )}
 

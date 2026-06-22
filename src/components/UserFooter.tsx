@@ -87,7 +87,7 @@ export default function UserFooter() {
             <ul className="grid grid-cols-2 gap-y-2 gap-x-4">
               {[
                 { label: 'Home', href: '/' },
-                { label: 'Menu', href: '/menu-ordering-screen' },
+                { label: 'Menu', href: '/menu' },
                 { label: 'Refer a Friend', href: '/refer-a-friend' },
                 { label: 'How to Heat', href: '/how-to-heat' },
                 { label: 'Student Discounts', href: '/student-discounts' },

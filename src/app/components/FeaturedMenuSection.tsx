@@ -52,6 +52,7 @@ export default function FeaturedMenuSection() {
       });
 
       const cleanItems = items.filter(item => {
+        if (item.category !== 'Menu') return false;
         const nameKey = item.name.toLowerCase().trim();
         const group = nameGroups[nameKey];
         if (group.length > 1) {
@@ -64,8 +65,8 @@ export default function FeaturedMenuSection() {
         return true;
       });
 
-      // Only take the first 6 items for the featured section
-      setFeaturedItems(cleanItems.slice(0, 6));
+      // Only take the first 8 items for the featured section
+      setFeaturedItems(cleanItems.slice(0, 8));
       setLoading(false);
     });
     return () => unsub();
@@ -84,7 +85,7 @@ export default function FeaturedMenuSection() {
             </h2>
           </div>
           <Link
-            href="/menu-ordering-screen"
+            href="/menu"
             className="inline-flex items-center gap-2 text-primary font-600 text-sm hover:gap-3 transition-all duration-150"
           >
             View Full Menu <ArrowRight size={16} />
@@ -100,7 +101,7 @@ export default function FeaturedMenuSection() {
             No featured items available at the moment.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredItems.map((item) => {
               const hasImages = item.images && item.images.length > 0;
               return (
@@ -158,7 +159,7 @@ export default function FeaturedMenuSection() {
                         £{item.price.toFixed(2)}
                       </span>
                       <Link
-                        href="/menu-ordering-screen"
+                        href="/menu"
                         className="bg-secondary text-white text-xs font-700 px-4 py-2 rounded-lg hover:bg-red-700 transition-all active:scale-95"
                       >
                         Add to Cart

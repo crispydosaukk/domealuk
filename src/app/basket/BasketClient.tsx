@@ -190,7 +190,7 @@ export default function BasketClient() {
                         <p className="text-[11px] font-800 uppercase tracking-wide text-[#11261a] bg-orange-50 px-2 py-0.5 rounded border border-orange-100">
                           {frequency}
                         </p>
-                        {item.category === 'Menu' && (
+                        {(item as any).category === 'Menu' && (
                           <div className="mt-2.5 bg-green-50 text-green-700 text-[11px] font-800 px-2.5 py-1.5 rounded flex items-center gap-1.5 inline-flex shadow-sm border border-green-100">
                             <span className="text-sm">🎉</span> {globalSettings.discount}% off your first {globalSettings.count} deliveries, applied automatically. Pause or cancel anytime.
                           </div>

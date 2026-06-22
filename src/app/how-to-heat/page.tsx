@@ -64,9 +64,9 @@ export default function HowToHeatPage() {
                       isOpen ? 'bg-[#1E3B2B]/5' : 'hover:bg-gray-50'
                     }`}
                   >
-                    <div className="flex items-center gap-4">
-                      <Icon className={`w-6 h-6 md:w-8 md:h-8 ${isOpen ? 'text-[#C39B54]' : 'text-primary'}`} strokeWidth={1.5} />
-                      <span className={`text-xl md:text-2xl font-800 ${isOpen ? 'text-[#1E3B2B]' : 'text-foreground'}`}>
+                    <div className="flex items-center gap-4 flex-1 pr-4">
+                      <Icon className={`w-6 h-6 md:w-8 md:h-8 shrink-0 ${isOpen ? 'text-[#C39B54]' : 'text-primary'}`} strokeWidth={1.5} />
+                      <span className={`text-xl md:text-2xl font-800 text-left ${isOpen ? 'text-[#1E3B2B]' : 'text-foreground'}`}>
                         {item.title}
                       </span>
                     </div>

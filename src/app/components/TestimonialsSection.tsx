@@ -80,7 +80,7 @@ export default function TestimonialsSection() {
             <p className="text-blue-200 mb-6 text-sm">Join 1,200+ happy customers. First week free on any subscription plan.</p>
             <div className="flex flex-wrap gap-3 justify-center">
               <a
-                href="/menu-ordering-screen"
+                href="/menu"
                 className="bg-secondary text-white font-700 px-6 py-3 rounded-xl hover:bg-red-700 transition-all active:scale-95"
               >
                 Order Now

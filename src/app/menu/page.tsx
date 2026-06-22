@@ -1,7 +1,7 @@
 import React from 'react';
 import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
-import MenuOrderingClient from '@/app/menu-ordering-screen/components/MenuOrderingClient';
+import MenuOrderingClient from '@/app/menu/components/MenuOrderingClient';
 
 export default function MenuOrderingPage() {
   return (

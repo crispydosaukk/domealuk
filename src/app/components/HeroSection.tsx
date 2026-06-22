@@ -38,7 +38,7 @@ export default function HeroSection() {
 
             <div className="flex flex-wrap gap-4 mb-10">
               <Link
-                href="/menu-ordering-screen"
+                href="/menu"
                 className="inline-flex items-center gap-2 bg-[#C39B54] text-white font-700 px-6 py-3.5 rounded-xl hover:bg-yellow-700 transition-all duration-150 active:scale-95 shadow-lg shadow-yellow-900/40"
               >
                 Start Your DoMeal Journey

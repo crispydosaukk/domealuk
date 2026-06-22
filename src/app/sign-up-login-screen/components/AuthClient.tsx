@@ -33,7 +33,7 @@ export default function AuthClient() {
       toast.success('Welcome back to DoMeal!', {
         duration: 1500
       });
-      router.push('/menu-ordering-screen');
+      router.push('/menu');
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code || '';
       if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
@@ -67,7 +67,7 @@ export default function AuthClient() {
       toast.success('Account created successfully!', {
         duration: 1500
       });
-      router.push('/menu-ordering-screen');
+      router.push('/menu');
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code || '';
       if (code === 'auth/email-already-in-use') {

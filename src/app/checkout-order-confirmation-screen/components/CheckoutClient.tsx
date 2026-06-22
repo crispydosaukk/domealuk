@@ -357,7 +357,7 @@ export default function CheckoutClient() {
             <Link href="/order-history" className="flex-1 text-center border border-border text-foreground font-600 py-3 rounded-xl hover:bg-muted transition-all">
               View Order History
             </Link>
-            <Link href="/menu-ordering-screen" className="flex-1 text-center bg-primary text-white font-700 py-3 rounded-xl hover:bg-orange-700 transition-all active:scale-95">
+            <Link href="/menu" className="flex-1 text-center bg-primary text-white font-700 py-3 rounded-xl hover:bg-orange-700 transition-all active:scale-95">
               Order Again
             </Link>
           </div>

@@ -146,7 +146,7 @@ export default function GlobalPopup() {
             </div>
           </div>
 
-          <Link href="/menu-ordering-screen" onClick={handleClose} className="w-full">
+          <Link href="/menu" onClick={handleClose} className="w-full">
             <button className="w-full bg-[#f3e5d8] text-[#11261a] hover:bg-white font-900 text-lg py-4 rounded-xl transition-all active:scale-95 shadow-[0_0_20px_rgba(243,229,216,0.3)]">
               {settings.popupBtnText}
             </button>

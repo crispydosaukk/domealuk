@@ -62,7 +62,7 @@ export default function UserNavbar() {
 
   const navLinks = [
     { label: 'Home', href: '/' },
-    { label: 'Menu', href: '/menu-ordering-screen' },
+    { label: 'Menu', href: '/menu' },
     { label: 'Refer a Friend', href: '/refer-a-friend' },
     { label: 'How to Heat', href: '/how-to-heat' },
     { label: 'Student Discounts', href: '/student-discounts' },
@@ -117,8 +117,8 @@ export default function UserNavbar() {
               <button
                 onClick={() => {
                   setIsCartOpen(true);
-                  if (pathname !== '/menu-ordering-screen') {
-                    router.push('/menu-ordering-screen');
+                  if (pathname !== '/menu') {
+                    router.push('/menu');
                   }
                 }}
                 className={`relative p-2 rounded-lg transition-colors ${isTransparent ? 'hover:bg-white/10' : 'hover:bg-muted'}`}

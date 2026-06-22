@@ -52,14 +52,14 @@ const defaultSettings = {
   heatBottomDesc: 'Ready to enjoy piping hot, authentic Indian meals at home? Enter your postcode on our homepage to see if we deliver to you.',
   heatBottomBtn: 'Get Started',
   heatData: [
-    "Chickpea Salad, Aloo Fry, Aloo Gobi Masala & Jeera Rice",
-    "Tomato Cucumber Salad, Soya Chaap subzi, Tofu Jalfrezi & Jasmine Rice",
-    "Soya Chunks Salad, Kadai veg, Palak Tofu & Basmati Rice",
-    "Sprouted Green gram Salad, Baingan Bartha, Soya Chettinad & Sambar Rice",
-    "Quinoa Cucumber carrot salad, Cabbage Kootu, Dhall Palak & Veg Pulao Rice",
-    "Mexican Bean and Corn Salad, Mogo Masala Subzi, Rajma Masala & Saffron Rice",
-    "Chilly Garlic Broccoli, Mix Bean Subzi, Methi Mutter Thadka & Foxtail Millet Rice",
-    "Beans Usili, Dhall Palak, Channa Masala & Little Millet Rice"
+    "Chickpea Salad",
+    "Tomato Cucumber Salad",
+    "Soya Chunks Salad",
+    "Sprouted Green gram Salad",
+    "Quinoa Cucumber carrot salad",
+    "Mexican Bean and Corn Salad",
+    "Chilly Garlic Broccoli",
+    "Beans Usili"
   ].map(title => ({
     title,
     icon: 'ConciergeBell',
