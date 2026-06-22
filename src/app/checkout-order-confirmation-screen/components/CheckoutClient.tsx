@@ -50,12 +50,12 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
 
   const today = new Date();
-  today.setHours(0,0,0,0);
+  today.setHours(0, 0, 0, 0);
 
   return (
     <div className="relative w-full sm:w-1/2">
-      <button 
-        type="button" 
+      <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between px-4 py-3 border-2 border-border rounded-xl text-sm bg-background text-foreground font-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
       >
@@ -89,7 +89,7 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
                 const isPast = date < today;
                 const dayOfWeek = date.getDay();
                 const isValid = !isPast && (dayOfWeek === 1 || dayOfWeek === 4);
-                
+
                 // create local iso string without timezone shifting
                 const dateStr = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
                 const isSelected = values.includes(dateStr);
@@ -101,9 +101,10 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
                     disabled={!isValid}
                     onClick={() => {
                       if (isSelected) {
-                        onChange(values.filter(d => d !== dateStr));
+                        onChange([]);
                       } else {
-                        onChange([...values, dateStr].sort());
+                        onChange([dateStr]);
+                        setIsOpen(false);
                       }
                     }}
                     className={`h-9 w-9 rounded-full flex items-center justify-center text-sm transition-all mx-auto
@@ -132,8 +133,9 @@ export default function CheckoutClient() {
   const [selectedPayment, setSelectedPayment] = useState('pay-card');
   const [isLoading, setIsLoading] = useState(false);
   const [orderId] = useState(`VSL-${Math.floor(10000 + Math.random() * 90000)}`);
-  
+
   const [deliveryDates, setDeliveryDates] = useState<string[]>(checkoutData?.deliveryDates || []);
+  const [isEditingDate, setIsEditingDate] = useState(false);
   const [notes, setNotes] = useState(checkoutData?.notes || '');
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
@@ -232,17 +234,17 @@ export default function CheckoutClient() {
     }
 
     setIsLoading(true);
-    
+
     try {
       let finalAddress: AddressForm = data;
-      
+
       if (user) {
         if (selectedAddressId === 'new') {
           const newAddress: SavedAddress = { ...data, id: `addr-${Date.now()}` };
           finalAddress = newAddress;
           await setDoc(doc(db, 'users', user.uid), { addresses: arrayUnion(newAddress) }, { merge: true });
         }
-        
+
         // Save Order
         const subtotal = cartTotal * (deliveryDates.length || 1);
         let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
@@ -340,7 +342,7 @@ export default function CheckoutClient() {
             <Clock size={20} className="text-blue-600 shrink-0" />
             <div>
               <p className="text-sm font-700 text-foreground">Estimated Delivery</p>
-              <p className="text-xs text-muted-foreground">{deliveryDates.map(d => new Date(d).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})).join(', ')} • {deliverySlots.find(s => s.id === selectedSlot)?.label}</p>
+              <p className="text-xs text-muted-foreground">{deliveryDates.map(d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })).join(', ')} • {deliverySlots.find(s => s.id === selectedSlot)?.label}</p>
             </div>
           </div>
 
@@ -386,7 +388,7 @@ export default function CheckoutClient() {
                 <MapPin size={18} className="text-primary" />
                 Delivery Address
               </h2>
-              
+
               {savedAddresses.length > 0 && (
                 <div className="mb-6 space-y-3">
                   <p className="text-sm font-600 text-muted-foreground">Saved Addresses</p>
@@ -455,18 +457,36 @@ export default function CheckoutClient() {
               )}
             </div>
 
-            {/* Delivery Date & Slot & Notes */}
-            <div className="bg-white rounded-2xl border border-border p-5">
+            {/* Selected Preferences Summary */}
+            <div className="bg-white rounded-2xl border border-border p-5 relative">
               <div className="flex items-center gap-2 mb-4">
-                <CalendarDays size={18} className="text-primary" />
-                <h2 className="font-700 text-base text-foreground">Choose Delivery Date</h2>
+                <CheckCircle size={18} className="text-primary" />
+                <h2 className="font-700 text-base text-foreground">Your Selected Preferences</h2>
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-600 text-foreground mb-1">Select Delivery Dates</label>
-                <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                  Plan ahead by selecting multiple delivery days (Mondays & Thursdays). Your cart items will be prepared fresh for each chosen date.
-                </p>
-                <CustomDatePicker values={deliveryDates} onChange={setDeliveryDates} />
+              
+              <Link href="/basket" className="absolute top-5 right-5 text-primary text-xs font-700 hover:underline">
+                Edit Preferences
+              </Link>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-muted/30 border border-border rounded-xl p-3">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-700 mb-1">Delivery Date</p>
+                  <p className="font-600 text-sm text-foreground">
+                    {deliveryDates.length > 0 ? deliveryDates.map(d => new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })).join(', ') : 'Not selected'}
+                  </p>
+                </div>
+                <div className="bg-muted/30 border border-border rounded-xl p-3">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-700 mb-1">Frequency</p>
+                  <p className="font-600 text-sm text-foreground">
+                    {checkoutData?.subscriptionFrequency || 'Weekly Delivery'}
+                  </p>
+                </div>
+                <div className="bg-muted/30 border border-border rounded-xl p-3">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-700 mb-1">Postcode</p>
+                  <p className="font-600 text-sm text-foreground">
+                    {checkoutData?.postcode || 'Not entered'}
+                  </p>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 mb-3 mt-4 border-t border-border pt-5">
@@ -494,7 +514,7 @@ export default function CheckoutClient() {
                   <FileText size={16} className="text-primary" />
                   <h2 className="font-700 text-sm text-foreground">Add Special Instructions</h2>
                 </div>
-                <textarea 
+                <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="E.g. Ring the bell twice, leave at the door..."
@@ -564,17 +584,17 @@ export default function CheckoutClient() {
 
               <div className="border-t border-border pt-5 mb-5 space-y-4">
                 <div className="flex gap-2">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={discountCode}
                     onChange={(e) => setDiscountCode(e.target.value)}
-                    placeholder="Discount code or gift card" 
+                    placeholder="Discount code or gift card"
                     className="flex-1 px-4 py-2.5 border border-[#e1d5c9] bg-[#faefe4]/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => {
-                      if(discountCode.trim() !== '') setDiscountApplied(true);
+                      if (discountCode.trim() !== '') setDiscountApplied(true);
                     }}
                     className="px-5 py-2.5 bg-[#f3e5d8] text-gray-700 font-700 text-sm rounded-lg hover:bg-[#ebd5c1] transition-colors"
                   >
@@ -585,8 +605,8 @@ export default function CheckoutClient() {
                 <div className="pt-2">
                   {walletBalance > 0 && (
                     <label className="flex items-center gap-2 mb-4 p-3 border border-[#C39B54]/30 rounded-xl bg-[#C39B54]/5 cursor-pointer hover:bg-[#C39B54]/10 transition-colors">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={useWallet}
                         onChange={(e) => setUseWallet(e.target.checked)}
                         className="w-4 h-4 accent-[#b58b42]"

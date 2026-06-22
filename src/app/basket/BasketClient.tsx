@@ -23,12 +23,12 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
 
   const today = new Date();
-  today.setHours(0,0,0,0);
+  today.setHours(0, 0, 0, 0);
 
   return (
     <div className="relative w-full">
-      <button 
-        type="button" 
+      <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between px-4 py-3 border border-border rounded-xl text-sm bg-background text-foreground font-600 focus:outline-none focus:ring-2 focus:ring-primary/30"
       >
@@ -62,7 +62,7 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
                 const isPast = date < today;
                 const dayOfWeek = date.getDay();
                 const isValid = !isPast && (dayOfWeek === 1 || dayOfWeek === 4);
-                
+
                 const dateStr = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
                 const isSelected = values.includes(dateStr);
 
@@ -73,9 +73,10 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
                     disabled={!isValid}
                     onClick={() => {
                       if (isSelected) {
-                        onChange(values.filter(d => d !== dateStr));
+                        onChange([]);
                       } else {
-                        onChange([...values, dateStr].sort());
+                        onChange([dateStr]);
+                        setIsOpen(false);
                       }
                     }}
                     className={`h-9 w-9 rounded-full flex items-center justify-center text-sm transition-all mx-auto
@@ -100,7 +101,7 @@ export default function BasketClient() {
   const { cart, updateQty, cartTotal, checkoutData, setCheckoutData } = useCart();
   const { user } = useAuth();
   const router = useRouter();
-  
+
   const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4 });
 
   useEffect(() => {
@@ -171,7 +172,7 @@ export default function BasketClient() {
       <h1 className="text-3xl font-extrabold text-foreground mb-8 text-[#11261a]">Your Basket</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* LEFT COLUMN: Items & Allergies */}
         <div className="lg:col-span-2 space-y-6">
           {/* Cart Items */}
@@ -186,15 +187,15 @@ export default function BasketClient() {
                   <div key={item.cartItemId || item.id} className="flex gap-4 p-4 border border-border rounded-xl items-center bg-gray-50/50">
                     <div className="flex-1">
                       <h3 className="font-700 text-foreground text-lg leading-tight mb-1">{item.name}</h3>
-                      <div className="flex flex-col items-start gap-1.5 mb-2">
-                        <p className="text-[11px] font-800 uppercase tracking-wide text-[#11261a] bg-orange-50 px-2 py-0.5 rounded border border-orange-100">
-                          {frequency}
-                        </p>
-                        {(item as any).category === 'Menu' && (
-                          <div className="mt-2.5 bg-green-50 text-green-700 text-[11px] font-800 px-2.5 py-1.5 rounded flex items-center gap-1.5 inline-flex shadow-sm border border-green-100">
-                            <span className="text-sm">🎉</span> {globalSettings.discount}% off your first {globalSettings.count} deliveries, applied automatically. Pause or cancel anytime.
-                          </div>
-                        )}
+                      <div className="flex flex-col items-start gap-1 mb-2 text-[#003b49] text-[15px]">
+                        <p>{frequency}</p>
+                        <p className="text-xs mt-0.5 text-[#003b49]">{globalSettings.discount}% off your first {globalSettings.count} deliveries, applied automatically. Pause or cancel anytime.</p>
+                        <button 
+                          onClick={() => updateQty(item.cartItemId || item.id, -item.qty)} 
+                          className="hover:text-red-700 transition-colors mt-1 underline underline-offset-2 text-sm"
+                        >
+                          Remove
+                        </button>
                       </div>
                       {item.subItems && item.subItems.length > 0 && (
                         <div className="mt-1.5 text-sm text-muted-foreground border-l-2 border-border/60 pl-2">
@@ -205,7 +206,7 @@ export default function BasketClient() {
                       )}
                       <p className="text-primary font-900 mt-2.5 text-base">£{item.price.toFixed(2)} each</p>
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-3 bg-white border border-border rounded-full px-3 py-1.5 shadow-sm">
                         <button onClick={() => updateQty(item.cartItemId || item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
@@ -216,29 +217,26 @@ export default function BasketClient() {
                           <span className="font-900 leading-none mb-0.5">+</span>
                         </button>
                       </div>
-                      <button onClick={() => updateQty(item.cartItemId || item.id, -item.qty)} className="p-2 text-muted-foreground hover:text-red-500 transition-colors">
-                        <Trash2 size={20} />
-                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            
+
             {/* Reusable Dabba Block */}
             {cart.length > 0 && (
-              <div className="mt-6 flex items-center justify-between p-4 border border-border rounded-xl bg-orange-50/50">
+              <div className="mt-6 flex items-center justify-between p-4 border border-border rounded-xl bg-white">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm border border-orange-100">
-                    <span className="text-2xl">🥡</span>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden border border-border/50">
+                    <img src="/assets/images/dabba-icon.png" alt="Reusable Dabba" className="w-full h-full object-cover" />
                   </div>
                   <div>
-                    <h3 className="font-700 text-foreground">Your Reusable Dabba</h3>
-                    <p className="text-sm text-muted-foreground">We swap your empty dabba with a full one when we deliver next.</p>
+                    <h3 className="font-600 text-foreground text-[16px] mb-0.5">Your Reusable Dabba</h3>
+                    <p className="text-[13px] text-muted-foreground">We swap your empty dabba with a full one when we deliver next.</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="font-800 text-[#11261a]">Free</span>
+                  <span className="font-600 text-foreground">Free</span>
                 </div>
               </div>
             )}
@@ -254,13 +252,13 @@ export default function BasketClient() {
                 </p>
               </div>
               <div className="flex items-center gap-4 bg-white/10 p-1.5 rounded-lg shrink-0">
-                <button 
+                <button
                   onClick={() => { setHasAllergies(true); saveToContext('allergiesInfo', allergiesInfo); }}
                   className={`px-6 py-2 rounded-md font-600 transition-colors ${hasAllergies ? 'bg-white text-[#11261a]' : 'text-white hover:bg-white/20'}`}
                 >
                   Yes
                 </button>
-                <button 
+                <button
                   onClick={() => { setHasAllergies(false); setAllergiesInfo(''); saveToContext('allergiesInfo', ''); }}
                   className={`px-6 py-2 rounded-md font-600 transition-colors ${!hasAllergies ? 'bg-white text-[#11261a]' : 'text-white hover:bg-white/20'}`}
                 >
@@ -287,7 +285,7 @@ export default function BasketClient() {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-border p-6 shadow-sm sticky top-24">
             <h2 className="font-800 text-xl text-[#11261a] mb-6">Your Order</h2>
-            
+
             <div className="space-y-3 border-b border-border pb-5 mb-6">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
@@ -333,7 +331,7 @@ export default function BasketClient() {
               <div>
                 <label className="block text-sm font-700 text-foreground mb-1.5">Subscription Frequency</label>
                 <div className="relative">
-                  <select 
+                  <select
                     value={frequency}
                     onChange={(e) => { setFrequency(e.target.value); saveToContext('subscriptionFrequency', e.target.value); }}
                     className="w-full px-4 py-3 border border-border rounded-xl text-sm bg-background appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -343,7 +341,7 @@ export default function BasketClient() {
                   </select>
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-muted-foreground">
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 </div>
@@ -384,7 +382,7 @@ export default function BasketClient() {
                   Checkout
                 </button>
                 <p className="text-center text-[11px] text-muted-foreground mt-3 leading-relaxed">
-                  Discount codes applied at next step.<br/>Shipping calculated at next step.
+                  Discount codes applied at next step.<br />Shipping calculated at next step.
                 </p>
               </div>
 

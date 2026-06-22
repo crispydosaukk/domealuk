@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Package, Clock, CheckCircle, Truck, XCircle, ChevronDown, ChevronUp, RotateCcw, Search, Filter, Bell, ShoppingCart, User, Wallet } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck, XCircle, ChevronDown, ChevronUp, RotateCcw, Search, Filter, Bell, ShoppingCart, User, Wallet, CalendarDays } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -240,11 +240,31 @@ export default function OrderHistoryClient() {
                       <div>
                         <p className="text-[10px] font-800 text-muted-foreground uppercase tracking-wider mb-3">Delivery Information</p>
                         <div className="space-y-3 bg-white border border-border p-4 rounded-xl shadow-sm text-sm">
+                          
+                          {order.subscriptionFrequency && (
+                            <div className="flex items-start gap-3">
+                              <CalendarDays size={16} className="text-primary shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-700 text-foreground">Subscription</p>
+                                <p className="text-muted-foreground mt-0.5 text-xs">{order.subscriptionFrequency}</p>
+                              </div>
+                            </div>
+                          )}
+
                           <div className="flex items-start gap-3">
                             <Clock size={16} className="text-primary shrink-0 mt-0.5" />
                             <div>
-                              <p className="font-700 text-foreground">Requested Delivery</p>
-                              <p className="text-muted-foreground mt-0.5 text-xs">{order.deliverySlot || 'Standard Delivery'}</p>
+                              <p className="font-700 text-foreground">Delivery Date & Slot</p>
+                              <p className="text-muted-foreground mt-0.5 text-xs">
+                                {order.deliveryDates?.length > 0 ? order.deliveryDates.map((d: string) => new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })).join(', ') : 'Not selected'}
+                                <br/>
+                                Slot: {
+                                  order.deliverySlot === 'slot-1' ? 'Morning (7:30 AM - 8:30 AM)' :
+                                  order.deliverySlot === 'slot-2' ? 'Afternoon (12:00 PM - 1:00 PM)' :
+                                  order.deliverySlot === 'slot-3' ? 'Evening (7:30 PM - 8:30 PM)' :
+                                  (order.deliverySlot || 'Standard Delivery')
+                                }
+                              </p>
                             </div>
                           </div>
                           
