@@ -1,10 +1,11 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Package, Clock, CheckCircle, Truck, XCircle, ChevronDown, ChevronUp, RotateCcw, Search, Filter, Bell, ShoppingCart, User, Wallet, CalendarDays } from 'lucide-react';
+import { Package, Clock, CheckCircle, Truck, XCircle, ChevronDown, ChevronUp, RotateCcw, Search, Filter, Bell, ShoppingCart, User, Wallet, CalendarDays, CreditCard } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { toast } from 'sonner';
 
 const statusConfig: Record<string, { icon: React.ElementType; color: string; bg: string; label: string }> = {
   'Order Received': { icon: Package, color: 'text-blue-700', bg: 'bg-blue-100', label: 'Order Received' },
@@ -24,6 +25,43 @@ export default function OrderHistoryClient() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [pendingCancelData, setPendingCancelData] = useState<{ subscriptionId: string; orderId: string } | null>(null);
+
+  const confirmCancelSubscription = async () => {
+    if (!pendingCancelData) return;
+    const { subscriptionId, orderId } = pendingCancelData;
+    setCancellingId(subscriptionId);
+    try {
+      const res = await fetch('/api/cancel-stripe-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscriptionId, orderId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        try {
+          await updateDoc(doc(db, 'orders', orderId), {
+            subscriptionStatus: 'cancelled',
+            status: 'Cancelled'
+          });
+        } catch (e) {
+          console.error('Failed to update order status client-side:', e);
+        }
+        toast.success('Subscription cancelled successfully. 🎉');
+        setShowCancelModal(false);
+        setPendingCancelData(null);
+      } else {
+        toast.error(data.error || 'Failed to cancel subscription.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -169,11 +207,20 @@ export default function OrderHistoryClient() {
                   </div>
 
                   <div className="flex-1 min-w-0 w-full">
-                    <div className="flex justify-between sm:justify-start items-center gap-2 mb-1 w-full">
+                    <div className="flex flex-wrap items-center gap-2 mb-1 w-full">
                       <span className="font-800 text-base text-primary">{order.id}</span>
                       <span className={`text-xs font-700 px-2.5 py-1 rounded-md ${cfg.bg} ${cfg.color}`}>
                         {cfg.label}
                       </span>
+                      {order.paymentMethod && (
+                        <span className={`text-[10px] font-700 px-2 py-0.5 rounded-md border ${
+                          order.paymentMethod === 'pay-cod' 
+                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                            : 'bg-green-50 text-green-700 border-green-200'
+                        }`}>
+                          {order.paymentMethod === 'pay-cod' ? 'COD' : 'Paid'}
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground font-500">
                       Placed: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent'} · {order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? 's' : ''}
@@ -235,6 +282,48 @@ export default function OrderHistoryClient() {
                             </div>
                           </div>
                         </div>
+
+                        <p className="text-[10px] font-800 text-muted-foreground uppercase tracking-wider mt-5 mb-3">Payment Details</p>
+                        <div className="space-y-3 bg-white border border-border p-4 rounded-xl shadow-sm text-sm">
+                          <div className="flex items-start gap-3">
+                            <CreditCard size={16} className="text-primary shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-700 text-foreground">Method</p>
+                              <p className="text-muted-foreground mt-0.5 text-xs">
+                                {order.paymentMethod === 'pay-cod' ? 'Cash on Delivery (COD)' : 'Online Payment (Stripe Card)'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3">
+                            <CheckCircle size={16} className="text-primary shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-700 text-foreground">Status</p>
+                              <div className="mt-1">
+                                {order.paymentMethod === 'pay-cod' ? (
+                                  <span className="inline-flex items-center text-[10px] font-700 bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                                    Pending Cash Delivery
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center text-[10px] font-700 bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-200">
+                                    Paid Successfully
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {order.stripeSubscriptionId && (
+                            <div className="flex items-start gap-3 border-t border-border/50 pt-2.5">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-700 text-foreground text-xs">Subscription Reference</p>
+                                <p className="text-muted-foreground mt-0.5 text-[11px] font-mono break-all bg-gray-50 p-1.5 rounded border border-border/40">
+                                  {order.stripeSubscriptionId}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div>
@@ -244,9 +333,31 @@ export default function OrderHistoryClient() {
                           {order.subscriptionFrequency && (
                             <div className="flex items-start gap-3">
                               <CalendarDays size={16} className="text-primary shrink-0 mt-0.5" />
-                              <div>
+                              <div className="flex-1">
                                 <p className="font-700 text-foreground">Subscription</p>
                                 <p className="text-muted-foreground mt-0.5 text-xs">{order.subscriptionFrequency}</p>
+                                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                  {order.subscriptionStatus === 'active' && (
+                                    <span className="inline-flex items-center text-[10px] font-700 bg-green-50 text-green-700 px-2.5 py-0.5 rounded border border-green-200">
+                                      Active Subscription
+                                    </span>
+                                  )}
+                                  {order.subscriptionStatus === 'cancelled' && (
+                                    <span className="inline-flex items-center text-[10px] font-700 bg-gray-50 text-gray-500 px-2.5 py-0.5 rounded border border-gray-200">
+                                      Cancelled
+                                    </span>
+                                  )}
+                                  {order.subscriptionStatus === 'past_due' && (
+                                    <span className="inline-flex items-center text-[10px] font-700 bg-red-50 text-red-600 px-2.5 py-0.5 rounded border border-red-200">
+                                      Payment Failed (Low Balance)
+                                    </span>
+                                  )}
+                                  {order.subscriptionStatus === 'cod' && (
+                                    <span className="inline-flex items-center text-[10px] font-700 bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded border border-blue-200">
+                                      Cash on Delivery
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           )}
@@ -303,6 +414,28 @@ export default function OrderHistoryClient() {
                           Order Again
                         </Link>
                       )}
+
+                      {order.stripeSubscriptionId && order.subscriptionStatus === 'active' && (
+                        <button
+                          type="button"
+                          disabled={cancellingId === order.stripeSubscriptionId}
+                          onClick={() => {
+                            setPendingCancelData({ subscriptionId: order.stripeSubscriptionId, orderId: order.id });
+                            setShowCancelModal(true);
+                          }}
+                          className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm font-700 px-5 py-2.5 rounded-xl hover:bg-red-100 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          {cancellingId === order.stripeSubscriptionId ? (
+                            <>
+                              <span className="w-3.5 h-3.5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            <>Cancel Subscription</>
+                          )}
+                        </button>
+                      )}
+
                       <Link
                         href="/menu"
                         className="flex items-center gap-2 bg-white border border-border text-foreground text-sm font-600 px-5 py-2.5 rounded-xl hover:border-primary/50 hover:bg-muted/50 transition-all shadow-sm"
@@ -316,6 +449,52 @@ export default function OrderHistoryClient() {
               </div>
             );
           })}
+        </div>
+      )}
+      {/* Custom Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div 
+            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-border/50 animate-in fade-in zoom-in-95 duration-200 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+              <XCircle className="text-red-500" size={24} />
+            </div>
+            
+            <h3 className="text-lg font-800 text-foreground mb-2">Cancel Tiffin Subscription</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+              Are you sure you want to cancel your tiffin subscription? This will stop all upcoming scheduled tiffin deliveries for this order.
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setPendingCancelData(null);
+                }}
+                className="flex-1 bg-white border border-border text-foreground text-sm font-600 py-3 rounded-xl hover:bg-muted transition-all active:scale-95 shadow-sm"
+              >
+                No, Keep it
+              </button>
+              <button
+                type="button"
+                disabled={cancellingId !== null}
+                onClick={confirmCancelSubscription}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-700 py-3 rounded-xl transition-all active:scale-95 shadow-md shadow-red-100 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {cancellingId !== null ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  'Yes, Cancel'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

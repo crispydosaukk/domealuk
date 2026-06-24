@@ -330,6 +330,63 @@ export default function OrdersTab() {
                 </div>
               </div>
 
+              {/* Payment & Subscription Details */}
+              <div className="bg-gray-50/50 p-4 rounded-xl border border-border shadow-sm">
+                <h3 className="font-800 text-xs text-primary uppercase tracking-wider mb-3">Billing & Payment Info</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground font-600">Payment Method</p>
+                    <p className="font-700 text-foreground mt-0.5">
+                      {selectedOrder.paymentMethod === 'pay-cod' ? '💵 Cash on Delivery (COD)' : '💳 Online Payment (Stripe Card)'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-600">Payment Status</p>
+                    <p className="mt-1">
+                      {selectedOrder.paymentMethod === 'pay-cod' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded border border-amber-200">
+                          Pending Cash Delivery
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-green-50 text-green-700 px-2.5 py-0.5 rounded border border-green-200">
+                          Paid Successfully
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-600">Subscription Status</p>
+                    <p className="mt-1">
+                      {selectedOrder.subscriptionStatus === 'active' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-green-50 text-green-700 px-2.5 py-0.5 rounded border border-green-200">
+                          Active
+                        </span>
+                      ) : selectedOrder.subscriptionStatus === 'cancelled' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-gray-100 text-gray-500 px-2.5 py-0.5 rounded border border-gray-200">
+                          Cancelled
+                        </span>
+                      ) : selectedOrder.subscriptionStatus === 'cod' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded border border-blue-200">
+                          Cash on Delivery
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-gray-50 text-gray-500 px-2.5 py-0.5 rounded border border-gray-200">
+                          None (One-time)
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                {selectedOrder.stripeSubscriptionId && (
+                  <div className="mt-3 pt-3 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground font-600">Stripe Subscription ID:</span>
+                    <span className="font-mono text-xs bg-white px-2.5 py-1 rounded border border-border/40 text-foreground select-all">
+                      {selectedOrder.stripeSubscriptionId}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {selectedOrder.allergiesInfo && (
                 <div className="bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm">
                   <h3 className="font-800 text-xs text-red-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">

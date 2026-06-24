@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../admin-dashboard/components/AdminLayout';
-import { Save, Users, Flame, GraduationCap, Gift, Plus, Trash2, ChevronDown, ChevronRight, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Save, Users, Flame, GraduationCap, Gift, Plus, Trash2, ChevronDown, ChevronRight, Upload, Loader2, Image as ImageIcon, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
@@ -87,7 +87,11 @@ const defaultSettings = {
   popupOrdersCount: 4,
   popupImage: '/discount_poster.png',
   popupDescription: 'Sign up today and get {percentage}% off your first {count} orders with DoMeal.',
-  popupBtnText: 'Claim Offer Now'
+  popupBtnText: 'Claim Offer Now',
+
+  // Stripe Config
+  stripePublishableKey: '',
+  stripeSecretKey: '',
 };
 
 export default function AdminSettingsPage() {
@@ -97,6 +101,7 @@ export default function AdminSettingsPage() {
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('referral');
   const [settings, setSettings] = useState(defaultSettings);
+  const [showSecretKey, setShowSecretKey] = useState(false);
 
   useEffect(() => {
     if (!user || user.email !== 'domealuk79812@gmail.com') return;
@@ -239,6 +244,7 @@ export default function AdminSettingsPage() {
     { id: 'gift', label: 'Gift Vouchers', icon: Gift, color: 'text-purple-600', bg: 'bg-purple-50' },
     { id: 'heating', label: 'How to Heat', icon: Flame, color: 'text-orange-600', bg: 'bg-orange-50' },
     { id: 'popup', label: 'Global Popup Ads', icon: ImageIcon, color: 'text-pink-600', bg: 'bg-pink-50' },
+    { id: 'stripe', label: 'Stripe Config', icon: CreditCard, color: 'text-rose-600', bg: 'bg-rose-50' },
   ];
 
   return (
@@ -574,6 +580,52 @@ export default function AdminSettingsPage() {
                           <span className="text-sm font-700 text-foreground">Uploading...</span>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'stripe' && (
+            <div className="animate-in fade-in duration-200">
+              <div className="bg-rose-50 border-b border-border p-4 px-6">
+                <h2 className="font-800 text-foreground text-lg">Stripe Configuration</h2>
+              </div>
+              <div className="p-6 space-y-6">
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl p-4 text-sm leading-relaxed">
+                  <strong>⚠️ Security Note:</strong> Please ensure your Stripe keys are kept secure. You can update these keys to dynamically switch between <strong>Test Mode</strong> (for test card transactions) and <strong>Live Mode</strong> (for real customer billing).
+                </div>
+                <div className="space-y-4 max-w-2xl">
+                  <div>
+                    <label className="block text-xs font-800 text-muted-foreground mb-1.5">Stripe Publishable Key</label>
+                    <input
+                      type="text"
+                      name="stripePublishableKey"
+                      value={settings.stripePublishableKey || ''}
+                      onChange={handleChange}
+                      placeholder="pk_test_... or pk_live_..."
+                      className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-800 text-muted-foreground mb-1.5">Stripe Secret Key</label>
+                    <div className="relative">
+                      <input
+                        type={showSecretKey ? "text" : "password"}
+                        name="stripeSecretKey"
+                        value={settings.stripeSecretKey || ''}
+                        onChange={handleChange}
+                        placeholder="sk_test_... or sk_live_..."
+                        className="w-full border border-border rounded-xl pl-4 pr-12 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSecretKey(!showSecretKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showSecretKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
                     </div>
                   </div>
                 </div>

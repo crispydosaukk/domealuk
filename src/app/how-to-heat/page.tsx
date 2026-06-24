@@ -21,10 +21,10 @@ export default function HowToHeatPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const docRef = doc(db, 'settings', 'global');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setSettings(prev => ({ ...prev, ...docSnap.data() }));
+        const res = await fetch('/api/public-settings', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(prev => ({ ...prev, ...data }));
         }
       } catch (error) {}
     };

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LayoutDashboard, ClipboardList, UtensilsCrossed, Users, TrendingUp, Settings, LogOut, ChevronLeft, ChevronRight, Bell, Menu, History, Loader2 } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, UtensilsCrossed, Users, TrendingUp, Settings, LogOut, ChevronLeft, ChevronRight, Bell, Menu, History, Loader2, CreditCard } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -13,6 +13,7 @@ const baseNavItems = [
   { id: 'nav-orders', label: 'Orders & Menu', href: '/order-menu-management-screen', icon: ClipboardList },
   { id: 'nav-history', label: 'Order History', href: '/admin-history', icon: History },
   { id: 'nav-customers', label: 'Customers', href: '/admin-customers', icon: Users },
+  { id: 'nav-payments', label: 'Transactions', href: '/admin-payments', icon: CreditCard },
   { id: 'nav-analytics', label: 'Analytics', href: '/admin-analytics', icon: TrendingUp },
   { id: 'nav-menu', label: 'Menu Management', href: '/admin-menu', icon: UtensilsCrossed },
   { id: 'nav-settings', label: 'Settings', href: '/admin-settings', icon: Settings },

@@ -22,10 +22,12 @@ export default function StudentDiscountsPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const docRef = doc(db, 'settings', 'global');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().studentDiscount !== undefined) {
-          setSettings(prev => ({ ...prev, ...docSnap.data() }));
+        const res = await fetch('/api/public-settings', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.studentDiscount !== undefined) {
+            setSettings(prev => ({ ...prev, ...data }));
+          }
         }
       } catch (error) {}
     };

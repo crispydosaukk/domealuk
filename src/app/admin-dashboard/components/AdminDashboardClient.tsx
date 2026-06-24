@@ -217,22 +217,89 @@ export default function AdminDashboardClient() {
             <div className="overflow-y-auto p-6 space-y-6 flex-1">
               {/* Customer Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 shadow-sm">
+                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 shadow-sm flex flex-col items-start">
                   <h3 className="font-800 text-xs text-blue-800 uppercase tracking-wider mb-2">Customer Info</h3>
                   <p className="font-700 text-sm text-foreground">{selectedOrder.address?.fullName || 'Unknown'}</p>
                   <p className="text-sm text-muted-foreground mt-1">{selectedOrder.address?.email}</p>
                   <p className="text-sm text-muted-foreground">{selectedOrder.address?.phone}</p>
-                </div>
-                <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 shadow-sm">
-                  <h3 className="font-800 text-xs text-orange-800 uppercase tracking-wider mb-2">Delivery Address</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedOrder.address?.streetAddress}<br/>
-                    {selectedOrder.address?.city}, {selectedOrder.address?.postcode}
-                  </p>
-                  {selectedOrder.deliverySlot && (
-                    <p className="text-xs font-700 text-orange-800 mt-2 bg-orange-100 inline-block px-2 py-0.5 rounded">Slot: {slotNames[selectedOrder.deliverySlot] || selectedOrder.deliverySlot}</p>
+                  {selectedOrder.subscriptionFrequency && (
+                    <div className="mt-3 inline-block bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg text-xs font-800 border border-blue-200 shadow-sm">
+                      {selectedOrder.subscriptionFrequency}
+                    </div>
                   )}
                 </div>
+                <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 shadow-sm">
+                  <h3 className="font-800 text-xs text-orange-800 uppercase tracking-wider mb-2">Delivery Details</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {selectedOrder.address?.addressLine1 || selectedOrder.address?.streetAddress}{selectedOrder.address?.addressLine2 ? `, ${selectedOrder.address.addressLine2}` : ''}<br/>
+                    {selectedOrder.address?.city}, {selectedOrder.address?.postcode}
+                  </p>
+                  {selectedOrder.deliveryDates && selectedOrder.deliveryDates.length > 0 ? (
+                    <p className="text-sm font-600 text-foreground mt-3">Delivery Dates: {selectedOrder.deliveryDates.map((d: string) => new Date(d).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})).join(', ')}</p>
+                  ) : (
+                    <p className="text-sm font-600 text-foreground mt-3">Delivery Date: {selectedOrder.deliveryDate || 'N/A'}</p>
+                  )}
+                  {selectedOrder.deliverySlot && (
+                    <p className="text-xs font-700 text-orange-800 mt-1 bg-orange-100 inline-block px-2 py-0.5 rounded">Slot: {slotNames[selectedOrder.deliverySlot] || selectedOrder.deliverySlot}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment & Subscription Details */}
+              <div className="bg-gray-50/50 p-4 rounded-xl border border-border shadow-sm">
+                <h3 className="font-800 text-xs text-primary uppercase tracking-wider mb-3">Billing & Payment Info</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground font-600">Payment Method</p>
+                    <p className="font-700 text-foreground mt-0.5">
+                      {selectedOrder.paymentMethod === 'pay-cod' ? '💵 Cash on Delivery (COD)' : '💳 Online Payment (Stripe Card)'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-600">Payment Status</p>
+                    <p className="mt-1">
+                      {selectedOrder.paymentMethod === 'pay-cod' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded border border-amber-200">
+                          Pending Cash Delivery
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-green-50 text-green-700 px-2.5 py-0.5 rounded border border-green-200">
+                          Paid Successfully
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-600">Subscription Status</p>
+                    <p className="mt-1">
+                      {selectedOrder.subscriptionStatus === 'active' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-green-50 text-green-700 px-2.5 py-0.5 rounded border border-green-200">
+                          Active
+                        </span>
+                      ) : selectedOrder.subscriptionStatus === 'cancelled' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-gray-100 text-gray-500 px-2.5 py-0.5 rounded border border-gray-200">
+                          Cancelled
+                        </span>
+                      ) : selectedOrder.subscriptionStatus === 'cod' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded border border-blue-200">
+                          Cash on Delivery
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-gray-50 text-gray-500 px-2.5 py-0.5 rounded border border-gray-200">
+                          None (One-time)
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                {selectedOrder.stripeSubscriptionId && (
+                  <div className="mt-3 pt-3 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground font-600">Stripe Subscription ID:</span>
+                    <span className="font-mono text-xs bg-white px-2.5 py-1 rounded border border-border/40 text-foreground select-all">
+                      {selectedOrder.stripeSubscriptionId}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Order Items */}

@@ -64,9 +64,9 @@ export default function MenuOrderingClient() {
   useEffect(() => {
     const fetchGlobalSettings = async () => {
       try {
-        const snap = await getDoc(doc(db, 'settings', 'global'));
-        if (snap.exists()) {
-          const data = snap.data();
+        const res = await fetch('/api/public-settings', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
           setGlobalSettings({
             discount: data.popupDiscountPercentage || 25,
             count: data.popupOrdersCount || 4

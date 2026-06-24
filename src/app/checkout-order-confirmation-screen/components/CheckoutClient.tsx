@@ -10,6 +10,8 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { doc, getDoc, updateDoc, arrayUnion, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 type AddressForm = {
   fullName: string;
@@ -30,9 +32,8 @@ const deliverySlots = [
 ];
 
 const paymentMethods = [
-  { id: 'pay-card', label: 'Credit / Debit Card', icon: CreditCard, desc: 'Visa, Mastercard, Amex' },
-  { id: 'pay-apple', label: 'Apple Pay / Google Pay', icon: Smartphone, desc: 'Fast contactless payment' },
-  { id: 'pay-cod', label: 'Cash on Delivery', icon: Package, desc: 'Pay when delivered' },
+  { id: 'pay-online', label: 'Online Payment', icon: CreditCard, desc: 'Visa, Mastercard, Amex' },
+  { id: 'pay-cod', label: 'Cash on Delivery (COD)', icon: Package, desc: 'Pay when delivered' },
 ];
 
 function CustomDatePicker({ values, onChange }: { values: string[], onChange: (dates: string[]) => void }) {
@@ -125,39 +126,23 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
   )
 }
 
-export default function CheckoutClient() {
+function CheckoutClientContent({ globalSettings }: { globalSettings: { discount: number, count: number } }) {
   const { cart, cartTotal, clearCart, checkoutData } = useCart();
   const { user } = useAuth();
+  const stripe = useStripe();
+  const elements = useElements();
   const [step, setStep] = useState<'checkout' | 'confirmed'>('checkout');
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
-  const [selectedPayment, setSelectedPayment] = useState('pay-card');
+  const [selectedPayment, setSelectedPayment] = useState('pay-online');
   const [isLoading, setIsLoading] = useState(false);
   const [orderId] = useState(`VSL-${Math.floor(10000 + Math.random() * 90000)}`);
+  const [isCardComplete, setIsCardComplete] = useState(false);
 
   const [deliveryDates, setDeliveryDates] = useState<string[]>(checkoutData?.deliveryDates || []);
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [notes, setNotes] = useState(checkoutData?.notes || '');
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
-  const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4 });
-
-  useEffect(() => {
-    const fetchGlobalSettings = async () => {
-      try {
-        const snap = await getDoc(doc(db, 'settings', 'global'));
-        if (snap.exists()) {
-          const data = snap.data();
-          setGlobalSettings({
-            discount: data.popupDiscountPercentage || 25,
-            count: data.popupOrdersCount || 4
-          });
-        }
-      } catch (error) {
-        console.error('Failed to load global settings', error);
-      }
-    };
-    fetchGlobalSettings();
-  }, []);
 
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState(false);
@@ -166,6 +151,7 @@ export default function CheckoutClient() {
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [useWallet, setUseWallet] = useState(false);
+  const [stripeCustomerId, setStripeCustomerId] = useState('');
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<AddressForm>({
     defaultValues: { city: 'London', postcode: checkoutData?.postcode || '' }
@@ -186,6 +172,7 @@ export default function CheckoutClient() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setWalletBalance(data.walletBalance || 0);
+          setStripeCustomerId(data.stripeCustomerId || '');
           setValue('fullName', data.name || user.displayName || '');
           setValue('phone', data.phone || '');
           if (data.addresses) {
@@ -236,7 +223,100 @@ export default function CheckoutClient() {
     setIsLoading(true);
 
     try {
-      let finalAddress: AddressForm = data;
+      const subtotal = cartTotal * (deliveryDates.length || 1);
+      let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
+      const appliedWalletAmount = useWallet ? Math.min(walletBalance, finalTotal) : 0;
+      finalTotal = finalTotal - appliedWalletAmount;
+
+      let stripeSubscriptionId = '';
+      let subscriptionStatus = 'pending';
+
+      if (selectedPayment !== 'pay-cod') {
+        if (!stripe || !elements) {
+          toast.error('Stripe has not initialized yet. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+
+        if (!isCardComplete) {
+          toast.error('Please enter your complete card details below before placing the order.');
+          setIsLoading(false);
+          return;
+        }
+
+        const email = user?.email || (finalAddress.phone.replace(/\s+/g, '') + '@domeal.co.uk');
+
+        // 1. Call Route Handler to create Stripe subscription
+        const res = await fetch('/api/create-stripe-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            name: finalAddress.fullName,
+            phone: finalAddress.phone,
+            amount: finalTotal,
+            frequency: checkoutData?.subscriptionFrequency || 'Delivery every 1 Week',
+            userId: user?.uid || 'guest-user',
+            stripeCustomerId: stripeCustomerId
+          }),
+        });
+
+        const stripeData = await res.json();
+        if (stripeData.error) {
+          toast.error(stripeData.error || 'Failed to initialize subscription');
+          setIsLoading(false);
+          return;
+        }
+
+        // If a new customer was created, save the customer ID client-side
+        if (user && stripeData.customerId && stripeData.customerId !== stripeCustomerId) {
+          await updateDoc(doc(db, 'users', user.uid), {
+            stripeCustomerId: stripeData.customerId
+          });
+          setStripeCustomerId(stripeData.customerId);
+        }
+
+        // 2. Confirm card payment
+        const cardElement = elements.getElement(CardElement);
+        if (!cardElement) {
+          toast.error('Card element is missing');
+          setIsLoading(false);
+          return;
+        }
+
+        const paymentResult = await stripe.confirmCardPayment(stripeData.clientSecret, {
+          payment_method: {
+            card: cardElement,
+            billing_details: {
+              name: finalAddress.fullName,
+              phone: finalAddress.phone,
+              email,
+              address: {
+                line1: finalAddress.addressLine1,
+                line2: finalAddress.addressLine2 || '',
+                city: finalAddress.city,
+                postal_code: finalAddress.postcode,
+                country: 'GB',
+              },
+            },
+          },
+        });
+
+        if (paymentResult.error) {
+          toast.error(paymentResult.error.message || 'Payment failed. Please check your card.');
+          // Cancel the draft subscription on failure
+          await fetch('/api/cancel-stripe-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscriptionId: stripeData.subscriptionId }),
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        stripeSubscriptionId = stripeData.subscriptionId;
+        subscriptionStatus = 'active';
+      }
 
       if (user) {
         if (selectedAddressId === 'new') {
@@ -246,11 +326,6 @@ export default function CheckoutClient() {
         }
 
         // Save Order
-        const subtotal = cartTotal * (deliveryDates.length || 1);
-        let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
-        const appliedWalletAmount = useWallet ? Math.min(walletBalance, finalTotal) : 0;
-        finalTotal = finalTotal - appliedWalletAmount;
-
         const orderRef = doc(db, 'orders', orderId);
 
         await setDoc(orderRef, {
@@ -265,6 +340,8 @@ export default function CheckoutClient() {
           notes,
           paymentMethod: selectedPayment,
           subscriptionFrequency: checkoutData?.subscriptionFrequency || 'Delivery every 1 Week',
+          stripeSubscriptionId: stripeSubscriptionId || null,
+          subscriptionStatus: selectedPayment === 'pay-cod' ? 'cod' : subscriptionStatus,
           allergiesInfo: checkoutData?.allergiesInfo || '',
           createdAt: serverTimestamp(),
           status: 'Order Received'
@@ -277,11 +354,6 @@ export default function CheckoutClient() {
         }
       }
 
-      const subtotal = cartTotal * (deliveryDates.length || 1);
-      let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
-      const appliedWalletAmount = useWallet ? Math.min(walletBalance, finalTotal) : 0;
-      finalTotal = finalTotal - appliedWalletAmount;
-
       setFinalOrderSummary({
         total: finalTotal,
         items: [...cart]
@@ -290,7 +362,7 @@ export default function CheckoutClient() {
       setStep('confirmed');
       clearCart();
       toast.success('Order placed successfully! 🎉');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       toast.error('Failed to place order. Please try again.');
     } finally {
@@ -530,25 +602,62 @@ export default function CheckoutClient() {
                 Payment Method
               </h2>
               <div className="space-y-3">
-                {paymentMethods.map(method => (
-                  <button
-                    key={method.id}
-                    type="button"
-                    onClick={() => setSelectedPayment(method.id)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-150 ${selectedPayment === method.id ? 'border-primary bg-orange-50' : 'border-border hover:border-orange-200'}`}
-                  >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedPayment === method.id ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                      <method.icon size={18} />
+                {paymentMethods.map(method => {
+                  const isSelected = selectedPayment === method.id;
+                  return (
+                    <div
+                      key={method.id}
+                      onClick={() => setSelectedPayment(method.id)}
+                      className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-150 cursor-pointer ${
+                        isSelected ? 'border-primary bg-orange-50/40' : 'border-border hover:border-orange-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSelected ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
+                          <method.icon size={18} />
+                        </div>
+                        <div>
+                          <p className="font-700 text-sm text-foreground">{method.label}</p>
+                          <p className="text-xs text-muted-foreground">{method.desc}</p>
+                        </div>
+                        <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-primary' : 'border-border'}`}>
+                          {isSelected && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        </div>
+                      </div>
+
+                      {method.id === 'pay-online' && isSelected && (
+                        <div 
+                          className="mt-4 p-4 border border-border/80 rounded-xl bg-white space-y-2 animate-in fade-in slide-in-from-top-2 duration-200"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <label className="block text-[11px] font-800 text-foreground uppercase tracking-wider">Card Details</label>
+                          <div className="bg-white px-4 py-3 border border-border/80 rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+                            <CardElement
+                              onChange={(event) => {
+                                setIsCardComplete(event.complete);
+                              }}
+                              options={{
+                                style: {
+                                  base: {
+                                    fontSize: '14px',
+                                    color: '#11261a',
+                                    fontFamily: 'Inter, system-ui, sans-serif',
+                                    '::placeholder': {
+                                      color: '#a0aec0',
+                                    },
+                                  },
+                                  invalid: {
+                                    color: '#ef4444',
+                                  },
+                                },
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <p className="font-700 text-sm text-foreground">{method.label}</p>
-                      <p className="text-xs text-muted-foreground">{method.desc}</p>
-                    </div>
-                    <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedPayment === method.id ? 'border-primary' : 'border-border'}`}>
-                      {selectedPayment === method.id && <div className="w-2 h-2 rounded-full bg-primary" />}
-                    </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -673,5 +782,54 @@ export default function CheckoutClient() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function CheckoutClient() {
+  const [stripePromise, setStripePromise] = useState<any>(null);
+  const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSettingsAndKey = async () => {
+      try {
+        const res = await fetch('/api/public-settings', { method: 'POST' });
+        const data = await res.json();
+
+        setGlobalSettings({
+          discount: data.popupDiscountPercentage || 25,
+          count: data.popupOrdersCount || 4
+        });
+
+        if (data.stripePublishableKey) {
+          setStripePromise(loadStripe(data.stripePublishableKey));
+        } else {
+          setStripePromise(loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''));
+        }
+      } catch (error) {
+        console.error('Failed to load settings & publishable key:', error);
+        setStripePromise(loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''));
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadSettingsAndKey();
+  }, []);
+
+  if (loading || !stripePromise) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground font-600">Loading checkout session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutClientContent globalSettings={globalSettings} />
+    </Elements>
   );
 }

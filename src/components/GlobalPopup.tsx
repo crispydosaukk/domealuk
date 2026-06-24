@@ -41,10 +41,9 @@ export default function GlobalPopup() {
 
     const fetchSettings = async () => {
       try {
-        const docRef = doc(db, 'settings', 'global');
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          const data = snap.data();
+        const res = await fetch('/api/public-settings', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
           const isEnabled = data.popupEnabled !== false; // Default to true if undefined
           
           if (!isEnabled) {

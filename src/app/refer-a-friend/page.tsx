@@ -33,15 +33,17 @@ export default function ReferAFriendPage() {
 
     const fetchSettings = async () => {
       try {
-        const docRef = doc(db, 'settings', 'global');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().referralAmount !== undefined) {
-          setSettings(prev => ({ ...prev, ...docSnap.data() }));
-        } else {
-          // Fallback to legacy
-          const oldRef = await getDoc(doc(db, 'settings', 'referral'));
-          if (oldRef.exists() && oldRef.data().amount) {
-            setSettings(prev => ({ ...prev, referralAmount: oldRef.data().amount }));
+        const res = await fetch('/api/public-settings', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.referralAmount !== undefined) {
+            setSettings(prev => ({ ...prev, ...data }));
+          } else {
+            // Fallback to legacy
+            const oldRef = await getDoc(doc(db, 'settings', 'referral'));
+            if (oldRef.exists() && oldRef.data().amount) {
+              setSettings(prev => ({ ...prev, referralAmount: oldRef.data().amount }));
+            }
           }
         }
       } catch (error) {}
