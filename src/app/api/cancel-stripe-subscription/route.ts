@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     const stripe = new Stripe(secretKey, {
-      apiVersion: '2022-11-15',
+      apiVersion: '2022-11-15' as any,
     });
 
     // Cancel subscription on Stripe

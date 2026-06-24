@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     stripe = new Stripe(secretKey, {
-      apiVersion: '2022-11-15',
+      apiVersion: '2022-11-15' as any,
     });
 
     if (process.env.STRIPE_WEBHOOK_SECRET && signature) {
