@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, ChevronDown, Eye, X, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, getDocs, where, increment } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc, getDocs, where, increment, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 
@@ -78,6 +78,14 @@ export default function OrdersTab() {
                   walletBalance: increment(referralAmount),
                   referralRewardClaimed: true
                 });
+                await addDoc(collection(db, 'wallet_transactions'), {
+                  userId: orderData.userId,
+                  amount: referralAmount,
+                  type: 'credit',
+                  status: 'completed',
+                  description: `Referral signup reward`,
+                  createdAt: serverTimestamp()
+                });
 
                 // Reward the referrer
                 const qReferrer = query(collection(db, 'users'), where('referralCode', '==', userData.referredBy));
@@ -86,6 +94,14 @@ export default function OrdersTab() {
                   const referrerDoc = referrerSnaps.docs[0];
                   await updateDoc(doc(db, 'users', referrerDoc.id), {
                     walletBalance: increment(referralAmount)
+                  });
+                  await addDoc(collection(db, 'wallet_transactions'), {
+                    userId: referrerDoc.id,
+                    amount: referralAmount,
+                    type: 'credit',
+                    status: 'completed',
+                    description: `Referral reward for inviting ${userData.name || 'a friend'}`,
+                    createdAt: serverTimestamp()
                   });
                 }
 
@@ -431,15 +447,27 @@ export default function OrdersTab() {
               </div>
 
               {/* Summary */}
-              <div className="bg-gray-50 p-5 rounded-xl border border-border shadow-sm">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-muted-foreground font-500">Subtotal (after discount/delivery)</span>
-                  <span className="font-600 tabular-nums">£{((selectedOrder.total || 0) + (selectedOrder.walletApplied || 0)).toFixed(2)}</span>
+              <div className="bg-gray-50 p-5 rounded-xl border border-border shadow-sm space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground font-500">Subtotal</span>
+                  <span className="font-600 tabular-nums">£{(selectedOrder.subtotal || (selectedOrder.total + (selectedOrder.discountApplied || 0) + (selectedOrder.studentDiscountApplied || 0) + (selectedOrder.walletApplied || 0))).toFixed(2)}</span>
                 </div>
+                {selectedOrder.studentDiscountApplied > 0 && (
+                  <div className="flex justify-between text-sm font-700 text-[#C39B54]">
+                    <span>🎓 Student Discount ({selectedOrder.studentDiscountPercent || 0}%)</span>
+                    <span className="tabular-nums">-£{(selectedOrder.studentDiscountApplied).toFixed(2)}</span>
+                  </div>
+                )}
+                {selectedOrder.discountApplied > 0 && (
+                  <div className="flex justify-between text-sm font-700 text-orange-600">
+                    <span>🏷️ Promo Discount</span>
+                    <span className="tabular-nums">-£{(selectedOrder.discountApplied).toFixed(2)}</span>
+                  </div>
+                )}
                 {selectedOrder.walletApplied > 0 && (
-                  <div className="flex justify-between text-sm mb-3">
-                    <span className="text-green-600 font-700 flex items-center gap-1.5"><Wallet size={16} /> Wallet Applied</span>
-                    <span className="font-800 text-green-700 tabular-nums">-£{(selectedOrder.walletApplied).toFixed(2)}</span>
+                  <div className="flex justify-between text-sm font-700 text-green-700">
+                    <span className="flex items-center gap-1.5"><Wallet size={16} /> Wallet Applied</span>
+                    <span className="tabular-nums">-£{(selectedOrder.walletApplied).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-800 border-t border-border/50 pt-3">

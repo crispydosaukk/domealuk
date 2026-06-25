@@ -15,8 +15,8 @@ const faqs = [
   },
   {
     id: 'faq-3',
-    question: 'Is the food 100% vegetarian?',
-    answer: 'Yes! All our food is 100% pure vegetarian. We also offer a No Onion–No Garlic option for those who follow a Jain or Sattvic diet. Just select the option when ordering.',
+    question: 'Is the food 100% vegan and vegetarian?',
+    answer: 'Yes! All our food is 100% pure vegetarian. We also offer a 100% Vegan and Vegetarian option. Just select the option when ordering.',
   },
   {
     id: 'faq-4',

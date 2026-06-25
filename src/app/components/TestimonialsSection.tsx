@@ -15,7 +15,7 @@ const testimonials = [
     name: 'Venkatesh Subramaniam',
     role: 'Teacher, Ilford',
     rating: 5,
-    text: 'The no-onion no-garlic option is a blessing. Perfect for our family. Quantity is generous and the food is always hot and fresh. Best tiffin service in London.',
+    text: 'The 100% Vegan and Vegetarian option is a blessing. Perfect for our family. Quantity is generous and the food is always hot and fresh. Best tiffin service in London.',
     plan: 'Lunch + Dinner Plan',
   },
   {

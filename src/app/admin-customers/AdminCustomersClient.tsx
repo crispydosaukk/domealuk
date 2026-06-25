@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 export default function AdminCustomersClient() {
   const [users, setUsers] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -22,9 +23,12 @@ export default function AdminCustomersClient() {
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     const unsub2 = onSnapshot(q, (snap) => {
       setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    const unsub3 = onSnapshot(collection(db, 'wallet_transactions'), (snap) => {
+      setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
-    return () => { unsub1(); unsub2(); };
+    return () => { unsub1(); unsub2(); unsub3(); };
   }, [user]);
 
   // Enrich user data by cross-referencing orders for missing details
@@ -34,6 +38,18 @@ export default function AdminCustomersClient() {
     const userOrders = orders.filter(o => o.userId === u.id);
     const totalSpent = userOrders.reduce((s, o) => s + (o.total || 0), 0);
     const latestOrder = userOrders[0];
+
+    // Calculate Wallet stats from transactions
+    const userTx = transactions.filter(t => t.userId === u.id);
+    const referralEarned = userTx
+      .filter(t => t.type === 'credit' && /referral/i.test(t.description || ''))
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const giftEarned = userTx
+      .filter(t => t.type === 'credit' && /gift/i.test(t.description || ''))
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const totalEarned = userTx
+      .filter(t => t.type === 'credit')
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
     // Fallback: get name & phone from their order address if missing from user profile
     const resolvedName = u.name || latestOrder?.address?.fullName || 'Unknown';
@@ -48,7 +64,10 @@ export default function AdminCustomersClient() {
       orderCount: userOrders.length,
       totalSpent,
       latestOrder,
-      orders: userOrders
+      orders: userOrders,
+      referralEarned,
+      giftEarned,
+      totalEarned
     };
   });
 
@@ -196,14 +215,27 @@ export default function AdminCustomersClient() {
                             <p className="text-xl font-900 text-primary">£{u.totalSpent.toFixed(2)}</p>
                           </div>
                         </div>
-                        <div className="bg-white border border-border rounded-xl p-3 text-center shadow-sm flex items-center justify-between">
-                           <div>
-                             <p className="text-[10px] font-700 uppercase tracking-wider text-muted-foreground mb-0.5">Wallet Balance</p>
-                             <p className="text-xl font-900 text-green-600">£{(u.walletBalance || 0).toFixed(2)}</p>
-                           </div>
-                           <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-                             <Wallet size={20} />
-                           </div>
+
+                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground mt-1">Wallet Details</p>
+                        <div className="bg-white border border-border rounded-xl p-4 shadow-sm space-y-3">
+                          <div className="flex items-center justify-between border-b border-dashed border-border pb-2">
+                            <span className="text-xs font-700 text-muted-foreground flex items-center gap-1.5"><Wallet size={14} className="text-green-600" /> Current Balance</span>
+                            <span className="text-base font-900 text-green-600">£{(u.walletBalance || 0).toFixed(2)}</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                            <div>
+                              <p className="text-[9px] font-700 uppercase text-muted-foreground/80 mb-0.5">Referrals</p>
+                              <p className="text-xs font-800 text-blue-600">£{u.referralEarned.toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-700 uppercase text-muted-foreground/80 mb-0.5">Gifts</p>
+                              <p className="text-xs font-800 text-purple-600">£{u.giftEarned.toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-700 uppercase text-muted-foreground/80 mb-0.5">Total Earned</p>
+                              <p className="text-xs font-800 text-foreground">£{u.totalEarned.toFixed(2)}</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

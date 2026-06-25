@@ -67,8 +67,8 @@ export default function HeroSection() {
                   <Leaf size={16} className="text-green-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-700 text-white">100% Veg</p>
-                  <p className="text-xs text-gray-400">No Onion/Garlic Option</p>
+                  <p className="text-sm font-700 text-white">100% Vegan</p>
+                  <p className="text-xs text-gray-400">and Vegetarian</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">

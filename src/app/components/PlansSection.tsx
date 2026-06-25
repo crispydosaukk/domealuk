@@ -21,7 +21,7 @@ const plans = [
     period: 'month',
     desc: 'Complete nutrition — Breakfast + Lunch + Dinner. Best value for families.',
     meals: '3 meals × 30 days',
-    features: ['All 3 meal slots', 'Varied daily menu', 'No Onion-Garlic option', 'Priority delivery', 'Free delivery', 'Monthly recipe booklet'],
+    features: ['All 3 meal slots', 'Varied daily menu', '100% Vegan and Vegetarian', 'Priority delivery', 'Free delivery', 'Monthly recipe booklet'],
     highlight: true,
     badge: 'Most Popular',
   },

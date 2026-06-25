@@ -3,11 +3,12 @@ import Stripe from 'stripe';
 import { db } from '@/lib/firebase';
 import { dbAdmin } from '@/lib/firebase-admin';
 import { collection, query, where, getDocs, doc, updateDoc, setDoc, getDoc, FieldValue } from 'firebase/firestore';
+import { FieldValue as AdminFieldValue } from 'firebase-admin/firestore';
 
 // Helper function to resolve serverTimestamp or FieldValue.serverTimestamp
 const getServerTimestamp = () => {
   if (dbAdmin) {
-    return require('firebase-admin').firestore.FieldValue.serverTimestamp();
+    return AdminFieldValue.serverTimestamp();
   }
   // Fallback to client SDK serverTimestamp
   const { serverTimestamp } = require('firebase/firestore');
@@ -230,6 +231,82 @@ export async function POST(req: NextRequest) {
           }
         }
         console.log(`Subscription ${subscriptionId} deleted. Updated orders to cancelled.`);
+        break;
+      }
+
+      case 'checkout.session.completed': {
+        const metadata = session.metadata;
+        if (metadata && metadata.type === 'gift_card') {
+          const senderName = metadata.senderName;
+          const senderEmail = metadata.senderEmail;
+          const recipientFirstName = metadata.recipientFirstName;
+          const recipientLastName = metadata.recipientLastName;
+          const recipientEmail = metadata.recipientEmail;
+          const message = metadata.message;
+          const sendOn = metadata.sendOn;
+          const giftAmount = Number(metadata.giftAmount);
+          const userId = metadata.userId;
+
+          if (dbAdmin) {
+            await dbAdmin.collection('gift_cards').add({
+              stripeSessionId: session.id,
+              senderName,
+              senderEmail,
+              recipientFirstName,
+              recipientLastName,
+              recipientEmail: recipientEmail.toLowerCase(),
+              message: message || '',
+              sendOn,
+              giftAmount,
+              claimed: false,
+              createdAt: AdminFieldValue.serverTimestamp()
+            });
+          }
+        } else if (metadata && metadata.type === 'subscription_order') {
+          const orderId = metadata.orderId;
+          const userId = metadata.userId;
+
+          if (dbAdmin && orderId) {
+            const orderRef = dbAdmin.collection('orders').doc(orderId);
+            await dbAdmin.runTransaction(async (transaction: any) => {
+              const orderSnap = await transaction.get(orderRef);
+              if (!orderSnap.exists) return;
+
+              const orderData = orderSnap.data();
+              if (orderData.status !== 'Pending Payment') {
+                return;
+              }
+
+              transaction.update(orderRef, {
+                status: 'Order Received',
+                subscriptionStatus: 'active',
+                stripeSubscriptionId: session.subscription || null,
+                updatedAt: AdminFieldValue.serverTimestamp()
+              });
+
+              const walletApplied = Number(orderData.walletApplied) || 0;
+              if (walletApplied > 0 && userId && userId !== 'guest-user') {
+                const userRef = dbAdmin.collection('users').doc(userId);
+                const userSnap = await transaction.get(userRef);
+                if (userSnap.exists) {
+                  const currentBalance = userSnap.data().walletBalance || 0;
+                  const newBalance = Math.max(0, currentBalance - walletApplied);
+                  transaction.update(userRef, { walletBalance: newBalance });
+
+                  const txRef = dbAdmin.collection('wallet_transactions').doc(`order_debit_${orderId}`);
+                  transaction.set(txRef, {
+                    userId,
+                    amount: walletApplied,
+                    type: 'debit',
+                    status: 'completed',
+                    description: `Payment for Order #${orderId}`,
+                    createdAt: AdminFieldValue.serverTimestamp()
+                  });
+                }
+              }
+            });
+          }
+        }
         break;
       }
 

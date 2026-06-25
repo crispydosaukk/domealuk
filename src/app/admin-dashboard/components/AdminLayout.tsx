@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LayoutDashboard, ClipboardList, UtensilsCrossed, Users, TrendingUp, Settings, LogOut, ChevronLeft, ChevronRight, Bell, Menu, History, Loader2, CreditCard } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, UtensilsCrossed, Users, TrendingUp, Settings, LogOut, ChevronLeft, ChevronRight, Bell, Menu, History, Loader2, CreditCard, GraduationCap } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +14,7 @@ const baseNavItems = [
   { id: 'nav-history', label: 'Order History', href: '/admin-history', icon: History },
   { id: 'nav-customers', label: 'Customers', href: '/admin-customers', icon: Users },
   { id: 'nav-payments', label: 'Transactions', href: '/admin-payments', icon: CreditCard },
+  { id: 'nav-student-approvals', label: 'Student Approvals', href: '/admin-student-approvals', icon: GraduationCap },
   { id: 'nav-analytics', label: 'Analytics', href: '/admin-analytics', icon: TrendingUp },
   { id: 'nav-menu', label: 'Menu Management', href: '/admin-menu', icon: UtensilsCrossed },
   { id: 'nav-settings', label: 'Settings', href: '/admin-settings', icon: Settings },
@@ -28,6 +29,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingOrders, setPendingOrders] = useState(0);
+  const [pendingStudents, setPendingStudents] = useState(0);
   const { user, loading, logout } = useAuth();
   const router = useRouter();
 
@@ -54,13 +56,35 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
       setPendingOrders(count);
     });
     return () => unsub();
-  }, []);
+  }, [user]);
+
+  React.useEffect(() => {
+    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+
+    const q = query(collection(db, 'users'), where('studentStatus', '==', 'Pending'));
+    const unsub = onSnapshot(q, (snap) => {
+      setPendingStudents(snap.size);
+    });
+    return () => unsub();
+  }, [user]);
 
   const navItems = baseNavItems.map(item => {
     if (item.id === 'nav-orders') {
-      return { ...item, badge: pendingOrders > 0 ? pendingOrders.toString() : null };
+      const isActive = activeRoute === item.href;
+      return { 
+        ...item, 
+        badge: pendingOrders > 0 ? pendingOrders.toString() : null,
+        badgeColor: isActive ? 'bg-white text-[#1E3B2B]' : 'bg-[#C39B54] text-white'
+      };
     }
-    return { ...item, badge: null };
+    if (item.id === 'nav-student-approvals') {
+      return { 
+        ...item, 
+        badge: pendingStudents > 0 ? pendingStudents.toString() : null,
+        badgeColor: 'bg-red-500 text-white'
+      };
+    }
+    return { ...item, badge: null, badgeColor: null };
   });
 
   if (loading || !user || user.email !== 'domealuk79812@gmail.com') {
@@ -147,14 +171,14 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
                   <>
                     <span className="text-sm font-600 flex-1">{item.label}</span>
                     {item.badge && (
-                      <span className="bg-[#C39B54] text-white text-xs font-700 w-5 h-5 rounded-full flex items-center justify-center">
+                      <span className={`${item.badgeColor || 'bg-[#C39B54] text-white'} text-xs font-700 w-5 h-5 rounded-full flex items-center justify-center shrink-0`}>
                         {item.badge}
                       </span>
                     )}
                   </>
                 )}
                 {collapsed && item.badge && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#C39B54] rounded-full" />
+                  <span className={`absolute top-1 right-1 w-2 h-2 ${item.badgeColor?.split(' ')[0] || 'bg-[#C39B54]'} rounded-full`} />
                 )}
               </Link>
             );

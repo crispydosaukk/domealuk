@@ -8,10 +8,9 @@ import { getZoneFromPostcode } from '@/app/components/PostcodeSearch';
 
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { doc, getDoc, updateDoc, arrayUnion, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, setDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type AddressForm = {
   fullName: string;
@@ -33,7 +32,6 @@ const deliverySlots = [
 
 const paymentMethods = [
   { id: 'pay-online', label: 'Online Payment', icon: CreditCard, desc: 'Visa, Mastercard, Amex' },
-  { id: 'pay-cod', label: 'Cash on Delivery (COD)', icon: Package, desc: 'Pay when delivered' },
 ];
 
 function CustomDatePicker({ values, onChange }: { values: string[], onChange: (dates: string[]) => void }) {
@@ -129,8 +127,13 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
 function CheckoutClientContent({ globalSettings }: { globalSettings: { discount: number, count: number } }) {
   const { cart, cartTotal, clearCart, checkoutData } = useCart();
   const { user } = useAuth();
-  const stripe = useStripe();
-  const elements = useElements();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const urlStatus = searchParams.get('status');
+  const sessionId = searchParams.get('session_id');
+  const urlOrderId = searchParams.get('order_id');
+
   const [step, setStep] = useState<'checkout' | 'confirmed'>('checkout');
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
   const [selectedPayment, setSelectedPayment] = useState('pay-online');
@@ -147,15 +150,60 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState(false);
   const discountAmount = 7.50; // Mock discount amount
-  const [finalOrderSummary, setFinalOrderSummary] = useState<{ total: number, items: any[] } | null>(null);
+  const [finalOrderSummary, setFinalOrderSummary] = useState<any>(null);
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [useWallet, setUseWallet] = useState(false);
   const [stripeCustomerId, setStripeCustomerId] = useState('');
 
+  const [isStudentVerified, setIsStudentVerified] = useState(false);
+  const [studentDiscountPercentage, setStudentDiscountPercentage] = useState(0);
+
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<AddressForm>({
     defaultValues: { city: 'London', postcode: checkoutData?.postcode || '' }
   });
+
+  useEffect(() => {
+    if (urlStatus === 'success' && sessionId && urlOrderId) {
+      const verifyOrderPayment = async () => {
+        setIsLoading(true);
+        try {
+          const res = await fetch('/api/verify-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId, orderId: urlOrderId })
+          });
+          const data = await res.json();
+          if (data.success && data.order) {
+            const orderData = data.order;
+            setFinalOrderSummary({
+              total: orderData.total,
+              items: orderData.items || [],
+              subtotal: orderData.subtotal,
+              studentDiscountApplied: orderData.studentDiscountApplied,
+              studentDiscountPercent: orderData.studentDiscountPercent,
+              discountApplied: orderData.discountApplied,
+              walletApplied: orderData.walletApplied
+            });
+            clearCart();
+            setStep('confirmed');
+            toast.success('Subscription order placed successfully! 🎉');
+          } else {
+            toast.error(data.error || 'Failed to verify payment');
+          }
+        } catch (err) {
+          console.error('Failed to verify payment:', err);
+          toast.error('Connection error while verifying payment.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      verifyOrderPayment();
+    } else if (urlStatus === 'cancel') {
+      toast.warning('Payment was cancelled. You can try checking out again.');
+      router.replace('/checkout-order-confirmation-screen');
+    }
+  }, [urlStatus, sessionId, urlOrderId]);
 
   // Handle late incoming checkoutData
   useEffect(() => {
@@ -180,6 +228,10 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
             setSavedAddresses(addrs);
             if (addrs.length > 0) setSelectedAddressId(addrs[0].id);
           }
+          if (data.studentStatus === 'Approved') {
+            setIsStudentVerified(true);
+            setStudentDiscountPercentage(data.studentDiscount || 0);
+          }
         } else {
           setValue('fullName', user.displayName || '');
         }
@@ -189,9 +241,6 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
     };
     fetchUserData();
   }, [user, setValue]);
-
-
-
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -224,99 +273,11 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
 
     try {
       const subtotal = cartTotal * (deliveryDates.length || 1);
+      const studentDiscountAmt = isStudentVerified ? (subtotal * (studentDiscountPercentage / 100)) : 0;
       let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
+      finalTotal = Math.max(0, finalTotal - studentDiscountAmt);
       const appliedWalletAmount = useWallet ? Math.min(walletBalance, finalTotal) : 0;
       finalTotal = finalTotal - appliedWalletAmount;
-
-      let stripeSubscriptionId = '';
-      let subscriptionStatus = 'pending';
-
-      if (selectedPayment !== 'pay-cod') {
-        if (!stripe || !elements) {
-          toast.error('Stripe has not initialized yet. Please try again.');
-          setIsLoading(false);
-          return;
-        }
-
-        if (!isCardComplete) {
-          toast.error('Please enter your complete card details below before placing the order.');
-          setIsLoading(false);
-          return;
-        }
-
-        const email = user?.email || (finalAddress.phone.replace(/\s+/g, '') + '@domeal.co.uk');
-
-        // 1. Call Route Handler to create Stripe subscription
-        const res = await fetch('/api/create-stripe-subscription', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            name: finalAddress.fullName,
-            phone: finalAddress.phone,
-            amount: finalTotal,
-            frequency: checkoutData?.subscriptionFrequency || 'Delivery every 1 Week',
-            userId: user?.uid || 'guest-user',
-            stripeCustomerId: stripeCustomerId
-          }),
-        });
-
-        const stripeData = await res.json();
-        if (stripeData.error) {
-          toast.error(stripeData.error || 'Failed to initialize subscription');
-          setIsLoading(false);
-          return;
-        }
-
-        // If a new customer was created, save the customer ID client-side
-        if (user && stripeData.customerId && stripeData.customerId !== stripeCustomerId) {
-          await updateDoc(doc(db, 'users', user.uid), {
-            stripeCustomerId: stripeData.customerId
-          });
-          setStripeCustomerId(stripeData.customerId);
-        }
-
-        // 2. Confirm card payment
-        const cardElement = elements.getElement(CardElement);
-        if (!cardElement) {
-          toast.error('Card element is missing');
-          setIsLoading(false);
-          return;
-        }
-
-        const paymentResult = await stripe.confirmCardPayment(stripeData.clientSecret, {
-          payment_method: {
-            card: cardElement,
-            billing_details: {
-              name: finalAddress.fullName,
-              phone: finalAddress.phone,
-              email,
-              address: {
-                line1: finalAddress.addressLine1,
-                line2: finalAddress.addressLine2 || '',
-                city: finalAddress.city,
-                postal_code: finalAddress.postcode,
-                country: 'GB',
-              },
-            },
-          },
-        });
-
-        if (paymentResult.error) {
-          toast.error(paymentResult.error.message || 'Payment failed. Please check your card.');
-          // Cancel the draft subscription on failure
-          await fetch('/api/cancel-stripe-subscription', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subscriptionId: stripeData.subscriptionId }),
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        stripeSubscriptionId = stripeData.subscriptionId;
-        subscriptionStatus = 'active';
-      }
 
       if (user) {
         if (selectedAddressId === 'new') {
@@ -324,48 +285,98 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
           finalAddress = newAddress;
           await setDoc(doc(db, 'users', user.uid), { addresses: arrayUnion(newAddress) }, { merge: true });
         }
+      }
 
-        // Save Order
+      // 1. If finalTotal is 0, process the order immediately without Stripe redirect
+      if (finalTotal <= 0) {
         const orderRef = doc(db, 'orders', orderId);
-
         await setDoc(orderRef, {
-          userId: user.uid,
+          userId: user?.uid || 'guest-user',
           items: cart,
-          total: finalTotal,
+          total: 0,
+          subtotal: subtotal,
           walletApplied: appliedWalletAmount,
           discountApplied: discountApplied ? discountAmount : 0,
+          studentDiscountApplied: studentDiscountAmt,
+          studentDiscountPercent: isStudentVerified ? studentDiscountPercentage : 0,
           address: finalAddress,
           deliveryDates,
           deliverySlot: selectedSlot,
           notes,
-          paymentMethod: selectedPayment,
+          paymentMethod: 'pay-online',
           subscriptionFrequency: checkoutData?.subscriptionFrequency || 'Delivery every 1 Week',
-          stripeSubscriptionId: stripeSubscriptionId || null,
-          subscriptionStatus: selectedPayment === 'pay-cod' ? 'cod' : subscriptionStatus,
+          stripeSubscriptionId: null,
+          subscriptionStatus: 'active',
           allergiesInfo: checkoutData?.allergiesInfo || '',
           createdAt: serverTimestamp(),
           status: 'Order Received'
         });
 
-        if (appliedWalletAmount > 0) {
+        if (appliedWalletAmount > 0 && user) {
           await updateDoc(doc(db, 'users', user.uid), {
             walletBalance: walletBalance - appliedWalletAmount
           });
+          await addDoc(collection(db, 'wallet_transactions'), {
+            userId: user.uid,
+            amount: appliedWalletAmount,
+            type: 'debit',
+            status: 'completed',
+            description: `Payment for Order #${orderId}`,
+            createdAt: serverTimestamp()
+          });
+        }
+
+        setFinalOrderSummary({
+          total: 0,
+          items: [...cart],
+          subtotal: subtotal,
+          studentDiscountApplied: studentDiscountAmt,
+          studentDiscountPercent: isStudentVerified ? studentDiscountPercentage : 0,
+          discountApplied: discountApplied ? discountAmount : 0,
+          walletApplied: appliedWalletAmount
+        });
+
+        clearCart();
+        setStep('confirmed');
+        toast.success('Order placed successfully! 🎉');
+      } else {
+        // 2. Redirect to Stripe Checkout Session
+        const res = await fetch('/api/create-stripe-subscription-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user?.email || (finalAddress.phone.replace(/\s+/g, '') + '@domeal.co.uk'),
+            name: finalAddress.fullName,
+            phone: finalAddress.phone,
+            amount: finalTotal,
+            frequency: checkoutData?.subscriptionFrequency || 'Delivery every 1 Week',
+            userId: user?.uid || 'guest-user',
+            orderId: orderId,
+            address: finalAddress,
+            deliveryDates,
+            deliverySlot: selectedSlot,
+            notes,
+            subtotal,
+            walletApplied: appliedWalletAmount,
+            discountApplied: discountApplied ? discountAmount : 0,
+            studentDiscountApplied: studentDiscountAmt,
+            studentDiscountPercent: isStudentVerified ? studentDiscountPercentage : 0,
+            allergiesInfo: checkoutData?.allergiesInfo || '',
+            items: cart
+          }),
+        });
+
+        const sessionData = await res.json();
+        if (sessionData.url) {
+          window.location.href = sessionData.url;
+        } else {
+          toast.error(sessionData.error || 'Failed to initialize subscription checkout.');
+          setIsLoading(false);
         }
       }
-
-      setFinalOrderSummary({
-        total: finalTotal,
-        items: [...cart]
-      });
-
-      setStep('confirmed');
-      clearCart();
-      toast.success('Order placed successfully! 🎉');
     } catch (err: any) {
       console.error(err);
-      toast.error('Failed to place order. Please try again.');
-    } finally {
+      toast.error('Failed to process order. Please try again.');
       setIsLoading(false);
     }
   };
@@ -386,7 +397,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
               <span className="font-800 text-primary text-lg">{orderId}</span>
             </div>
             <div className="space-y-2">
-              {finalOrderSummary?.items.map(item => (
+              {finalOrderSummary?.items.map((item: any) => (
                 <div key={`conf-${item.cartItemId || item.id}`} className="flex justify-between text-sm items-start gap-4 mb-3 border-b border-border/30 pb-3 last:border-0">
                   <div>
                     <span className="text-foreground font-600">{item.name} × {item.qty}</span>
@@ -403,7 +414,35 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                   <span className="font-600 tabular-nums shrink-0">£{(item.price * item.qty).toFixed(2)}</span>
                 </div>
               ))}
-              <div className="border-t border-border pt-2 flex justify-between font-700">
+              
+              {finalOrderSummary && (
+                <div className="border-t border-border pt-3 mt-3 space-y-1.5 text-xs text-muted-foreground">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span className="tabular-nums">£{(finalOrderSummary.subtotal || 0).toFixed(2)}</span>
+                  </div>
+                  {finalOrderSummary.studentDiscountApplied > 0 && (
+                    <div className="flex justify-between text-[#C39B54] font-700">
+                      <span>🎓 Student Discount ({finalOrderSummary.studentDiscountPercent}%)</span>
+                      <span className="tabular-nums">-£{(finalOrderSummary.studentDiscountApplied).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {finalOrderSummary.discountApplied > 0 && (
+                    <div className="flex justify-between text-orange-600 font-700">
+                      <span>🏷️ Discount Applied</span>
+                      <span className="tabular-nums">-£{(finalOrderSummary.discountApplied).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {finalOrderSummary.walletApplied > 0 && (
+                    <div className="flex justify-between text-green-700 font-700">
+                      <span>Wallet Applied</span>
+                      <span className="tabular-nums">-£{(finalOrderSummary.walletApplied).toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="border-t border-border pt-2.5 flex justify-between font-700">
                 <span>Total Paid ({deliveryDates.length || 1} {(deliveryDates.length || 1) === 1 ? 'day' : 'days'})</span>
                 <span className="text-primary tabular-nums">£{(finalOrderSummary?.total || 0).toFixed(2)}</span>
               </div>
@@ -441,7 +480,9 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
   }
 
   const currentSubtotal = cartTotal * (deliveryDates.length || 1);
+  const studentDiscountAmtDisplay = isStudentVerified ? (currentSubtotal * (studentDiscountPercentage / 100)) : 0;
   let finalDisplayTotal = discountApplied ? Math.max(0, currentSubtotal - discountAmount) : currentSubtotal;
+  finalDisplayTotal = Math.max(0, finalDisplayTotal - studentDiscountAmtDisplay);
   const appliedWalletDisplay = useWallet ? Math.min(walletBalance, finalDisplayTotal) : 0;
   finalDisplayTotal = finalDisplayTotal - appliedWalletDisplay;
 
@@ -597,67 +638,23 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
 
             {/* Payment */}
             <div className="bg-white rounded-2xl border border-border p-6">
-              <h2 className="font-700 text-base text-foreground flex items-center gap-2 mb-5">
+              <h2 className="font-700 text-base text-foreground flex items-center gap-2 mb-4">
                 <CreditCard size={18} className="text-primary" />
                 Payment Method
               </h2>
-              <div className="space-y-3">
-                {paymentMethods.map(method => {
-                  const isSelected = selectedPayment === method.id;
-                  return (
-                    <div
-                      key={method.id}
-                      onClick={() => setSelectedPayment(method.id)}
-                      className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-150 cursor-pointer ${
-                        isSelected ? 'border-primary bg-orange-50/40' : 'border-border hover:border-orange-100'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSelected ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                          <method.icon size={18} />
-                        </div>
-                        <div>
-                          <p className="font-700 text-sm text-foreground">{method.label}</p>
-                          <p className="text-xs text-muted-foreground">{method.desc}</p>
-                        </div>
-                        <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-primary' : 'border-border'}`}>
-                          {isSelected && <div className="w-2 h-2 rounded-full bg-primary" />}
-                        </div>
-                      </div>
-
-                      {method.id === 'pay-online' && isSelected && (
-                        <div 
-                          className="mt-4 p-4 border border-border/80 rounded-xl bg-white space-y-2 animate-in fade-in slide-in-from-top-2 duration-200"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <label className="block text-[11px] font-800 text-foreground uppercase tracking-wider">Card Details</label>
-                          <div className="bg-white px-4 py-3 border border-border/80 rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-                            <CardElement
-                              onChange={(event) => {
-                                setIsCardComplete(event.complete);
-                              }}
-                              options={{
-                                style: {
-                                  base: {
-                                    fontSize: '14px',
-                                    color: '#11261a',
-                                    fontFamily: 'Inter, system-ui, sans-serif',
-                                    '::placeholder': {
-                                      color: '#a0aec0',
-                                    },
-                                  },
-                                  invalid: {
-                                    color: '#ef4444',
-                                  },
-                                },
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="w-full rounded-xl border-2 border-primary bg-orange-50/40 p-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary text-white">
+                    <CreditCard size={18} />
+                  </div>
+                  <div>
+                    <p className="font-700 text-sm text-foreground">Online Payment</p>
+                    <p className="text-xs text-muted-foreground">Visa, Mastercard, Amex, Apple Pay, Google Pay</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/80">
+                  Clicking "Place Order" will redirect you to Stripe to complete your transaction securely.
+                </p>
               </div>
             </div>
           </div>
@@ -735,6 +732,12 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                     <span className="text-gray-800">Subtotal · {cart.length} items</span>
                     <span className="tabular-nums">£{currentSubtotal.toFixed(2)}</span>
                   </div>
+                  {isStudentVerified && studentDiscountAmtDisplay > 0 && (
+                    <div className="flex justify-between text-[15px] font-700 text-[#C39B54] mb-3">
+                      <span className="flex items-center gap-1">🎓 Student Discount ({studentDiscountPercentage}%)</span>
+                      <span className="tabular-nums">-£{studentDiscountAmtDisplay.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-[15px] font-500 mb-4">
                     <span className="text-gray-800 flex items-center gap-1.5">Shipping <span className="text-gray-400 border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-800">?</span></span>
                     <span className="text-gray-500 text-sm">{selectedAddressId ? 'Free' : 'Enter shipping address'}</span>
@@ -786,12 +789,11 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
 }
 
 export default function CheckoutClient() {
-  const [stripePromise, setStripePromise] = useState<any>(null);
   const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadSettingsAndKey = async () => {
+    const loadSettings = async () => {
       try {
         const res = await fetch('/api/public-settings', { method: 'POST' });
         const data = await res.json();
@@ -800,36 +802,25 @@ export default function CheckoutClient() {
           discount: data.popupDiscountPercentage || 25,
           count: data.popupOrdersCount || 4
         });
-
-        if (data.stripePublishableKey) {
-          setStripePromise(loadStripe(data.stripePublishableKey));
-        } else {
-          setStripePromise(loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''));
-        }
       } catch (error) {
-        console.error('Failed to load settings & publishable key:', error);
-        setStripePromise(loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''));
+        console.error('Failed to load settings:', error);
       } finally {
         setLoading(false);
       }
     };
-    loadSettingsAndKey();
+    loadSettings();
   }, []);
 
-  if (loading || !stripePromise) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground font-600">Loading checkout session...</p>
+          <p className="text-sm text-muted-foreground font-600">Loading checkout...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <Elements stripe={stripePromise}>
-      <CheckoutClientContent globalSettings={globalSettings} />
-    </Elements>
-  );
+  return <CheckoutClientContent globalSettings={globalSettings} />;
 }

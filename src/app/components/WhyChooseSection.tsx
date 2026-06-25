@@ -2,7 +2,7 @@ import React from 'react';
 import { ShieldCheck, Clock, Leaf, Heart, Star, Bike } from 'lucide-react';
 
 const reasons = [
-  { id: 'r-1', icon: Leaf, title: 'No Onion, No Garlic', desc: 'Sattvic cooking available on request. Perfect for religious occasions and dietary preferences.', color: 'text-green-700 bg-green-100' },
+  { id: 'r-1', icon: Leaf, title: '100% Vegan and Vegetarian', desc: 'Strictly plant-based and vegetarian options. Perfect for clean eating and conscious dietary preferences.', color: 'text-green-700 bg-green-100' },
   { id: 'r-2', icon: ShieldCheck, title: 'Food Hygiene Certified', desc: 'Our kitchen holds a 5-star Food Hygiene Rating from the local council. Safe food, always.', color: 'text-blue-700 bg-blue-100' },
   { id: 'r-3', icon: Clock, title: 'Punctual Delivery', desc: 'Breakfast by 8:30 AM, Lunch by 1:00 PM, Dinner by 8:30 PM. We respect your schedule.', color: 'text-primary bg-red-100' },
   { id: 'r-4', icon: Heart, title: 'Made with Love', desc: 'Every meal is prepared by experienced home cooks using traditional recipes passed down generations.', color: 'text-red-600 bg-red-100' },

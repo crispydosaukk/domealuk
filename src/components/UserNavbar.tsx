@@ -67,6 +67,7 @@ export default function UserNavbar() {
     { label: 'How to Heat', href: '/how-to-heat' },
     { label: 'Student Discounts', href: '/student-discounts' },
     { label: 'Gift', href: '/gift' },
+    ...(user ? [{ label: 'Wallet', href: '/wallet' }] : []),
     { label: 'Reviews', href: '/#reviews' },
     { label: 'FAQ', href: '/#faq' },
   ];
@@ -110,9 +111,9 @@ export default function UserNavbar() {
             {/* Right actions */}
             <div className="flex items-center gap-4">
               {user && userData && (
-                <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border ${isTransparent ? 'bg-white/10 border-white/20 text-white' : 'bg-green-50 border-green-100 text-green-700'} font-800 text-sm shadow-sm`}>
+                <Link href="/wallet" className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all hover:scale-105 ${isTransparent ? 'bg-white/10 border-white/20 text-white hover:bg-white/25' : 'bg-green-50 border-green-100 text-green-700 hover:bg-green-100'} font-800 text-sm shadow-sm`}>
                   <Wallet size={16} className={isTransparent ? 'text-white' : 'text-green-600'} /> £{(userData.walletBalance || 0).toFixed(2)}
-                </div>
+                </Link>
               )}
               <button
                 onClick={() => {
@@ -245,13 +246,13 @@ export default function UserNavbar() {
             <div className="flex-1 overflow-y-auto p-4 bg-muted/20">
               {/* Wallet & Referral */}
               <div className="mb-6 grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-xl border border-border p-4 shadow-sm flex flex-col items-center justify-center text-center">
+                <Link href="/wallet" onClick={() => setProfileOpen(false)} className="bg-white rounded-xl border border-border p-4 shadow-sm flex flex-col items-center justify-center text-center hover:border-primary/45 hover:bg-gray-50/50 transition-all cursor-pointer">
                   <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 mb-1.5">
                     <Wallet size={16} />
                   </div>
                   <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider mb-1">Wallet Balance</p>
                   <p className="font-900 text-xl text-primary tabular-nums">£{(userData?.walletBalance || 0).toFixed(2)}</p>
-                </div>
+                </Link>
                 <div className="bg-white rounded-xl border border-border p-4 shadow-sm flex flex-col items-center justify-center text-center">
                   <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-primary mb-1.5">
                     <Gift size={16} />

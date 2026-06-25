@@ -269,14 +269,30 @@ export default function OrderHistoryClient() {
                               </div>
                             );
                           })}
-                          <div className="border-t border-border pt-3 mt-3">
+                          <div className="border-t border-border pt-3 mt-3 space-y-1.5">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>Subtotal</span>
+                              <span className="tabular-nums">£{(order.subtotal || order.total + (order.discountApplied || 0) + (order.studentDiscountApplied || 0) + (order.walletApplied || 0)).toFixed(2)}</span>
+                            </div>
+                            {order.studentDiscountApplied > 0 && (
+                              <div className="flex justify-between font-700 text-xs text-[#C39B54]">
+                                <span>🎓 Student Discount ({order.studentDiscountPercent || 0}%)</span>
+                                <span className="tabular-nums">-£{(order.studentDiscountApplied).toFixed(2)}</span>
+                              </div>
+                            )}
+                            {order.discountApplied > 0 && (
+                              <div className="flex justify-between font-700 text-xs text-orange-600">
+                                <span>🏷️ Promo Discount</span>
+                                <span className="tabular-nums">-£{(order.discountApplied).toFixed(2)}</span>
+                              </div>
+                            )}
                             {order.walletApplied > 0 && (
-                              <div className="flex justify-between font-700 text-sm mb-1.5 text-green-700">
-                                <span className="flex items-center gap-1.5"><Wallet size={16} /> Wallet Applied</span>
+                              <div className="flex justify-between font-700 text-xs text-green-700">
+                                <span className="flex items-center gap-1"><Wallet size={12} /> Wallet Applied</span>
                                 <span className="tabular-nums">-£{(order.walletApplied).toFixed(2)}</span>
                               </div>
                             )}
-                            <div className="flex justify-between font-800 text-sm">
+                            <div className="flex justify-between font-800 text-sm border-t border-border/40 pt-1.5">
                               <span>Total Paid</span>
                               <span className="text-primary tabular-nums">£{(order.total || 0).toFixed(2)}</span>
                             </div>
