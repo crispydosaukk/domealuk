@@ -3,7 +3,7 @@ import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
 import HeroSection from '@/app/components/HeroSection';
 import HowItWorksSection from '@/app/components/HowItWorksSection';
-import FeaturedMenuSection from '@/app/components/FeaturedMenuSection';
+import MenuOrderingClient from '@/app/menu/components/MenuOrderingClient';
 import TestimonialsSection from '@/app/components/TestimonialsSection';
 import WhyChooseSection from '@/app/components/WhyChooseSection';
 import PostcodeSearch from '@/app/components/PostcodeSearch';
@@ -17,7 +17,7 @@ export default function HomePage() {
         <HeroSection />
         <PostcodeSearch />
         <HowItWorksSection />
-        <FeaturedMenuSection />
+        <MenuOrderingClient hideExtras={true} />
         <WhyChooseSection />
         <TestimonialsSection />
         <FAQSection />

@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
       studentDiscountApplied,
       studentDiscountPercent,
       allergiesInfo,
-      items
+      items,
+      dabbaFeeApplied
     } = await req.json();
 
     if (!email || !amount || !frequency || !userId || !orderId) {
@@ -118,7 +119,11 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Create a Price object for Stripe Checkout
-    const unitAmount = Math.round(amount * 100);
+    let recurringAmount = amount;
+    if (dabbaFeeApplied) {
+      recurringAmount = Math.max(0, amount - 12.00);
+    }
+    const unitAmount = Math.round(recurringAmount * 100);
     const interval = 'week';
     const interval_count = frequency.toLowerCase().includes('2 week') ? 2 : 1;
 
@@ -133,6 +138,25 @@ export async function POST(req: NextRequest) {
         interval_count,
       },
     });
+
+    const lineItems: any[] = [{
+      price: price.id,
+      quantity: 1,
+    }];
+
+    if (dabbaFeeApplied) {
+      const dabbaPrice = await stripe.prices.create({
+        product_data: {
+          name: 'Reusable Dabba Deposit Fee',
+        },
+        unit_amount: 1200, // £12.00
+        currency: 'gbp',
+      });
+      lineItems.push({
+        price: dabbaPrice.id,
+        quantity: 1,
+      });
+    }
 
     // 4. Create Order document in Firestore with 'Pending Payment'
     const orderPayload = {
@@ -154,7 +178,9 @@ export async function POST(req: NextRequest) {
       subscriptionStatus: 'pending_payment',
       allergiesInfo,
       createdAt: dbAdmin ? AdminFieldValue.serverTimestamp() : serverTimestamp(),
-      status: 'Pending Payment'
+      status: 'Pending Payment',
+      dabbaFeeApplied: dabbaFeeApplied || false,
+      dabbaFee: dabbaFeeApplied ? 12.00 : 0
     };
 
     if (dbAdmin) {
@@ -168,10 +194,7 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       payment_method_types: ['card'],
-      line_items: [{
-        price: price.id,
-        quantity: 1,
-      }],
+      line_items: lineItems,
       mode: 'subscription',
       success_url: `${origin}/checkout-order-confirmation-screen?status=success&session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
       cancel_url: `${origin}/checkout-order-confirmation-screen?status=cancel&order_id=${orderId}`,

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import { Trash2, CalendarDays, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
@@ -9,7 +10,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { getApiUrl } from '@/lib/api';
 
-function CustomDatePicker({ values, onChange }: { values: string[], onChange: (dates: string[]) => void }) {
+function CustomDatePicker({ values, onChange, deliveryDays = [1, 4] }: { values: string[], onChange: (dates: string[]) => void, deliveryDays?: number[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -62,7 +63,7 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
                 if (!date) return <div key={idx} />;
                 const isPast = date < today;
                 const dayOfWeek = date.getDay();
-                const isValid = !isPast && (dayOfWeek === 1 || dayOfWeek === 4);
+                const isValid = !isPast && deliveryDays.includes(dayOfWeek);
 
                 const dateStr = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
                 const isSelected = values.includes(dateStr);
@@ -99,11 +100,11 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
 }
 
 export default function BasketClient() {
-  const { cart, updateQty, cartTotal, checkoutData, setCheckoutData } = useCart();
+  const { cart, updateQty, cartTotal, completedOrdersCount, checkoutData, setCheckoutData } = useCart();
   const { user } = useAuth();
   const router = useRouter();
 
-  const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4 });
+  const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4, deliveryDays: [1, 4] });
 
   useEffect(() => {
     const fetchGlobalSettings = async () => {
@@ -113,7 +114,8 @@ export default function BasketClient() {
           const data = await res.json();
           setGlobalSettings({
             discount: data.popupDiscountPercentage || 25,
-            count: data.popupOrdersCount || 4
+            count: data.popupOrdersCount || 4,
+            deliveryDays: data.deliveryDays || [1, 4]
           });
         }
       } catch (error) {
@@ -184,29 +186,42 @@ export default function BasketClient() {
               </div>
             ) : (
               <div className="space-y-6">
-                {cart.map((item) => (
-                  <div key={item.cartItemId || item.id} className="flex gap-4 p-4 border border-border rounded-xl items-center bg-gray-50/50">
-                    <div className="flex-1">
-                      <h3 className="font-700 text-foreground text-lg leading-tight mb-1">{item.name}</h3>
-                      <div className="flex flex-col items-start gap-1 mb-2 text-[#003b49] text-[15px]">
-                        <p>{frequency}</p>
-                        <p className="text-xs mt-0.5 text-[#003b49]">{globalSettings.discount}% off your first {globalSettings.count} deliveries, applied automatically. Pause or cancel anytime.</p>
-                        <button 
-                          onClick={() => updateQty(item.cartItemId || item.id, -item.qty)} 
-                          className="hover:text-red-700 transition-colors mt-1 underline underline-offset-2 text-sm"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      {item.subItems && item.subItems.length > 0 && (
-                        <div className="mt-1.5 text-sm text-muted-foreground border-l-2 border-border/60 pl-2">
-                          {item.subItems.map((sub, i) => (
-                            <div key={i} className="leading-snug">+ {sub.name}</div>
-                          ))}
+                {cart.map((item) => {
+                  const isOriginalPriceApplied = !!(completedOrdersCount >= 4 && item.originalPrice && item.originalPrice > 0);
+                  const itemDisplayPrice = isOriginalPriceApplied ? (item.originalPrice ?? item.price) : item.price;
+
+                  return (
+                    <div key={item.cartItemId || item.id} className="flex gap-4 p-4 border border-border rounded-xl items-center bg-gray-50/50">
+                      <div className="flex-1">
+                        <h3 className="font-700 text-foreground text-lg leading-tight mb-1">
+                          {item.name}
+                          {isOriginalPriceApplied && (
+                            <span className="text-[10px] text-amber-700 font-700 bg-amber-100/80 px-2 py-0.5 rounded ml-2 border border-amber-200">Original Price</span>
+                          )}
+                        </h3>
+                        <div className="flex flex-col items-start gap-1 mb-2 text-[#003b49] text-[15px]">
+                          <p>{frequency}</p>
+                          {isOriginalPriceApplied ? (
+                            <p className="text-xs mt-0.5 text-amber-700 font-600 bg-amber-50 px-2 py-1 rounded border border-amber-100">Original price applies because you have completed {completedOrdersCount} orders.</p>
+                          ) : (
+                            <p className="text-xs mt-0.5 text-[#003b49]">{globalSettings.discount}% off your first {globalSettings.count} deliveries, applied automatically. Pause or cancel anytime.</p>
+                          )}
+                          <button 
+                            onClick={() => updateQty(item.cartItemId || item.id, -item.qty)} 
+                            className="hover:text-red-700 transition-colors mt-1 underline underline-offset-2 text-sm"
+                          >
+                            Remove
+                          </button>
                         </div>
-                      )}
-                      <p className="text-primary font-900 mt-2.5 text-base">£{item.price.toFixed(2)} each</p>
-                    </div>
+                        {item.subItems && item.subItems.length > 0 && (
+                          <div className="mt-1.5 text-sm text-muted-foreground border-l-2 border-border/60 pl-2">
+                            {item.subItems.map((sub, i) => (
+                              <div key={i} className="leading-snug">+ {sub.name}</div>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-primary font-900 mt-2.5 text-base">£{itemDisplayPrice.toFixed(2)} each</p>
+                      </div>
 
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-3 bg-white border border-border rounded-full px-3 py-1.5 shadow-sm">
@@ -220,7 +235,19 @@ export default function BasketClient() {
                       </div>
                     </div>
                   </div>
-                ))}
+                );
+              })}
+              </div>
+            )}
+
+            {cart.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border flex justify-end">
+                <Link
+                  href="/menu"
+                  className="inline-flex items-center gap-1.5 text-sm font-700 text-primary hover:underline"
+                >
+                  + Add More Items
+                </Link>
               </div>
             )}
 
@@ -237,7 +264,7 @@ export default function BasketClient() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="font-600 text-foreground">Free</span>
+                  <span className="font-600 text-foreground">£12.00</span>
                 </div>
               </div>
             )}
@@ -248,8 +275,11 @@ export default function BasketClient() {
             <div className="relative z-10 flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center">
               <div className="flex-1">
                 <h3 className="font-800 text-lg mb-2">Any allergies we should know about?</h3>
-                <p className="text-white/80 text-sm leading-relaxed max-w-lg">
+                <p className="text-white/80 text-sm leading-relaxed max-w-lg mb-3">
                   Please be aware that all meals are cooked in the same kitchen so may contain traces of ALL allergens. Please get in touch if you need further information about specific allergens in any of our dishes.
+                </p>
+                <p className="text-white/70 text-xs italic leading-relaxed max-w-lg">
+                  *Prepared in a kitchen handling cereals containing gluten, milk, nuts, peanuts, sesame, mustard, celery, soya and other allergens. Cross-contamination may occur.
                 </p>
               </div>
               <div className="flex items-center gap-4 bg-white/10 p-1.5 rounded-lg shrink-0">
@@ -287,14 +317,23 @@ export default function BasketClient() {
           <div className="bg-white rounded-2xl border border-border p-6 shadow-sm sticky top-24">
             <h2 className="font-800 text-xl text-[#11261a] mb-6">Your Order</h2>
 
-            <div className="space-y-3 border-b border-border pb-5 mb-6">
+             <div className="space-y-3 border-b border-border pb-5 mb-6">
+              {completedOrdersCount >= 4 && cart.some(item => item.originalPrice && item.originalPrice > 0) && (
+                <div className="bg-amber-50 text-amber-800 text-xs font-700 p-3 rounded-xl border border-amber-100 leading-tight">
+                  ⚠️ Original prices apply because you have completed {completedOrdersCount} orders.
+                </div>
+              )}
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
                 <span>£{cartTotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between font-800 text-lg">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Reusable Dabba Deposit</span>
+                <span>£12.00</span>
+              </div>
+              <div className="flex justify-between font-800 text-lg border-t border-dashed border-border/80 pt-2 mt-1">
                 <span>Total</span>
-                <span>£{cartTotal.toFixed(2)}</span>
+                <span>£{(cartTotal + 12.00).toFixed(2)}</span>
               </div>
             </div>
 
@@ -325,7 +364,11 @@ export default function BasketClient() {
               {/* Delivery Date */}
               <div>
                 <label className="block text-sm font-700 text-foreground mb-1.5">Choose your delivery date</label>
-                <CustomDatePicker values={deliveryDates} onChange={(dates) => { setDeliveryDates(dates); saveToContext('deliveryDates', dates); }} />
+                <CustomDatePicker 
+                  values={deliveryDates} 
+                  onChange={(dates) => { setDeliveryDates(dates); saveToContext('deliveryDates', dates); }} 
+                  deliveryDays={globalSettings.deliveryDays}
+                />
               </div>
 
               {/* Subscription Frequency */}

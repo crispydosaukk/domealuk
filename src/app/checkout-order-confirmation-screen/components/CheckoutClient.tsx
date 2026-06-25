@@ -35,7 +35,7 @@ const paymentMethods = [
   { id: 'pay-online', label: 'Online Payment', icon: CreditCard, desc: 'Visa, Mastercard, Amex' },
 ];
 
-function CustomDatePicker({ values, onChange }: { values: string[], onChange: (dates: string[]) => void }) {
+function CustomDatePicker({ values, onChange, deliveryDays = [1, 4] }: { values: string[], onChange: (dates: string[]) => void, deliveryDays?: number[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -88,7 +88,7 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
                 if (!date) return <div key={idx} />;
                 const isPast = date < today;
                 const dayOfWeek = date.getDay();
-                const isValid = !isPast && (dayOfWeek === 1 || dayOfWeek === 4);
+                const isValid = !isPast && deliveryDays.includes(dayOfWeek);
 
                 // create local iso string without timezone shifting
                 const dateStr = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -125,18 +125,25 @@ function CustomDatePicker({ values, onChange }: { values: string[], onChange: (d
   )
 }
 
-function CheckoutClientContent({ globalSettings }: { globalSettings: { discount: number, count: number } }) {
-  const { cart, cartTotal, clearCart, checkoutData } = useCart();
+function CheckoutClientContent({ globalSettings }: { globalSettings: { discount: number, count: number, deliveryDays?: number[], deliverySlots?: any[] } }) {
+  const { cart, cartTotal, completedOrdersCount, clearCart, checkoutData } = useCart();
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const dbSlots = globalSettings.deliverySlots || [
+    { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
+    { id: 'slot-2', label: 'Afternoon', time: '12:00 PM – 1:00 PM', icon: '☀️', enabled: true },
+    { id: 'slot-3', label: 'Evening', time: '7:30 PM – 8:30 PM', icon: '🌙', enabled: true },
+  ];
+  const activeSlots = dbSlots.filter(s => s.enabled !== false);
 
   const urlStatus = searchParams.get('status');
   const sessionId = searchParams.get('session_id');
   const urlOrderId = searchParams.get('order_id');
 
   const [step, setStep] = useState<'checkout' | 'confirmed'>('checkout');
-  const [selectedSlot, setSelectedSlot] = useState('slot-1');
+  const [selectedSlot, setSelectedSlot] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('pay-online');
   const [isLoading, setIsLoading] = useState(false);
   const [orderId] = useState(`VSL-${Math.floor(10000 + Math.random() * 90000)}`);
@@ -163,6 +170,12 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<AddressForm>({
     defaultValues: { city: 'London', postcode: checkoutData?.postcode || '' }
   });
+
+  useEffect(() => {
+    if (activeSlots.length > 0 && !activeSlots.some(s => s.id === selectedSlot)) {
+      setSelectedSlot(activeSlots[0].id);
+    }
+  }, [activeSlots, selectedSlot]);
 
   useEffect(() => {
     if (urlStatus === 'success' && sessionId && urlOrderId) {
@@ -247,7 +260,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
 
   const onSubmit = async (data: AddressForm) => {
     if (deliveryDates.length === 0) {
-      toast.error('Please select at least one delivery date (Monday or Thursday).');
+      toast.error('Please select at least one delivery date.');
       return;
     }
     if (cart.length === 0) {
@@ -273,10 +286,22 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
     setIsLoading(true);
 
     try {
+      const checkoutItems = cart.map(item => ({
+        ...item,
+        price: (completedOrdersCount >= 4 && item.originalPrice && item.originalPrice > 0)
+          ? item.originalPrice
+          : item.price
+      }));
+
       const subtotal = cartTotal * (deliveryDates.length || 1);
       const studentDiscountAmt = isStudentVerified ? (subtotal * (studentDiscountPercentage / 100)) : 0;
       let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
       finalTotal = Math.max(0, finalTotal - studentDiscountAmt);
+      
+      // Reusable Dabba Deposit Fee (£12.00)
+      const dabbaFee = 12.00;
+      finalTotal = finalTotal + dabbaFee;
+
       const appliedWalletAmount = useWallet ? Math.min(walletBalance, finalTotal) : 0;
       finalTotal = finalTotal - appliedWalletAmount;
 
@@ -293,7 +318,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
         const orderRef = doc(db, 'orders', orderId);
         await setDoc(orderRef, {
           userId: user?.uid || 'guest-user',
-          items: cart,
+          items: checkoutItems,
           total: 0,
           subtotal: subtotal,
           walletApplied: appliedWalletAmount,
@@ -310,7 +335,9 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
           subscriptionStatus: 'active',
           allergiesInfo: checkoutData?.allergiesInfo || '',
           createdAt: serverTimestamp(),
-          status: 'Order Received'
+          status: 'Order Received',
+          dabbaFeeApplied: true,
+          dabbaFee: 12.00
         });
 
         if (appliedWalletAmount > 0 && user) {
@@ -329,12 +356,13 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
 
         setFinalOrderSummary({
           total: 0,
-          items: [...cart],
+          items: checkoutItems,
           subtotal: subtotal,
           studentDiscountApplied: studentDiscountAmt,
           studentDiscountPercent: isStudentVerified ? studentDiscountPercentage : 0,
           discountApplied: discountApplied ? discountAmount : 0,
-          walletApplied: appliedWalletAmount
+          walletApplied: appliedWalletAmount,
+          dabbaFee: 12.00
         });
 
         clearCart();
@@ -363,7 +391,8 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
             studentDiscountApplied: studentDiscountAmt,
             studentDiscountPercent: isStudentVerified ? studentDiscountPercentage : 0,
             allergiesInfo: checkoutData?.allergiesInfo || '',
-            items: cart
+            items: checkoutItems,
+            dabbaFeeApplied: true
           }),
         });
 
@@ -448,6 +477,12 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                       <span className="tabular-nums">-£{(finalOrderSummary.walletApplied).toFixed(2)}</span>
                     </div>
                   )}
+                  {finalOrderSummary.dabbaFee > 0 && (
+                    <div className="flex justify-between">
+                      <span>Reusable Dabba Deposit</span>
+                      <span className="tabular-nums">£{(finalOrderSummary.dabbaFee).toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -462,7 +497,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
             <Clock size={20} className="text-blue-600 shrink-0" />
             <div>
               <p className="text-sm font-700 text-foreground">Estimated Delivery</p>
-              <p className="text-xs text-muted-foreground">{deliveryDates.map(d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })).join(', ')} • {deliverySlots.find(s => s.id === selectedSlot)?.label}</p>
+              <p className="text-xs text-muted-foreground">{deliveryDates.map(d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })).join(', ')} • {dbSlots.find(s => s.id === selectedSlot)?.label}</p>
             </div>
           </div>
 
@@ -492,6 +527,11 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
   const studentDiscountAmtDisplay = isStudentVerified ? (currentSubtotal * (studentDiscountPercentage / 100)) : 0;
   let finalDisplayTotal = discountApplied ? Math.max(0, currentSubtotal - discountAmount) : currentSubtotal;
   finalDisplayTotal = Math.max(0, finalDisplayTotal - studentDiscountAmtDisplay);
+  
+  // Reusable Dabba Fee (£12.00)
+  const dabbaFee = 12.00;
+  finalDisplayTotal = finalDisplayTotal + dabbaFee;
+
   const appliedWalletDisplay = useWallet ? Math.min(walletBalance, finalDisplayTotal) : 0;
   finalDisplayTotal = finalDisplayTotal - appliedWalletDisplay;
 
@@ -616,7 +656,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                 <h2 className="font-700 text-base text-foreground">Choose Delivery Slot</h2>
               </div>
               <div className="grid grid-cols-3 gap-2 mb-4">
-                {deliverySlots.map(slot => (
+                {activeSlots.map(slot => (
                   <button
                     key={slot.id}
                     type="button"
@@ -674,27 +714,37 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
               <h2 className="font-700 text-base text-foreground mb-5">Order Summary</h2>
 
               <div className="space-y-3 mb-5">
-                {cart.map(item => (
-                  <div key={`sum-${item.cartItemId || item.id}`} className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-green-100 rounded flex items-center justify-center shrink-0 mt-0.5">
-                      <Leaf size={10} className="text-secondary" />
+                {cart.map(item => {
+                  const isOriginalPriceApplied = !!(completedOrdersCount >= 4 && item.originalPrice && item.originalPrice > 0);
+                  const itemDisplayPrice = isOriginalPriceApplied ? (item.originalPrice ?? item.price) : item.price;
+
+                  return (
+                    <div key={`sum-${item.cartItemId || item.id}`} className="flex items-start gap-3">
+                      <div className="w-5 h-5 bg-green-100 rounded flex items-center justify-center shrink-0 mt-0.5">
+                        <Leaf size={10} className="text-secondary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-600 text-foreground truncate">
+                          {item.name}
+                          {isOriginalPriceApplied && (
+                            <span className="text-[9px] text-amber-700 font-700 bg-amber-100/80 px-1 py-0.5 rounded ml-1.5 border border-amber-200">Original</span>
+                          )}
+                        </p>
+                        {item.subItems && item.subItems.length > 0 && (
+                          <div className="mt-0.5 flex flex-col gap-0.5">
+                            {item.subItems.map((sub, i) => (
+                              <span key={i} className="text-[10px] text-muted-foreground">
+                                + {sub.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-0.5">Qty: {item.qty}</p>
+                      </div>
+                      <span className="text-sm font-700 tabular-nums shrink-0">£{(itemDisplayPrice * item.qty).toFixed(2)}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-600 text-foreground truncate">{item.name}</p>
-                      {item.subItems && item.subItems.length > 0 && (
-                        <div className="mt-0.5 flex flex-col gap-0.5">
-                          {item.subItems.map((sub, i) => (
-                            <span key={i} className="text-[10px] text-muted-foreground">
-                              + {sub.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-0.5">Qty: {item.qty}</p>
-                    </div>
-                    <span className="text-sm font-700 tabular-nums shrink-0">£{(item.price * item.qty).toFixed(2)}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="border-t border-border pt-5 mb-5 space-y-4">
@@ -733,9 +783,16 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                     </label>
                   )}
 
-                  <div className="bg-green-50 text-green-700 text-[11px] font-800 px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm border border-green-100 mb-4">
-                    <span className="text-sm">🎉</span> {globalSettings.discount}% off your first {globalSettings.count} deliveries, applied automatically. Pause or cancel anytime.
-                  </div>
+                  {completedOrdersCount >= 4 && cart.some(item => item.originalPrice && item.originalPrice > 0) ? (
+                    <div className="bg-amber-50 text-amber-800 text-[11px] font-800 px-3 py-2.5 rounded-lg flex items-start gap-1.5 shadow-sm border border-amber-100 mb-4">
+                      <span className="text-sm">⚠️</span>
+                      <span>Original prices apply because you have completed {completedOrdersCount} orders.</span>
+                    </div>
+                  ) : (
+                    <div className="bg-green-50 text-green-700 text-[11px] font-800 px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm border border-green-100 mb-4">
+                      <span className="text-sm">🎉</span> {globalSettings.discount}% off your first {globalSettings.count} deliveries, applied automatically. Pause or cancel anytime.
+                    </div>
+                  )}
 
                   <div className="flex justify-between text-[15px] font-500 mb-3">
                     <span className="text-gray-800">Subtotal · {cart.length} items</span>
@@ -745,6 +802,17 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                     <div className="flex justify-between text-[15px] font-700 text-[#C39B54] mb-3">
                       <span className="flex items-center gap-1">🎓 Student Discount ({studentDiscountPercentage}%)</span>
                       <span className="tabular-nums">-£{studentDiscountAmtDisplay.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {/* Reusable Dabba Deposit Fee (£12) */}
+                  <div className="flex justify-between text-[15px] font-500 mb-3 text-gray-800">
+                    <span>Reusable Dabba Deposit</span>
+                    <span className="tabular-nums">£12.00</span>
+                  </div>
+                  {useWallet && appliedWalletDisplay > 0 && (
+                    <div className="flex justify-between text-[15px] font-700 text-green-700 mb-3">
+                      <span>Wallet Balance Applied</span>
+                      <span className="tabular-nums">-£{appliedWalletDisplay.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-[15px] font-500 mb-4">
@@ -768,7 +836,15 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                   )}
 
                   <div className="flex justify-between items-center text-[15px] font-800 mt-5 border-t border-border/60 pt-4 text-gray-900">
-                    <span className="flex items-center gap-1.5">Recurring subtotal <span className="text-gray-400 border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-800">?</span></span>
+                    <span className="flex items-center gap-1.5 font-700">
+                      Recurring subtotal
+                      <div className="relative group/tooltip">
+                        <span className="text-gray-400 border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-800 cursor-help">?</span>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-[10px] p-2.5 rounded-lg shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity z-50 text-center font-500 normal-case leading-relaxed">
+                          This is the recurring price for your tiffin plan charged on subsequent renewals. It excludes one-time fees (like the Reusable Dabba deposit).
+                        </div>
+                      </div>
+                    </span>
                     <span className="tabular-nums">£{cartTotal.toFixed(2)} {checkoutData?.subscriptionFrequency?.toLowerCase().replace('delivery ', '') || 'every 1 week'}</span>
                   </div>
                 </div>
@@ -798,7 +874,16 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
 }
 
 export default function CheckoutClient() {
-  const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4 });
+  const [globalSettings, setGlobalSettings] = useState({ 
+    discount: 25, 
+    count: 4, 
+    deliveryDays: [1, 4],
+    deliverySlots: [
+      { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
+      { id: 'slot-2', label: 'Afternoon', time: '12:00 PM – 1:00 PM', icon: '☀️', enabled: true },
+      { id: 'slot-3', label: 'Evening', time: '7:30 PM – 8:30 PM', icon: '🌙', enabled: true },
+    ] 
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -809,7 +894,13 @@ export default function CheckoutClient() {
 
         setGlobalSettings({
           discount: data.popupDiscountPercentage || 25,
-          count: data.popupOrdersCount || 4
+          count: data.popupOrdersCount || 4,
+          deliveryDays: data.deliveryDays || [1, 4],
+          deliverySlots: data.deliverySlots || [
+            { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
+            { id: 'slot-2', label: 'Afternoon', time: '12:00 PM – 1:00 PM', icon: '☀️', enabled: true },
+            { id: 'slot-3', label: 'Evening', time: '7:30 PM – 8:30 PM', icon: '🌙', enabled: true },
+          ]
         });
       } catch (error) {
         console.error('Failed to load settings:', error);

@@ -24,5 +24,11 @@ export async function POST(req: NextRequest) {
     stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
     popupDiscountPercentage: 25,
     popupOrdersCount: 4,
+    deliveryDays: [1, 4],
+    deliverySlots: [
+      { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
+      { id: 'slot-2', label: 'Afternoon', time: '12:00 PM – 1:00 PM', icon: '☀️', enabled: true },
+      { id: 'slot-3', label: 'Evening', time: '7:30 PM – 8:30 PM', icon: '🌙', enabled: true },
+    ]
   });
 }

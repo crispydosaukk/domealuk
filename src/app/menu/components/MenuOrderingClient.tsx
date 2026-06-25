@@ -51,16 +51,20 @@ const SpiceLevel = ({ level }: { level: number }) => (
   </div>
 );
 
-export default function MenuOrderingClient() {
+interface MenuOrderingClientProps {
+  hideExtras?: boolean;
+}
+
+export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingClientProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCategory, setActiveCategory] = useState(hideExtras ? 'Menu' : 'All');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [customizingItem, setCustomizingItem] = useState<{ item: MenuItem, selections: Record<string, boolean> } | null>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const [menuSelections, setMenuSelections] = useState<Record<string, Record<string, boolean>>>({});
   const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4 });
-  const { cart, addToCart, updateQty, cartCount, cartTotal, isCartOpen, setIsCartOpen } = useCart();
+  const { cart, addToCart, updateQty, cartCount, cartTotal, completedOrdersCount, isCartOpen, setIsCartOpen } = useCart();
 
   useEffect(() => {
     const fetchGlobalSettings = async () => {
@@ -118,11 +122,12 @@ export default function MenuOrderingClient() {
   }, []);
 
   // Define allowed categories
-  const dynamicCategories = ['All', 'Menu', 'Extras'];
+  const dynamicCategories = hideExtras ? ['Menu'] : ['All', 'Menu', 'Extras'];
 
   const filtered = menuItems.filter(i => {
     const cat = i.category === 'Snacks' ? 'Extras' : i.category;
     if (cat === 'Combo Packs') return false; // Hide Combo Packs completely
+    if (hideExtras && cat === 'Extras') return false; // Hide Extras completely if hideExtras is true
     if (activeCategory === 'All') return ['Menu', 'Extras'].includes(cat);
     return cat === activeCategory;
   }).sort((a, b) => {
@@ -299,7 +304,13 @@ export default function MenuOrderingClient() {
                       if (item.subItems && item.subItems.length > 0) {
                         setExpandedMenus(prev => ({...prev, [item.id]: !prev[item.id]}));
                       } else {
-                        const added = addToCart({ id: item.id, cartItemId: item.id, name: item.name, price: activePrice });
+                        const added = addToCart({ 
+                          id: item.id, 
+                          cartItemId: item.id, 
+                          name: item.name, 
+                          price: activePrice,
+                          originalPrice: item.originalPrice || undefined
+                        });
                         if (added) {
                           toast.success(`Added ${item.name} to cart`);
                         }
@@ -374,6 +385,7 @@ export default function MenuOrderingClient() {
                         cartItemId,
                         name: item.name,
                         price: activePrice + extraPrice,
+                        originalPrice: item.originalPrice ? (item.originalPrice + extraPrice) : undefined,
                         subItems: selectedSubItems
                       });
                       if (added) {
@@ -413,39 +425,54 @@ export default function MenuOrderingClient() {
                   <p className="text-xs text-muted-foreground">Add items from the menu to get started</p>
                 </div>
               ) : (
-                cart.map(cItem => (
-                  <div key={`cart-${cItem.cartItemId || cItem.id}`} className="flex items-center gap-3 bg-muted rounded-xl p-3 border border-border/50">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-600 text-foreground truncate">{cItem.name}</p>
-                      {cItem.subItems && cItem.subItems.length > 0 && (
-                        <div className="mt-1 flex flex-col gap-0.5">
-                          {cItem.subItems.map((sub, i) => (
-                            <span key={i} className="text-[10px] text-muted-foreground flex justify-between leading-tight">
-                              <span className="truncate pr-2">+ {sub.name}</span>
-                              {sub.price > 0 && <span>+£{sub.price.toFixed(2)}</span>}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-xs text-primary font-700 tabular-nums mt-1">£{cItem.price.toFixed(2)} each</p>
+                cart.map(cItem => {
+                  const isOriginalPriceApplied = !!(completedOrdersCount >= 4 && cItem.originalPrice && cItem.originalPrice > 0);
+                  const itemDisplayPrice = isOriginalPriceApplied ? (cItem.originalPrice ?? cItem.price) : cItem.price;
+
+                  return (
+                    <div key={`cart-${cItem.cartItemId || cItem.id}`} className="flex items-center gap-3 bg-muted rounded-xl p-3 border border-border/50">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-600 text-foreground truncate">{cItem.name}</p>
+                        {cItem.subItems && cItem.subItems.length > 0 && (
+                          <div className="mt-1 flex flex-col gap-0.5">
+                            {cItem.subItems.map((sub, i) => (
+                              <span key={i} className="text-[10px] text-muted-foreground flex justify-between leading-tight">
+                                <span className="truncate pr-2">+ {sub.name}</span>
+                                {sub.price > 0 && <span>+£{sub.price.toFixed(2)}</span>}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-xs text-primary font-700 tabular-nums mt-1">
+                          £{itemDisplayPrice.toFixed(2)} each
+                          {isOriginalPriceApplied && (
+                            <span className="text-[9px] text-amber-700 font-700 bg-amber-100/80 px-1.5 py-0.5 rounded ml-1.5 border border-amber-200">Original Price</span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => updateQty(cItem.cartItemId || cItem.id, -1)} className="w-6 h-6 rounded-lg bg-white border border-border flex items-center justify-center hover:border-primary transition-colors">
+                          <Minus size={10} />
+                        </button>
+                        <span className="text-sm font-700 w-5 text-center tabular-nums">{cItem.qty}</span>
+                        <button onClick={() => updateQty(cItem.cartItemId || cItem.id, 1)} className="w-6 h-6 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-[#C39B54] transition-colors">
+                          <Plus size={10} />
+                        </button>
+                      </div>
+                      <span className="text-sm font-700 tabular-nums text-foreground w-14 text-right shrink-0">£{(itemDisplayPrice * cItem.qty).toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => updateQty(cItem.cartItemId || cItem.id, -1)} className="w-6 h-6 rounded-lg bg-white border border-border flex items-center justify-center hover:border-primary transition-colors">
-                        <Minus size={10} />
-                      </button>
-                      <span className="text-sm font-700 w-5 text-center tabular-nums">{cItem.qty}</span>
-                      <button onClick={() => updateQty(cItem.cartItemId || cItem.id, 1)} className="w-6 h-6 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-[#C39B54] transition-colors">
-                        <Plus size={10} />
-                      </button>
-                    </div>
-                    <span className="text-sm font-700 tabular-nums text-foreground w-14 text-right shrink-0">£{(cItem.price * cItem.qty).toFixed(2)}</span>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
             {cart.length > 0 && (
               <div className="p-4 border-t border-border space-y-3 bg-white">
+                {completedOrdersCount >= 4 && cart.some(item => item.originalPrice && item.originalPrice > 0) && (
+                  <div className="bg-amber-50 text-amber-800 text-[11px] font-700 p-2.5 rounded-xl border border-amber-100 leading-tight">
+                    ⚠️ Original prices apply because you have completed {completedOrdersCount} orders.
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal ({cartCount} items)</span>
                   <span className="font-700 tabular-nums">£{cartTotal.toFixed(2)}</span>
@@ -462,6 +489,13 @@ export default function MenuOrderingClient() {
                   className="w-full bg-[#10261A] text-white font-800 py-3.5 rounded-xl hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
                   Proceed to Checkout <ChevronRight size={18} />
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => setIsCartOpen(false)}
+                  className="w-full text-center text-xs font-700 text-muted-foreground hover:text-primary transition-colors pt-2 block"
+                >
+                  + Add More Items
+                </button>
               </div>
             )}
           </div>

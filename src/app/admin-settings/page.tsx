@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../admin-dashboard/components/AdminLayout';
-import { Save, Users, Flame, GraduationCap, Gift, Plus, Trash2, ChevronDown, ChevronRight, Upload, Loader2, Image as ImageIcon, CreditCard, Eye, EyeOff } from 'lucide-react';
+import { Save, Users, Flame, GraduationCap, Gift, Plus, Trash2, ChevronDown, ChevronRight, Upload, Loader2, Image as ImageIcon, CreditCard, Eye, EyeOff, Layout, Clock } from 'lucide-react';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
@@ -92,6 +92,143 @@ const defaultSettings = {
   // Stripe Config
   stripePublishableKey: '',
   stripeSecretKey: '',
+
+  // Delivery Settings
+  deliveryDays: [1, 4], // 1 = Monday, 4 = Thursday
+  deliverySlots: [
+    { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
+    { id: 'slot-2', label: 'Afternoon', time: '12:00 PM – 1:00 PM', icon: '☀️', enabled: true },
+    { id: 'slot-3', label: 'Evening', time: '7:30 PM – 8:30 PM', icon: '🌙', enabled: true },
+  ],
+
+  // Homepage Hero
+  heroTitle: 'Fresh Indian Food,\nDelivered with Love',
+  heroDesc: 'Drawing on 21 years of restaurant expertise, we prepare nutritious vegetarian meals using authentic recipes, fresh ingredients, and sustainable packaging.',
+  heroBtn1: 'Start Your DoMeal Journey',
+  heroBtn2: 'View Meal Plans',
+  heroRating: '4.9 / 5',
+  heroReviews: '1,200+ Reviews',
+  heroDailyOrders: '500+',
+  heroDailyOrdersLabel: 'Daily Orders',
+  heroSpecialTitle: "Today's Special",
+  heroSpecialText: 'Dal Makhani + Roti',
+  heroPoints: [
+    'Freshly Cooked Daily',
+    'Vegetarian & Vegan Options',
+    'Balanced Nutrition',
+    'Reusable Packaging',
+    '21 Years of Culinary Excellence',
+  ],
+
+  // Homepage How It Works
+  howItWorksBadge: 'Simple Process',
+  howItWorksTitle: 'How DoMeal Works',
+  howItWorksDesc: 'From your phone to your plate in 3 easy steps. No fuss, no hassle — just great food delivered on time.',
+  howItWorksSteps: [
+    {
+      title: 'Choose Your Meals',
+      description: "Browse today's fresh menu or subscribe to a weekly plan. Select from Breakfast, Lunch, Dinner, or a Full Day combo.",
+    },
+    {
+      title: 'We Cook Fresh',
+      description: 'Our home-cooks prepare your meals fresh every morning using traditional Indian recipes with no preservatives.',
+    },
+    {
+      title: 'Delivered to You',
+      description: 'Hot tiffin delivered right to your doorstep across London. Track your order in real-time and enjoy a home-cooked meal.',
+    }
+  ],
+
+  // Homepage Why Choose Us
+  whyChooseBadge: 'Why Us',
+  whyChooseTitle: 'Why Choose DoMeal?',
+  whyChooseDesc: 'More than just food delivery — we bring the warmth of home-cooking to your daily life in London.',
+  whyChooseReasons: [
+    { title: '100% Vegan and Vegetarian', desc: 'Strictly plant-based and vegetarian options. Perfect for clean eating and conscious dietary preferences.' },
+    { title: 'Food Hygiene Certified', desc: 'Our kitchen holds a 5-star Food Hygiene Rating from the local council. Safe food, always.' },
+    { title: 'Punctual Delivery', desc: 'Breakfast by 8:30 AM, Lunch by 1:00 PM, Dinner by 8:30 PM. We respect your schedule.' },
+    { title: 'Made with Love', desc: 'Every meal is prepared by experienced home cooks using traditional recipes passed down generations.' },
+    { title: 'No Hidden Charges', desc: 'What you see is what you pay. Free delivery on all subscription plans. No surprise fees.' },
+    { title: 'London-Wide Delivery', desc: 'We cover East, North, South, West and Central London. Check your postcode above.' }
+  ],
+
+  // Homepage Testimonials
+  testimonialsBadge: 'Customer Love',
+  testimonialsTitle: 'What Our Customers Say',
+  testimonialsDesc: 'Over 1,200 happy customers across London trust DoMeal daily.',
+  testimonialsList: [
+    {
+      name: 'Priya Raghunathan',
+      role: 'Software Engineer, Whitechapel',
+      rating: 5,
+      text: "I've been subscribing for 8 months now. The Pongal breakfast is exactly like my mom makes. Never missed a delivery. Highly recommend to anyone who misses home food!",
+      plan: 'Full Day Plan',
+    },
+    {
+      name: 'Venkatesh Subramaniam',
+      role: 'Teacher, Ilford',
+      rating: 5,
+      text: 'The 100% Vegan and Vegetarian option is a blessing. Perfect for our family. Quantity is generous and the food is always hot and fresh. Best tiffin service in London.',
+      plan: 'Lunch + Dinner Plan',
+    },
+    {
+      name: 'Kavitha Moorthi',
+      role: 'Homemaker, East Ham',
+      rating: 5,
+      text: "Even as a homemaker, I order their Full Meals on busy festival days. The curd rice and pickle combo is outstanding. The tiffin boxes are a lovely touch!",
+      plan: 'Occasional Orders',
+    },
+    {
+      name: 'Arun Krishnaswamy',
+      role: 'Accountant, Romford',
+      rating: 5,
+      text: "Switched from another service 6 months ago and never looked back. The variety changes daily so I never get bored. Customer support is also very responsive.",
+      plan: 'Breakfast Plan',
+    }
+  ],
+  testimonialsCTATitle: 'Ready to taste the difference?',
+  testimonialsCTADesc: 'Join 1,200+ happy customers. First week free on any subscription plan.',
+  testimonialsCTAButton1: 'Order Now',
+  testimonialsCTAButton2: 'Create Account',
+
+  // Homepage FAQs
+  faqBadge: 'FAQs',
+  faqTitle: "Questions?\nWe've got answers.",
+  faqDesc: "Everything you need to know about DoMeal tiffin delivery in London. Can't find your answer?",
+  faqsList: [
+    {
+      question: 'What areas in London do you deliver to?',
+      answer: 'We currently deliver across East London (E1–E18), North London (N1, N4, N5, N7, N16), South East London (SE1–SE17), South West London (SW1–SW11), West London, Central London (WC1, WC2), City of London (EC1–EC4), Ilford (IG1–IG6), and Romford (RM1–RM3). Use our postcode checker above to confirm your area.',
+    },
+    {
+      question: 'What time do you deliver?',
+      answer: 'We offer three delivery slots: Breakfast (7:30 AM – 8:30 AM), Lunch (12:00 PM – 1:00 PM), and Dinner (7:30 PM – 8:30 PM). You can choose your preferred slot when placing your order.',
+    },
+    {
+      question: 'Is the food 100% vegan and vegetarian?',
+      answer: 'Yes! All our food is 100% pure vegetarian. We also offer a 100% Vegan and Vegetarian option. Just select the option when ordering.',
+    },
+    {
+      question: 'How do I subscribe to a meal plan?',
+      answer: 'Simply create an account, choose your preferred plan (Breakfast, Lunch + Dinner, or Full Day Meals), select your delivery slot, and complete payment. Your subscription starts the next working day.',
+    },
+    {
+      question: 'Can I pause or cancel my subscription?',
+      answer: 'Absolutely. You can pause your subscription anytime with 24 hours notice, or cancel with 3 days notice. There are no cancellation fees. Manage everything from your account dashboard.',
+    },
+    {
+      question: 'What is your pricing and currency?',
+      answer: 'All our prices are in British Pounds (£). Our plans start from £45/month for the Breakfast Plan, £75/month for Lunch + Dinner, and £105/month for Full Day Meals. Individual orders are also available.',
+    },
+    {
+      question: 'How is the food packaged?',
+      answer: 'We use eco-friendly, food-safe containers. Tiffin boxes are sealed to maintain freshness and temperature during delivery. All packaging is recyclable.',
+    },
+    {
+      question: 'What if I have allergies or dietary requirements?',
+      answer: 'Please mention your dietary requirements in the special instructions when placing your order. We handle common allergens carefully, but our kitchen does use nuts, dairy, and gluten. Contact us directly for severe allergies.',
+    }
+  ],
 };
 
 export default function AdminSettingsPage() {
@@ -102,6 +239,7 @@ export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState('referral');
   const [settings, setSettings] = useState(defaultSettings);
   const [showSecretKey, setShowSecretKey] = useState(false);
+  const [openHomepageSubTab, setOpenHomepageSubTab] = useState('hero');
 
   useEffect(() => {
     if (!user || user.email !== 'domealuk79812@gmail.com') return;
@@ -111,7 +249,7 @@ export default function AdminSettingsPage() {
         const snap = await getDoc(docRef);
         if (snap.exists()) {
           const data = snap.data();
-          data.heatData = defaultSettings.heatData;
+          data.heatData = data.heatData || defaultSettings.heatData;
           setSettings(prev => ({ ...prev, ...data }));
         } else {
           const refDoc = await getDoc(doc(db, 'settings', 'referral'));
@@ -230,6 +368,35 @@ export default function AdminSettingsPage() {
     updateHeatItem(index, field, arr);
   };
 
+  // Homepage Sections Helper Methods
+  const handleHeroPointChange = (idx: number, val: string) => {
+    const pts = [...(settings.heroPoints || [])];
+    pts[idx] = val;
+    setSettings(prev => ({ ...prev, heroPoints: pts }));
+  };
+  const addHeroPoint = () => {
+    setSettings(prev => ({ ...prev, heroPoints: [...(settings.heroPoints || []), 'New Highlight Point'] }));
+  };
+  const removeHeroPoint = (idx: number) => {
+    const pts = [...(settings.heroPoints || [])];
+    pts.splice(idx, 1);
+    setSettings(prev => ({ ...prev, heroPoints: pts }));
+  };
+
+  const handleArrayObjChange = (fieldName: string, idx: number, key: string, val: any) => {
+    const arr = [...((settings as any)[fieldName] || [])] as any[];
+    arr[idx] = { ...arr[idx], [key]: val };
+    setSettings(prev => ({ ...prev, [fieldName]: arr }));
+  };
+  const addArrayObjItem = (fieldName: string, defaultObj: any) => {
+    setSettings(prev => ({ ...prev, [fieldName]: [...((settings as any)[fieldName] || []), defaultObj] }));
+  };
+  const removeArrayObjItem = (fieldName: string, idx: number) => {
+    const arr = [...((settings as any)[fieldName] || [])];
+    arr.splice(idx, 1);
+    setSettings(prev => ({ ...prev, [fieldName]: arr }));
+  };
+
   if (loading) {
     return (
       <AdminLayout activeRoute="/admin-settings">
@@ -244,7 +411,9 @@ export default function AdminSettingsPage() {
     { id: 'gift', label: 'Gift Vouchers', icon: Gift, color: 'text-purple-600', bg: 'bg-purple-50' },
     { id: 'heating', label: 'How to Heat', icon: Flame, color: 'text-orange-600', bg: 'bg-orange-50' },
     { id: 'popup', label: 'Global Popup Ads', icon: ImageIcon, color: 'text-pink-600', bg: 'bg-pink-50' },
+    { id: 'homepage', label: 'Homepage Sections', icon: Layout, color: 'text-amber-600', bg: 'bg-amber-50' },
     { id: 'stripe', label: 'Stripe Config', icon: CreditCard, color: 'text-rose-600', bg: 'bg-rose-50' },
+    { id: 'delivery', label: 'Delivery & Slots', icon: Clock, color: 'text-teal-600', bg: 'bg-teal-50' },
   ];
 
   return (
@@ -587,6 +756,564 @@ export default function AdminSettingsPage() {
             </div>
           )}
 
+          {/* HOMEPAGE SECTIONS TAB */}
+          {activeTab === 'homepage' && (
+            <div className="animate-in fade-in duration-200">
+              <div className="bg-amber-50 border-b border-border p-4 px-6 flex justify-between items-center">
+                <h2 className="font-800 text-foreground text-lg">Homepage Sections Content</h2>
+              </div>
+              
+              <div className="p-6">
+                {/* Horizontal Navigation for Homepage Sub-tabs */}
+                <div className="flex gap-2 border-b border-border pb-3 mb-6 overflow-x-auto">
+                  {[
+                    { id: 'hero', label: '1. Hero & Highlights' },
+                    { id: 'howItWorks', label: '2. How It Works' },
+                    { id: 'whyChoose', label: '3. Why Choose Us' },
+                    { id: 'testimonials', label: '4. Testimonials' },
+                    { id: 'faq', label: '5. FAQs' }
+                  ].map(subTab => (
+                    <button
+                      key={subTab.id}
+                      type="button"
+                      onClick={() => setOpenHomepageSubTab(subTab.id)}
+                      className={`px-4 py-2 rounded-lg font-700 text-xs whitespace-nowrap transition-all ${
+                        openHomepageSubTab === subTab.id
+                          ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                          : 'bg-gray-50 text-muted-foreground hover:bg-gray-100 border border-transparent'
+                      }`}
+                    >
+                      {subTab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* SUB-TAB: HERO */}
+                {openHomepageSubTab === 'hero' && (
+                  <div className="space-y-4 animate-in fade-in duration-150">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Hero Title (Use \n for new lines)</label>
+                        <textarea
+                          name="heroTitle"
+                          rows={2}
+                          value={settings.heroTitle || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2.5 text-sm font-700 focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Hero Description</label>
+                        <textarea
+                          name="heroDesc"
+                          rows={3}
+                          value={settings.heroDesc || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2.5 text-sm font-500 focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">CTA Button 1 Text</label>
+                        <input
+                          type="text"
+                          name="heroBtn1"
+                          value={settings.heroBtn1 || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">CTA Button 2 Text</label>
+                        <input
+                          type="text"
+                          name="heroBtn2"
+                          value={settings.heroBtn2 || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Rating Badge Value</label>
+                        <input
+                          type="text"
+                          name="heroRating"
+                          value={settings.heroRating || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Reviews Count Text</label>
+                        <input
+                          type="text"
+                          name="heroReviews"
+                          value={settings.heroReviews || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Daily Orders Badge Value</label>
+                        <input
+                          type="text"
+                          name="heroDailyOrders"
+                          value={settings.heroDailyOrders || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Daily Orders Badge Label</label>
+                        <input
+                          type="text"
+                          name="heroDailyOrdersLabel"
+                          value={settings.heroDailyOrdersLabel || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Floating Special Offer Title</label>
+                        <input
+                          type="text"
+                          name="heroSpecialTitle"
+                          value={settings.heroSpecialTitle || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Floating Special Offer Text</label>
+                        <input
+                          type="text"
+                          name="heroSpecialText"
+                          value={settings.heroSpecialText || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border border-border rounded-2xl p-4 bg-gray-50/50 mt-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <label className="block text-xs font-800 text-primary uppercase">Hero Highlight Points</label>
+                        <button
+                          type="button"
+                          onClick={addHeroPoint}
+                          className="text-xs bg-primary text-white font-700 px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-[#1E3B2B] transition-colors"
+                        >
+                          <Plus size={14} /> Add Point
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {(settings.heroPoints || []).map((pt: string, idx: number) => (
+                          <div key={idx} className="flex gap-2 items-center">
+                            <input
+                              type="text"
+                              value={pt}
+                              onChange={(e) => handleHeroPointChange(idx, e.target.value)}
+                              className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeHeroPoint(idx)}
+                              className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB-TAB: HOW IT WORKS */}
+                {openHomepageSubTab === 'howItWorks' && (
+                  <div className="space-y-4 animate-in fade-in duration-150">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Badge Text</label>
+                        <input
+                          type="text"
+                          name="howItWorksBadge"
+                          value={settings.howItWorksBadge || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Section Title</label>
+                        <input
+                          type="text"
+                          name="howItWorksTitle"
+                          value={settings.howItWorksTitle || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Section Description</label>
+                        <textarea
+                          name="howItWorksDesc"
+                          rows={2}
+                          value={settings.howItWorksDesc || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border border-border rounded-2xl p-4 bg-gray-50/50 space-y-4 mt-4">
+                      <h4 className="text-xs font-800 text-primary uppercase">How It Works Steps (Exactly 3 steps)</h4>
+                      {(settings.howItWorksSteps || []).slice(0, 3).map((step: any, idx: number) => (
+                        <div key={idx} className="border border-border bg-white rounded-xl p-4 space-y-3 shadow-sm">
+                          <span className="font-800 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full">Step {idx + 1}</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                            <div>
+                              <label className="block text-[11px] font-800 text-muted-foreground mb-1">Step Title</label>
+                              <input
+                                type="text"
+                                value={step.title || ''}
+                                onChange={(e) => handleArrayObjChange('howItWorksSteps', idx, 'title', e.target.value)}
+                                className="w-full border border-border rounded-lg px-3 py-1.5 text-xs font-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-800 text-muted-foreground mb-1">Step Description</label>
+                              <textarea
+                                rows={2}
+                                value={step.description || ''}
+                                onChange={(e) => handleArrayObjChange('howItWorksSteps', idx, 'description', e.target.value)}
+                                className="w-full border border-border rounded-lg px-3 py-1.5 text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB-TAB: WHY CHOOSE */}
+                {openHomepageSubTab === 'whyChoose' && (
+                  <div className="space-y-4 animate-in fade-in duration-150">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Badge Text</label>
+                        <input
+                          type="text"
+                          name="whyChooseBadge"
+                          value={settings.whyChooseBadge || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Section Title</label>
+                        <input
+                          type="text"
+                          name="whyChooseTitle"
+                          value={settings.whyChooseTitle || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Section Description</label>
+                        <textarea
+                          name="whyChooseDesc"
+                          rows={2}
+                          value={settings.whyChooseDesc || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border border-border rounded-2xl p-4 bg-gray-50/50 space-y-4 mt-4">
+                      <h4 className="text-xs font-800 text-primary uppercase">Why Choose Reasons (Exactly 6 reasons)</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(settings.whyChooseReasons || []).slice(0, 6).map((reason: any, idx: number) => (
+                          <div key={idx} className="border border-border bg-white rounded-xl p-4 space-y-2 shadow-sm">
+                            <span className="font-800 text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full">Reason {idx + 1}</span>
+                            <div className="space-y-2 mt-2">
+                              <div>
+                                <label className="block text-[11px] font-800 text-muted-foreground mb-1">Title</label>
+                                <input
+                                  type="text"
+                                  value={reason.title || ''}
+                                  onChange={(e) => handleArrayObjChange('whyChooseReasons', idx, 'title', e.target.value)}
+                                  className="w-full border border-border rounded-lg px-3 py-1.5 text-xs font-700"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-800 text-muted-foreground mb-1">Description</label>
+                                <textarea
+                                  rows={2}
+                                  value={reason.desc || ''}
+                                  onChange={(e) => handleArrayObjChange('whyChooseReasons', idx, 'desc', e.target.value)}
+                                  className="w-full border border-border rounded-lg px-3 py-1.5 text-xs"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB-TAB: TESTIMONIALS */}
+                {openHomepageSubTab === 'testimonials' && (
+                  <div className="space-y-4 animate-in fade-in duration-150">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Badge Text</label>
+                        <input
+                          type="text"
+                          name="testimonialsBadge"
+                          value={settings.testimonialsBadge || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Section Title</label>
+                        <input
+                          type="text"
+                          name="testimonialsTitle"
+                          value={settings.testimonialsTitle || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Section Description</label>
+                        <textarea
+                          name="testimonialsDesc"
+                          rows={2}
+                          value={settings.testimonialsDesc || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border border-border rounded-2xl p-4 bg-gray-50/50 mt-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <label className="block text-xs font-800 text-primary uppercase">Testimonials List</label>
+                        <button
+                          type="button"
+                          onClick={() => addArrayObjItem('testimonialsList', { name: 'Customer Name', role: 'Role/Location', rating: 5, text: 'Review text...', plan: 'Plan Name' })}
+                          className="text-xs bg-primary text-white font-700 px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-[#1E3B2B] transition-colors"
+                        >
+                          <Plus size={14} /> Add Testimonial
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(settings.testimonialsList || []).map((t: any, idx: number) => (
+                          <div key={idx} className="border border-border bg-white rounded-xl p-4 space-y-3 shadow-sm relative group">
+                            <button
+                              type="button"
+                              onClick={() => removeArrayObjItem('testimonialsList', idx)}
+                              className="absolute top-2 right-2 text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                            <span className="font-800 text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">Testimonial {idx + 1}</span>
+                            
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              <div>
+                                <label className="block text-[10px] font-800 text-muted-foreground mb-1">Name</label>
+                                <input
+                                  type="text"
+                                  value={t.name || ''}
+                                  onChange={(e) => handleArrayObjChange('testimonialsList', idx, 'name', e.target.value)}
+                                  className="w-full border border-border rounded-lg px-3 py-1 text-xs font-700"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-800 text-muted-foreground mb-1">Role/Location</label>
+                                <input
+                                  type="text"
+                                  value={t.role || ''}
+                                  onChange={(e) => handleArrayObjChange('testimonialsList', idx, 'role', e.target.value)}
+                                  className="w-full border border-border rounded-lg px-3 py-1 text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-800 text-muted-foreground mb-1">Rating (1-5)</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="5"
+                                  value={t.rating || 5}
+                                  onChange={(e) => handleArrayObjChange('testimonialsList', idx, 'rating', Number(e.target.value))}
+                                  className="w-full border border-border rounded-lg px-3 py-1 text-xs font-700"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-800 text-muted-foreground mb-1">Plan Subscribed</label>
+                                <input
+                                  type="text"
+                                  value={t.plan || ''}
+                                  onChange={(e) => handleArrayObjChange('testimonialsList', idx, 'plan', e.target.value)}
+                                  className="w-full border border-border rounded-lg px-3 py-1 text-xs font-700"
+                                />
+                              </div>
+                              <div className="col-span-2">
+                                <label className="block text-[10px] font-800 text-muted-foreground mb-1">Review Text</label>
+                                <textarea
+                                  rows={3}
+                                  value={t.text || ''}
+                                  onChange={(e) => handleArrayObjChange('testimonialsList', idx, 'text', e.target.value)}
+                                  className="w-full border border-border rounded-lg px-3 py-1.5 text-xs resize-none"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border border-border rounded-2xl p-4 bg-gray-50/50 space-y-4 mt-4">
+                      <h4 className="text-xs font-800 text-primary uppercase">Bottom CTA Banner Card</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-800 text-muted-foreground mb-1.5">CTA Card Title</label>
+                          <input
+                            type="text"
+                            name="testimonialsCTATitle"
+                            value={settings.testimonialsCTATitle || ''}
+                            onChange={handleChange}
+                            className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-800 text-muted-foreground mb-1.5">CTA Card Description</label>
+                          <textarea
+                            name="testimonialsCTADesc"
+                            rows={2}
+                            value={settings.testimonialsCTADesc || ''}
+                            onChange={handleChange}
+                            className="w-full border border-border rounded-xl px-4 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-800 text-muted-foreground mb-1.5">CTA Button 1 Text</label>
+                          <input
+                            type="text"
+                            name="testimonialsCTAButton1"
+                            value={settings.testimonialsCTAButton1 || ''}
+                            onChange={handleChange}
+                            className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-800 text-muted-foreground mb-1.5">CTA Button 2 Text</label>
+                          <input
+                            type="text"
+                            name="testimonialsCTAButton2"
+                            value={settings.testimonialsCTAButton2 || ''}
+                            onChange={handleChange}
+                            className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB-TAB: FAQ */}
+                {openHomepageSubTab === 'faq' && (
+                  <div className="space-y-4 animate-in fade-in duration-150">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Badge Text</label>
+                        <input
+                          type="text"
+                          name="faqBadge"
+                          value={settings.faqBadge || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Section Title</label>
+                        <textarea
+                          name="faqTitle"
+                          rows={2}
+                          value={settings.faqTitle || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-800 text-muted-foreground mb-1.5">Section Description</label>
+                        <textarea
+                          name="faqDesc"
+                          rows={2}
+                          value={settings.faqDesc || ''}
+                          onChange={handleChange}
+                          className="w-full border border-border rounded-xl px-4 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border border-border rounded-2xl p-4 bg-gray-50/50 mt-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <label className="block text-xs font-800 text-primary uppercase">FAQs List</label>
+                        <button
+                          type="button"
+                          onClick={() => addArrayObjItem('faqsList', { question: 'Question?', answer: 'Answer here...' })}
+                          className="text-xs bg-primary text-white font-700 px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-[#1E3B2B] transition-colors"
+                        >
+                          <Plus size={14} /> Add FAQ
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {(settings.faqsList || []).map((faq: any, idx: number) => (
+                          <div key={idx} className="border border-border bg-white rounded-xl p-4 space-y-3 shadow-sm relative group">
+                            <button
+                              type="button"
+                              onClick={() => removeArrayObjItem('faqsList', idx)}
+                              className="absolute top-2 right-2 text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                            <span className="font-800 text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">FAQ {idx + 1}</span>
+                            
+                            <div className="space-y-2 mt-2">
+                              <div>
+                                <label className="block text-[10px] font-800 text-muted-foreground mb-1">Question</label>
+                                <input
+                                  type="text"
+                                  value={faq.question || ''}
+                                  onChange={(e) => handleArrayObjChange('faqsList', idx, 'question', e.target.value)}
+                                  className="w-full border border-border rounded-lg px-3 py-1.5 text-xs font-700"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-800 text-muted-foreground mb-1">Answer</label>
+                                <textarea
+                                  rows={3}
+                                  value={faq.answer || ''}
+                                  onChange={(e) => handleArrayObjChange('faqsList', idx, 'answer', e.target.value)}
+                                  className="w-full border border-border rounded-lg px-3 py-1.5 text-xs"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {activeTab === 'stripe' && (
             <div className="animate-in fade-in duration-200">
               <div className="bg-rose-50 border-b border-border p-4 px-6">
@@ -627,6 +1354,133 @@ export default function AdminSettingsPage() {
                         {showSecretKey ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DELIVERY & SLOTS TAB */}
+          {activeTab === 'delivery' && (
+            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
+              <div className="border-b border-border bg-gray-50/50 px-6 py-4">
+                <h2 className="font-800 text-foreground text-lg">Delivery Days & Slots</h2>
+              </div>
+              <div className="p-6 space-y-8">
+                {/* Delivery Days Section */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-800 text-foreground">Available Delivery Days</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Select the days of the week when subscribers can choose to receive deliveries.</p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                    {[
+                      { value: 1, label: 'Monday' },
+                      { value: 2, label: 'Tuesday' },
+                      { value: 3, label: 'Wednesday' },
+                      { value: 4, label: 'Thursday' },
+                      { value: 5, label: 'Friday' },
+                      { value: 6, label: 'Saturday' },
+                      { value: 0, label: 'Sunday' },
+                    ].map((day) => {
+                      const isChecked = (settings.deliveryDays || [1, 4]).includes(day.value);
+                      return (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => {
+                            const currentDays = settings.deliveryDays || [1, 4];
+                            let newDays = [];
+                            if (currentDays.includes(day.value)) {
+                              newDays = currentDays.filter(d => d !== day.value);
+                            } else {
+                              newDays = [...currentDays, day.value].sort();
+                            }
+                            setSettings(prev => ({ ...prev, deliveryDays: newDays }));
+                          }}
+                          className={`py-3 px-4 rounded-xl border text-center font-700 text-xs transition-all ${isChecked ? 'border-primary bg-orange-50 text-primary' : 'border-border bg-background text-muted-foreground hover:border-gray-300'}`}
+                        >
+                          {day.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Delivery Slots Section */}
+                <div className="space-y-4 pt-6 border-t border-border">
+                  <div>
+                    <h3 className="text-sm font-800 text-foreground">Delivery Time Slots</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Customize time slot labels, descriptions, and toggle them on or off according to operational requirements.</p>
+                  </div>
+                  <div className="space-y-4 max-w-4xl">
+                    {(settings.deliverySlots || [
+                      { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
+                      { id: 'slot-2', label: 'Afternoon', time: '12:00 PM – 1:00 PM', icon: '☀️', enabled: true },
+                      { id: 'slot-3', label: 'Evening', time: '7:30 PM – 8:30 PM', icon: '🌙', enabled: true },
+                    ]).map((slot: any) => (
+                      <div key={slot.id} className={`p-5 rounded-2xl border transition-all ${slot.enabled ? 'border-border bg-white' : 'border-dashed border-gray-200 bg-gray-50/50 opacity-70'}`}>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl bg-muted p-2 rounded-xl">{slot.icon}</span>
+                            <div>
+                              <p className="font-800 text-sm text-foreground">{slot.label || 'Unnamed Slot'}</p>
+                              <p className="text-xs text-muted-foreground">{slot.time || 'No time set'}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            {/* Toggle switch */}
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={slot.enabled !== false}
+                                onChange={(e) => {
+                                  const currentSlots = settings.deliverySlots || [];
+                                  const updatedSlots = currentSlots.map((s: any) => s.id === slot.id ? { ...s, enabled: e.target.checked } : s);
+                                  setSettings(prev => ({ ...prev, deliverySlots: updatedSlots }));
+                                }}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+                              <span className="ml-2 text-xs font-700 text-foreground">{slot.enabled !== false ? 'Enabled' : 'Disabled'}</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {slot.enabled !== false && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/50 animate-in fade-in duration-200">
+                            <div>
+                              <label className="block text-[10px] font-800 text-muted-foreground uppercase tracking-wider mb-1.5">Slot Label</label>
+                              <input
+                                type="text"
+                                value={slot.label || ''}
+                                onChange={(e) => {
+                                  const currentSlots = settings.deliverySlots || [];
+                                  const updatedSlots = currentSlots.map((s: any) => s.id === slot.id ? { ...s, label: e.target.value } : s);
+                                  setSettings(prev => ({ ...prev, deliverySlots: updatedSlots }));
+                                }}
+                                className="w-full border border-border rounded-xl px-3.5 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                                placeholder="e.g. Morning Shift"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-800 text-muted-foreground uppercase tracking-wider mb-1.5">Delivery Time/Description</label>
+                              <input
+                                type="text"
+                                value={slot.time || ''}
+                                onChange={(e) => {
+                                  const currentSlots = settings.deliverySlots || [];
+                                  const updatedSlots = currentSlots.map((s: any) => s.id === slot.id ? { ...s, time: e.target.value } : s);
+                                  setSettings(prev => ({ ...prev, deliverySlots: updatedSlots }));
+                                }}
+                                className="w-full border border-border rounded-xl px-3.5 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                                placeholder="e.g. 7:30 AM – 8:30 AM"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

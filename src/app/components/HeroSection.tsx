@@ -1,9 +1,48 @@
-import React from 'react';
+'use client';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Star, Clock, Leaf, Check } from 'lucide-react';
+import { getApiUrl } from '@/lib/api';
 
 export default function HeroSection() {
+  const [settings, setSettings] = useState({
+    heroTitle: 'Fresh Indian Food,\nDelivered with Love',
+    heroDesc: 'Drawing on 21 years of restaurant expertise, we prepare nutritious vegetarian meals using authentic recipes, fresh ingredients, and sustainable packaging.',
+    heroBtn1: 'Start Your DoMeal Journey',
+    heroBtn2: 'View Meal Plans',
+    heroRating: '4.9 / 5',
+    heroReviews: '1,200+ Reviews',
+    heroDailyOrders: '500+',
+    heroDailyOrdersLabel: 'Daily Orders',
+    heroSpecialTitle: "Today's Special",
+    heroSpecialText: 'Dal Makhani + Roti',
+    heroPoints: [
+      'Freshly Cooked Daily',
+      'Vegetarian & Vegan Options',
+      'Balanced Nutrition',
+      'Reusable Packaging',
+      '21 Years of Culinary Excellence',
+    ]
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(prev => ({
+            ...prev,
+            ...data,
+            heroPoints: data.heroPoints || prev.heroPoints
+          }));
+        }
+      } catch (error) {}
+    };
+    fetchSettings();
+  }, []);
+
   return (
     <section
       className="relative overflow-hidden bg-cover bg-center bg-no-repeat"
@@ -24,16 +63,26 @@ export default function HeroSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
           {/* Left content */}
           <div>
-
-
             <h1 className="text-4xl lg:text-5xl xl:text-6xl font-extrabold text-white leading-tight mb-4">
-              Fresh Indian Food,
-              <br />
-              <span className="text-[#C39B54]">Delivered with Love</span>
+              {settings.heroTitle.split('\n').map((line, i) => {
+                if (i === 1) {
+                  return (
+                    <span key={i} className="text-[#C39B54] block sm:inline">
+                      {line}
+                    </span>
+                  );
+                }
+                return (
+                  <React.Fragment key={i}>
+                    {line}
+                    {i === 0 && <br />}
+                  </React.Fragment>
+                );
+              })}
             </h1>
 
             <p className="text-lg text-gray-300 leading-relaxed mb-8 max-w-lg">
-              Drawing on 21 years of restaurant expertise, we prepare nutritious vegetarian meals using authentic recipes, fresh ingredients, and sustainable packaging.
+              {settings.heroDesc}
             </p>
 
             <div className="flex flex-wrap gap-4 mb-10">
@@ -41,14 +90,14 @@ export default function HeroSection() {
                 href="/menu"
                 className="inline-flex items-center gap-2 bg-[#C39B54] text-white font-700 px-6 py-3.5 rounded-xl hover:bg-yellow-700 transition-all duration-150 active:scale-95 shadow-lg shadow-yellow-900/40"
               >
-                Start Your DoMeal Journey
+                {settings.heroBtn1}
                 <ArrowRight size={18} />
               </Link>
               <Link
                 href="/#plans"
                 className="inline-flex items-center gap-2 bg-white/10 text-white font-600 px-6 py-3.5 rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-150 active:scale-95"
               >
-                View Meal Plans
+                {settings.heroBtn2}
               </Link>
             </div>
 
@@ -58,8 +107,8 @@ export default function HeroSection() {
                   <Star size={16} className="text-yellow-400 fill-yellow-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-700 text-white">4.9 / 5</p>
-                  <p className="text-xs text-gray-400">1,200+ Reviews</p>
+                  <p className="text-sm font-700 text-white">{settings.heroRating}</p>
+                  <p className="text-xs text-gray-400">{settings.heroReviews}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -102,14 +151,8 @@ export default function HeroSection() {
                 <p className="text-[#C39B54] text-xs font-600 text-center tracking-widest uppercase mb-6">Home Food Away From Home</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                  {[
-                    'Freshly Cooked Daily',
-                    'Vegetarian & Vegan Options',
-                    'Balanced Nutrition',
-                    'Reusable Packaging',
-                    '21 Years of Culinary Excellence',
-                  ].map((point, idx) => (
-                    <div key={idx} className={`flex items-center gap-3 bg-white/15 rounded-xl px-4 py-3 border border-white/10 shadow-sm ${idx === 4 ? 'sm:col-span-2 sm:justify-center' : ''}`}>
+                  {settings.heroPoints.map((point, idx) => (
+                    <div key={idx} className={`flex items-center gap-3 bg-white/15 rounded-xl px-4 py-3 border border-white/10 shadow-sm ${idx === settings.heroPoints.length - 1 && settings.heroPoints.length % 2 !== 0 ? 'sm:col-span-2 sm:justify-center' : ''}`}>
                       <div className="w-7 h-7 rounded-full bg-[#1E3B2B] flex items-center justify-center flex-shrink-0">
                         <Check size={16} strokeWidth={3} className="text-white" />
                       </div>
@@ -121,8 +164,8 @@ export default function HeroSection() {
 
               {/* Floating badge */}
               <div className="absolute -top-4 -right-4 bg-[#C39B54] text-white rounded-2xl shadow-xl p-3 text-center border-2 border-yellow-400">
-                <p className="text-2xl font-extrabold tabular-nums">500+</p>
-                <p className="text-xs font-600">Daily Orders</p>
+                <p className="text-2xl font-extrabold tabular-nums">{settings.heroDailyOrders}</p>
+                <p className="text-xs font-600">{settings.heroDailyOrdersLabel}</p>
               </div>
 
               {/* Bottom badge */}
@@ -132,8 +175,8 @@ export default function HeroSection() {
                     <Leaf size={16} className="text-green-600" />
                   </div>
                   <div>
-                    <p className="text-xs font-700 text-foreground">Today&apos;s Special</p>
-                    <p className="text-xs text-primary font-600">Dal Makhani + Roti</p>
+                    <p className="text-xs font-700 text-foreground">{settings.heroSpecialTitle}</p>
+                    <p className="text-xs text-primary font-600">{settings.heroSpecialText}</p>
                   </div>
                 </div>
               </div>

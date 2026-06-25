@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ export interface CartItem {
   cartItemId?: string;
   name: string;
   price: number;
+  originalPrice?: number;
   qty: number;
   subItems?: { name: string; price: number }[];
 }
@@ -25,11 +26,12 @@ export interface CheckoutData {
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (item: { id: string; cartItemId?: string; name: string; price: number; subItems?: { name: string; price: number }[] }) => boolean;
+  addToCart: (item: { id: string; cartItemId?: string; name: string; price: number; originalPrice?: number; subItems?: { name: string; price: number }[] }) => boolean;
   updateQty: (idOrCartItemId: string, delta: number) => void;
   clearCart: () => void;
   cartCount: number;
   cartTotal: number;
+  completedOrdersCount: number;
   isCartOpen: boolean;
   setIsCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
   checkoutData: CheckoutData;
@@ -43,6 +45,7 @@ const CartContext = createContext<CartContextType>({
   clearCart: () => {},
   cartCount: 0,
   cartTotal: 0,
+  completedOrdersCount: 0,
   isCartOpen: false,
   setIsCartOpen: () => {},
   checkoutData: {},
@@ -55,6 +58,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState<CheckoutData>({});
+  const [completedOrdersCount, setCompletedOrdersCount] = useState<number>(0);
   const { user } = useAuth();
   const router = useRouter();
 
@@ -78,7 +82,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => unsub();
+    // Listen to successful/placed orders to compute completedOrdersCount
+    const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
+    const unsubOrders = onSnapshot(q, (snap) => {
+      const ordersData = snap.docs.map(doc => doc.data());
+      const successfulOrders = ordersData.filter(o => o.status !== 'Cancelled' && o.status !== 'Pending Payment');
+      setCompletedOrdersCount(successfulOrders.length);
+    });
+
+    return () => {
+      unsub();
+      unsubOrders();
+    };
   }, [user]);
 
   // Sync cart to Firestore
@@ -101,7 +116,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const addToCart = (item: { id: string; cartItemId?: string; name: string; price: number; subItems?: { name: string; price: number }[] }) => {
+  const addToCart = (item: { id: string; cartItemId?: string; name: string; price: number; originalPrice?: number; subItems?: { name: string; price: number }[] }) => {
     if (!user) {
       router.push('/sign-up-login-screen');
       return false;
@@ -121,6 +136,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           cartItemId: item.cartItemId,
           name: item.name, 
           price: item.price, 
+          originalPrice: item.originalPrice,
           qty: 1,
           ...(item.subItems ? { subItems: item.subItems } : {})
         }];
@@ -148,10 +164,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const cartTotal = cart.reduce((sum, item) => {
+    const activePrice = (completedOrdersCount >= 4 && item.originalPrice && item.originalPrice > 0)
+      ? item.originalPrice
+      : item.price;
+    return sum + activePrice * item.qty;
+  }, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, updateQty, clearCart, cartCount, cartTotal, isCartOpen, setIsCartOpen, checkoutData, setCheckoutData: updateCheckoutData as any }}>
+    <CartContext.Provider value={{ cart, addToCart, updateQty, clearCart, cartCount, cartTotal, completedOrdersCount, isCartOpen, setIsCartOpen, checkoutData, setCheckoutData: updateCheckoutData as any }}>
       {children}
     </CartContext.Provider>
   );
