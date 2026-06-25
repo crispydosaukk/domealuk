@@ -366,8 +366,16 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
           }),
         });
 
-        const sessionData = await res.json();
-        if (sessionData.url) {
+        let sessionData: any;
+        try {
+          sessionData = await res.json();
+        } catch (e) {
+          const textResponse = await res.text().catch(() => '');
+          console.error('Non-JSON response from server:', textResponse);
+          throw new Error(`Server returned status ${res.status}: ${textResponse.slice(0, 150) || 'Unknown error'}`);
+        }
+
+        if (res.ok && sessionData.url) {
           window.location.href = sessionData.url;
         } else {
           toast.error(sessionData.error || 'Failed to initialize subscription checkout.');
@@ -376,7 +384,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
       }
     } catch (err: any) {
       console.error(err);
-      toast.error('Failed to process order. Please try again.');
+      toast.error(err.message || 'Failed to process order. Please try again.');
       setIsLoading(false);
     }
   };

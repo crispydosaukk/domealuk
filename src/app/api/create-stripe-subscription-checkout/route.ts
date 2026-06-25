@@ -76,6 +76,19 @@ export async function POST(req: NextRequest) {
         }
       }
     }
+    
+    // Verify customer exists in this Stripe account/environment
+    if (stripeCustomerId) {
+      try {
+        const customerObj = await stripe.customers.retrieve(stripeCustomerId);
+        if ('deleted' in customerObj && customerObj.deleted) {
+          stripeCustomerId = '';
+        }
+      } catch (e) {
+        console.warn(`Customer ${stripeCustomerId} not found in Stripe:`, e);
+        stripeCustomerId = '';
+      }
+    }
 
     if (!stripeCustomerId) {
       const existingCustomers = await stripe.customers.list({ email, limit: 1 });
