@@ -366,13 +366,13 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
           }),
         });
 
+        const resText = await res.text();
         let sessionData: any;
         try {
-          sessionData = await res.json();
+          sessionData = JSON.parse(resText);
         } catch (e) {
-          const textResponse = await res.text().catch(() => '');
-          console.error('Non-JSON response from server:', textResponse);
-          throw new Error(`Server returned status ${res.status}: ${textResponse.slice(0, 150) || 'Unknown error'}`);
+          console.error('Non-JSON response from server:', resText);
+          throw new Error(`Server returned status ${res.status}: ${resText.slice(0, 150) || 'Unknown error (blank response)'}`);
         }
 
         if (res.ok && sessionData.url) {
