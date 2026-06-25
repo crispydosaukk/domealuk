@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { getApiUrl } from '@/lib/api';
 
 function GiftClient() {
   const { user } = useAuth();
@@ -51,7 +52,7 @@ function GiftClient() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/public-settings', { method: 'POST' });
+        const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
           if (data.giftBasePrice !== undefined) {
@@ -68,7 +69,7 @@ function GiftClient() {
     if (status === 'success' && sessionId) {
       const verifySession = async () => {
         try {
-          await fetch('/api/verify-gift-session', {
+          await fetch(getApiUrl('/api/verify-gift-session'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId })
@@ -102,7 +103,7 @@ function GiftClient() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/create-stripe-gift-checkout', {
+      const response = await fetch(getApiUrl('/api/create-stripe-gift-checkout'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

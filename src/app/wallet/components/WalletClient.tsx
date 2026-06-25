@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
+import { CollectionReference, collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw, Sparkles, Gift, CheckCircle, Clock, XCircle, AlertCircle, HelpCircle } from 'lucide-react';
+import { getApiUrl } from '@/lib/api';
 
 type Transaction = {
   id: string;
@@ -43,7 +44,7 @@ export default function WalletClient() {
     // 2. Fetch user's wallet transactions from our secure server GET API
     const fetchTransactions = async () => {
       try {
-        const response = await fetch('/api/wallet-transactions', {
+        const response = await fetch(getApiUrl('/api/wallet-transactions'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.uid })

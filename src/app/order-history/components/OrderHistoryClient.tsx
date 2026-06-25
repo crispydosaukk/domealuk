@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
+import { getApiUrl } from '@/lib/api';
 
 const statusConfig: Record<string, { icon: React.ElementType; color: string; bg: string; label: string }> = {
   'Order Received': { icon: Package, color: 'text-blue-700', bg: 'bg-blue-100', label: 'Order Received' },
@@ -34,7 +35,7 @@ export default function OrderHistoryClient() {
     const { subscriptionId, orderId } = pendingCancelData;
     setCancellingId(subscriptionId);
     try {
-      const res = await fetch('/api/cancel-stripe-subscription', {
+      const res = await fetch(getApiUrl('/api/cancel-stripe-subscription'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscriptionId, orderId }),

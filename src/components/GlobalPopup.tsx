@@ -7,6 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getApiUrl } from '@/lib/api';
 
 interface PopupSettings {
   popupEnabled: boolean;
@@ -41,7 +42,7 @@ export default function GlobalPopup() {
 
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/public-settings', { method: 'POST' });
+        const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
           const isEnabled = data.popupEnabled !== false; // Default to true if undefined

@@ -6,6 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { getApiUrl } from '@/lib/api';
 
 export default function ReferAFriendPage() {
   const [settings, setSettings] = useState({
@@ -33,7 +34,7 @@ export default function ReferAFriendPage() {
 
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/public-settings', { method: 'POST' });
+        const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
           if (data.referralAmount !== undefined) {

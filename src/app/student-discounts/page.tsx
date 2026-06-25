@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { getApiUrl } from '@/lib/api';
 
 export default function StudentDiscountsPage() {
   const [settings, setSettings] = useState({
@@ -22,7 +23,7 @@ export default function StudentDiscountsPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/public-settings', { method: 'POST' });
+        const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
           if (data.studentDiscount !== undefined) {

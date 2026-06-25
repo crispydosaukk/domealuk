@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useCart } from '@/context/CartContext';
+import { getApiUrl } from '@/lib/api';
 
 export interface SubMenuItem {
   id: string;
@@ -64,7 +65,7 @@ export default function MenuOrderingClient() {
   useEffect(() => {
     const fetchGlobalSettings = async () => {
       try {
-        const res = await fetch('/api/public-settings', { method: 'POST' });
+        const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
           setGlobalSettings({

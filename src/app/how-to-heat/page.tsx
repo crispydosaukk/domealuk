@@ -6,6 +6,7 @@ import { ConciergeBell, Package, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { getApiUrl } from '@/lib/api';
 
 export default function HowToHeatPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(0); // First item open by default
@@ -21,7 +22,7 @@ export default function HowToHeatPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch('/api/public-settings', { method: 'POST' });
+        const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
           setSettings(prev => ({ ...prev, ...data }));

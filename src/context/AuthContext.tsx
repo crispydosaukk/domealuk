@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+import { getApiUrl } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -32,7 +33,7 @@ export const useAuth = () => useContext(AuthContext);
 // Call the server API to atomically claim due gift cards securely using Admin SDK
 const checkAndApplyDueGifts = async (uid: string, email: string) => {
   try {
-    await fetch('/api/claim-gift-cards', {
+    await fetch(getApiUrl('/api/claim-gift-cards'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: uid, email })

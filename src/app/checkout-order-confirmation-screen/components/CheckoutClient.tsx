@@ -9,8 +9,8 @@ import { getZoneFromPostcode } from '@/app/components/PostcodeSearch';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { doc, getDoc, updateDoc, arrayUnion, setDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getApiUrl } from '@/lib/api';
 
 type AddressForm = {
   fullName: string;
@@ -168,7 +168,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
       const verifyOrderPayment = async () => {
         setIsLoading(true);
         try {
-          const res = await fetch('/api/verify-checkout-session', {
+          const res = await fetch(getApiUrl('/api/verify-checkout-session'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId, orderId: urlOrderId })
@@ -341,7 +341,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
         toast.success('Order placed successfully! 🎉');
       } else {
         // 2. Redirect to Stripe Checkout Session
-        const res = await fetch('/api/create-stripe-subscription-checkout', {
+        const res = await fetch(getApiUrl('/api/create-stripe-subscription-checkout'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -803,7 +803,7 @@ export default function CheckoutClient() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const res = await fetch('/api/public-settings', { method: 'POST' });
+        const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         const data = await res.json();
 
         setGlobalSettings({

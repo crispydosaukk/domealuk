@@ -7,6 +7,7 @@ import { getZoneFromPostcode } from '@/app/components/PostcodeSearch';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { getApiUrl } from '@/lib/api';
 
 function CustomDatePicker({ values, onChange }: { values: string[], onChange: (dates: string[]) => void }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -107,7 +108,7 @@ export default function BasketClient() {
   useEffect(() => {
     const fetchGlobalSettings = async () => {
       try {
-        const res = await fetch('/api/public-settings', { method: 'POST' });
+        const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
           setGlobalSettings({
