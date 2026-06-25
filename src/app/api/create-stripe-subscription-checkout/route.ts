@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { db } from '@/lib/firebase';
 import { dbAdmin } from '@/lib/firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue as AdminFieldValue } from 'firebase-admin/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,12 +32,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    // 1. Initialize Stripe
+    // 1. Initialize Stripe: Prioritize .env first, fall back to Firestore settings
     let secretKey = process.env.STRIPE_SECRET_KEY || '';
-    if (!secretKey && dbAdmin) {
-      const globalSnap = await dbAdmin.collection('settings').doc('global').get();
-      if (globalSnap.exists) {
-        secretKey = globalSnap.data().stripeSecretKey || '';
+    if (!secretKey) {
+      if (dbAdmin) {
+        const globalSnap = await dbAdmin.collection('settings').doc('global').get();
+        if (globalSnap.exists) {
+          secretKey = globalSnap.data().stripeSecretKey || '';
+        }
+      } else {
+        const globalSnap = await getDoc(doc(db, 'settings', 'global'));
+        if (globalSnap.exists()) {
+          const data = globalSnap.data();
+          if (data.stripeSecretKey) secretKey = data.stripeSecretKey;
+        }
       }
     }
 
@@ -49,10 +59,21 @@ export async function POST(req: NextRequest) {
 
     // 2. Get or Create Stripe Customer
     let stripeCustomerId = '';
-    if (dbAdmin && userId && userId !== 'guest-user') {
-      const userSnap = await dbAdmin.collection('users').doc(userId).get();
-      if (userSnap.exists) {
-        stripeCustomerId = userSnap.data().stripeCustomerId || '';
+    if (userId && userId !== 'guest-user') {
+      if (dbAdmin) {
+        const userSnap = await dbAdmin.collection('users').doc(userId).get();
+        if (userSnap.exists) {
+          stripeCustomerId = userSnap.data().stripeCustomerId || '';
+        }
+      } else {
+        try {
+          const userSnap = await getDoc(doc(db, 'users', userId));
+          if (userSnap.exists()) {
+            stripeCustomerId = userSnap.data().stripeCustomerId || '';
+          }
+        } catch (e) {
+          console.warn('Failed to read user doc using client SDK fallback:', e);
+        }
       }
     }
 
@@ -70,8 +91,16 @@ export async function POST(req: NextRequest) {
         stripeCustomerId = customer.id;
       }
 
-      if (dbAdmin && userId && userId !== 'guest-user') {
-        await dbAdmin.collection('users').doc(userId).update({ stripeCustomerId });
+      if (userId && userId !== 'guest-user') {
+        if (dbAdmin) {
+          await dbAdmin.collection('users').doc(userId).update({ stripeCustomerId });
+        } else {
+          try {
+            await updateDoc(doc(db, 'users', userId), { stripeCustomerId });
+          } catch (e) {
+            console.warn('Failed to update stripeCustomerId using client SDK fallback:', e);
+          }
+        }
       }
     }
 
@@ -93,28 +122,32 @@ export async function POST(req: NextRequest) {
     });
 
     // 4. Create Order document in Firestore with 'Pending Payment'
+    const orderPayload = {
+      userId,
+      items: items || [],
+      total: amount,
+      subtotal,
+      walletApplied,
+      discountApplied,
+      studentDiscountApplied,
+      studentDiscountPercent,
+      address,
+      deliveryDates,
+      deliverySlot,
+      notes: notes || '',
+      paymentMethod: 'pay-online',
+      subscriptionFrequency: frequency,
+      stripeSubscriptionId: null,
+      subscriptionStatus: 'pending_payment',
+      allergiesInfo,
+      createdAt: dbAdmin ? AdminFieldValue.serverTimestamp() : serverTimestamp(),
+      status: 'Pending Payment'
+    };
+
     if (dbAdmin) {
-      await dbAdmin.collection('orders').doc(orderId).set({
-        userId,
-        items: items || [],
-        total: amount,
-        subtotal,
-        walletApplied,
-        discountApplied,
-        studentDiscountApplied,
-        studentDiscountPercent,
-        address,
-        deliveryDates,
-        deliverySlot,
-        notes: notes || '',
-        paymentMethod: 'pay-online',
-        subscriptionFrequency: frequency,
-        stripeSubscriptionId: null,
-        subscriptionStatus: 'pending_payment',
-        allergiesInfo,
-        createdAt: FieldValue.serverTimestamp(),
-        status: 'Pending Payment'
-      });
+      await dbAdmin.collection('orders').doc(orderId).set(orderPayload);
+    } else {
+      await setDoc(doc(db, 'orders', orderId), orderPayload);
     }
 
     // 5. Create Stripe Checkout Session
