@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbAdmin } from '@/lib/firebase-admin';
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const body = await req.json().catch(() => ({}));
+    const userId = body.userId;
 
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });

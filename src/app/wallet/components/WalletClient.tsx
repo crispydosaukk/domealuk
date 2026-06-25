@@ -43,7 +43,11 @@ export default function WalletClient() {
     // 2. Fetch user's wallet transactions from our secure server GET API
     const fetchTransactions = async () => {
       try {
-        const response = await fetch(`/api/wallet-transactions?userId=${user.uid}`);
+        const response = await fetch('/api/wallet-transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.uid })
+        });
         if (response.ok) {
           const data = await response.json();
           if (data.transactions) {

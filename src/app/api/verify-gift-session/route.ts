@@ -3,10 +3,6 @@ import { dbAdmin } from '@/lib/firebase-admin';
 import Stripe from 'stripe';
 import { FieldValue } from 'firebase-admin/firestore';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16' as any,
-});
-
 export async function POST(req: NextRequest) {
   try {
     const { sessionId } = await req.json();
@@ -18,6 +14,18 @@ export async function POST(req: NextRequest) {
     if (!dbAdmin) {
       return NextResponse.json({ error: 'Firestore admin is not initialized' }, { status: 500 });
     }
+
+    // Retrieve Stripe secret key from settings
+    const globalSnap = await dbAdmin.collection('settings').doc('global').get();
+    const secretKey = globalSnap.data()?.stripeSecretKey || process.env.STRIPE_SECRET_KEY || '';
+
+    if (!secretKey) {
+      return NextResponse.json({ error: 'Stripe secret key not found' }, { status: 500 });
+    }
+
+    const stripe = new Stripe(secretKey, {
+      apiVersion: '2023-10-16' as any,
+    });
 
     // 1. Retrieve the session from Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId);
