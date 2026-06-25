@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { doc, getDoc, updateDoc, arrayUnion, setDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getApiUrl } from '@/lib/api';
+import { db } from '@/lib/firebase';
 
 type AddressForm = {
   fullName: string;
