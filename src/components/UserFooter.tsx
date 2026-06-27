@@ -115,10 +115,8 @@ export default function UserFooter() {
               <li className="flex items-start gap-2">
                 <MapPin size={16} className="text-secondary mt-1 shrink-0" />
                 <span className="text-sm text-gray-300 leading-relaxed">
-                  196, Kenton Road, Kenton,<br />
-                  Harrow, Middlesex,<br />
-                  Next to picknsave super market,<br />
-                  HA3 8BX
+                  No 1 Sedgecombe Avenue<br />
+                  Kenton, HA3 0HW
                 </span>
               </li>
               <li className="flex items-center gap-2">

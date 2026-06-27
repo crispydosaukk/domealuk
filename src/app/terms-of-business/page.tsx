@@ -21,7 +21,7 @@ export default function TermsOfBusiness() {
           <section>
             <h2 className="text-2xl font-bold mb-4 text-primary">2. Information about us</h2>
             <p className="mb-2">Our full name is DoMeal. We are registered in England and Wales.</p>
-            <p className="mb-2"><strong>Registered office:</strong> 196, Kenton Road, Kenton, Harrow, Middlesex, HA3 8BX</p>
+            <p className="mb-2"><strong>Registered office:</strong> No 1 Sedgecombe Avenue, Kenton, HA3 0HW</p>
             <p><strong>Email:</strong> orders@domeal.co.uk</p>
           </section>
 
@@ -143,7 +143,7 @@ export default function TermsOfBusiness() {
             <h2 className="text-2xl font-bold mb-4 text-primary">14. Communications between us</h2>
             <p className="mb-4">When we refer to “in writing” in these Terms, this includes email.</p>
             <p className="mb-4">If you wish to contact us in writing for any reason, you can write to us by email or by pre paid post to:<br />
-            DoMeal, 196, Kenton Road, Kenton, Harrow, Middlesex, HA3 8BX.</p>
+            DoMeal, No 1 Sedgecombe Avenue, Kenton, HA3 0HW.</p>
             <p className="mb-4">If we have to contact you or give you notice in writing, we will do so by email or by pre paid post to the address you provide in your order.</p>
             <p className="mb-4">Any change to your details must be notified to us promptly by updating your details via your account on the website or by contacting customer services using the details on the website.</p>
 

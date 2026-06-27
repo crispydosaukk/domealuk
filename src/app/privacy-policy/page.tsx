@@ -15,7 +15,7 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-2xl font-bold mb-4 text-primary">1. Who we are</h2>
             <p className="mb-2">This website and our services are operated by DoMeal.</p>
-            <p className="mb-2"><strong>Registered office:</strong> 196, Kenton Road, Kenton, Harrow, Middlesex, Next to picknsave super market, HA3 8BX</p>
+            <p className="mb-2"><strong>Registered office:</strong> No 1 Sedgecombe Avenue, Kenton, HA3 0HW</p>
             <p className="mb-2"><strong>Email:</strong> orders@domeal.co.uk</p>
             <p>For data protection purposes, we are the data controller for the personal data described in this Privacy Policy.</p>
           </section>

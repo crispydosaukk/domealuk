@@ -124,15 +124,26 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
   // Define allowed categories
   const dynamicCategories = hideExtras ? ['Menu'] : ['All', 'Menu', 'Extras'];
 
+  const getFrontendCategory = (dbCategory: string | null | undefined): string => {
+    const norm = (dbCategory || '').trim();
+    if (norm === 'Snacks' || norm === 'Sweets' || norm === 'Extras') {
+      return 'Extras';
+    }
+    if (norm === 'Combo Packs') {
+      return 'Combo Packs';
+    }
+    return 'Menu';
+  };
+
   const filtered = menuItems.filter(i => {
-    const cat = i.category === 'Snacks' ? 'Extras' : i.category;
+    const cat = getFrontendCategory(i.category);
     if (cat === 'Combo Packs') return false; // Hide Combo Packs completely
     if (hideExtras && cat === 'Extras') return false; // Hide Extras completely if hideExtras is true
     if (activeCategory === 'All') return ['Menu', 'Extras'].includes(cat);
     return cat === activeCategory;
   }).sort((a, b) => {
-    const catA = a.category === 'Snacks' ? 'Extras' : a.category;
-    const catB = b.category === 'Snacks' ? 'Extras' : b.category;
+    const catA = getFrontendCategory(a.category);
+    const catB = getFrontendCategory(b.category);
     if (catA === 'Menu' && catB !== 'Menu') return -1;
     if (catA !== 'Menu' && catB === 'Menu') return 1;
     return 0;
@@ -240,7 +251,7 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                 ) : (
                   <div className={`h-40 w-full bg-orange-50 flex flex-col items-center justify-center text-primary/40 relative overflow-hidden ${expandedMenus[item.id] ? 'rounded-t-2xl' : 'rounded-t-2xl'}`}>
                     <Leaf size={32} className="mb-2 opacity-50" />
-                    <span className="text-xs font-600 uppercase tracking-widest">{item.category === 'Snacks' ? 'Extras' : item.category}</span>
+                    <span className="text-xs font-600 uppercase tracking-widest">{getFrontendCategory(item.category)}</span>
                     {item.tag && (
                       <span className="absolute top-2 left-2 text-xs font-700 bg-primary text-white px-2 py-0.5 rounded-full shadow">{item.tag}</span>
                     )}
@@ -255,7 +266,7 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                   </div>
 
                   {/* Delivery Date Badge & Offer */}
-                  {item.category === 'Menu' && (
+                  {getFrontendCategory(item.category) === 'Menu' && (
                     <div className="flex flex-col gap-1.5 mb-2.5">
                       <div className="flex flex-wrap gap-1.5">
                         <span className="bg-orange-100 text-[#b58b42] text-xs font-900 px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-sm border border-orange-200">
