@@ -23,7 +23,7 @@ try {
   } else {
     console.warn(
       'Firebase Admin credentials not found (FIREBASE_CLIENT_EMAIL & FIREBASE_PRIVATE_KEY). ' +
-      'Falling back to Client SDK for server-side Firestore operations.'
+        'Falling back to Client SDK for server-side Firestore operations.'
     );
   }
 } catch (error) {

@@ -7,13 +7,14 @@ export async function POST(req: NextRequest) {
     const snap = await getDoc(doc(db, 'settings', 'global'));
     if (snap.exists()) {
       const data = snap.data();
-      
+
       // Exclude sensitive credentials before serving to the client
       const { stripeSecretKey, ...publicSettings } = data;
-      
+
       // Set a fallback for publishable key if not in firestore
-      publicSettings.stripePublishableKey = publicSettings.stripePublishableKey || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-      
+      publicSettings.stripePublishableKey =
+        publicSettings.stripePublishableKey || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+
       return NextResponse.json(publicSettings);
     }
   } catch (err: any) {
@@ -29,6 +30,6 @@ export async function POST(req: NextRequest) {
       { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
       { id: 'slot-2', label: 'Afternoon', time: '12:00 PM – 1:00 PM', icon: '☀️', enabled: true },
       { id: 'slot-3', label: 'Evening', time: '7:30 PM – 8:30 PM', icon: '🌙', enabled: true },
-    ]
+    ],
   });
 }

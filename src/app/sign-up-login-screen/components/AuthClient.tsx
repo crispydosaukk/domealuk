@@ -4,7 +4,18 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Phone, Mail, Lock, User, Upload, ArrowLeft, CheckCircle, GraduationCap } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  Phone,
+  Mail,
+  Lock,
+  User,
+  Upload,
+  ArrowLeft,
+  CheckCircle,
+  GraduationCap,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -12,7 +23,16 @@ import { db, storage } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 
 type LoginForm = { email: string; password: string; remember: boolean };
-type SignupForm = { name: string; phone: string; email: string; password: string; confirmPassword: string; terms: boolean; referredBy?: string; isStudent: boolean };
+type SignupForm = {
+  name: string;
+  phone: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  terms: boolean;
+  referredBy?: string;
+  isStudent: boolean;
+};
 
 export default function AuthClient() {
   const searchParams = useSearchParams();
@@ -22,7 +42,9 @@ export default function AuthClient() {
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [signupStep, setSignupStep] = useState<'details' | 'student_verification' | 'pending_status'>('details');
+  const [signupStep, setSignupStep] = useState<
+    'details' | 'student_verification' | 'pending_status'
+  >('details');
   const [studentEmail, setStudentEmail] = useState('');
   const [studentIdCard, setStudentIdCard] = useState<File | null>(null);
   const [studentIdCardPreview, setStudentIdCardPreview] = useState<string | null>(null);
@@ -30,8 +52,21 @@ export default function AuthClient() {
   const { login, signup } = useAuth();
   const router = useRouter();
 
-  const loginForm = useForm<LoginForm>({ defaultValues: { email: '', password: '', remember: false } });
-  const signupForm = useForm<SignupForm>({ defaultValues: { name: '', phone: '', email: '', password: '', confirmPassword: '', terms: false, referredBy: refCode, isStudent: false } });
+  const loginForm = useForm<LoginForm>({
+    defaultValues: { email: '', password: '', remember: false },
+  });
+  const signupForm = useForm<SignupForm>({
+    defaultValues: {
+      name: '',
+      phone: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      terms: false,
+      referredBy: refCode,
+      isStudent: false,
+    },
+  });
 
   const handleLoginSubmit = async (data: LoginForm) => {
     setIsLoading(true);
@@ -39,19 +74,25 @@ export default function AuthClient() {
     try {
       await login(data.email, data.password);
       toast.success('Welcome back to DoMeal!', {
-        duration: 1500
+        duration: 1500,
       });
       router.push('/menu');
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code || '';
       if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
-        loginForm.setError('root', { message: 'No account found with this email. Please create an account first.' });
+        loginForm.setError('root', {
+          message: 'No account found with this email. Please create an account first.',
+        });
       } else if (code === 'auth/wrong-password') {
         loginForm.setError('root', { message: 'Incorrect password. Please try again.' });
       } else if (code === 'auth/too-many-requests') {
-        loginForm.setError('root', { message: 'Too many failed attempts. Please try again later.' });
+        loginForm.setError('root', {
+          message: 'Too many failed attempts. Please try again later.',
+        });
       } else {
-        loginForm.setError('root', { message: 'Invalid email or password. Please check and try again.' });
+        loginForm.setError('root', {
+          message: 'Invalid email or password. Please check and try again.',
+        });
       }
     } finally {
       setIsLoading(false);
@@ -77,15 +118,19 @@ export default function AuthClient() {
           : `+44${data.phone}`;
       await signup(data.email, data.password, data.name, formattedPhone, data.referredBy);
       toast.success('Account created successfully!', {
-        duration: 1500
+        duration: 1500,
       });
       router.push('/menu');
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code || '';
       if (code === 'auth/email-already-in-use') {
-        signupForm.setError('root', { message: 'An account with this email already exists. Please sign in instead.' });
+        signupForm.setError('root', {
+          message: 'An account with this email already exists. Please sign in instead.',
+        });
       } else if (code === 'auth/weak-password') {
-        signupForm.setError('root', { message: 'Password is too weak. Please use at least 8 characters.' });
+        signupForm.setError('root', {
+          message: 'Password is too weak. Please use at least 8 characters.',
+        });
       } else {
         const errorMsg = (error as Error).message || 'Something went wrong. Please try again.';
         signupForm.setError('root', { message: errorMsg });
@@ -116,7 +161,13 @@ export default function AuthClient() {
           : `+44${data.phone}`;
 
       // 1. Create User
-      const credential = await signup(data.email, data.password, data.name, formattedPhone, data.referredBy);
+      const credential = await signup(
+        data.email,
+        data.password,
+        data.name,
+        formattedPhone,
+        data.referredBy
+      );
       const uid = credential.user.uid;
 
       // 2. Upload ID Card Image
@@ -167,8 +218,17 @@ export default function AuthClient() {
   return (
     <div className="min-h-screen flex">
       {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1E3B2B 0%, #14281D 50%, #1E3B2B 100%)' }}>
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #C39B54 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      <div
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #1E3B2B 0%, #14281D 50%, #1E3B2B 100%)' }}
+      >
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: 'radial-gradient(circle, #C39B54 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }}
+        />
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
           <Link href="/" className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/30 shadow-lg flex-shrink-0">
@@ -186,10 +246,13 @@ export default function AuthClient() {
 
           <div>
             <h2 className="text-4xl font-extrabold leading-tight mb-4">
-              Home Food,<br />Away From Home 🍱
+              Home Food,
+              <br />
+              Away From Home 🍱
             </h2>
             <p className="text-gray-300 text-lg leading-relaxed mb-8">
-              Join 1,200+ happy customers who enjoy authentic Indian tiffin delivered fresh across London every day.
+              Join 1,200+ happy customers who enjoy authentic Indian tiffin delivered fresh across
+              London every day.
             </p>
             <div className="grid grid-cols-2 gap-4">
               {[
@@ -197,8 +260,11 @@ export default function AuthClient() {
                 { label: '4.9★', sub: 'Customer Rating' },
                 { label: '3 yrs', sub: 'Serving London' },
                 { label: '100%', sub: 'Pure Vegetarian' },
-              ].map(stat => (
-                <div key={`stat-${stat.label}`} className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+              ].map((stat) => (
+                <div
+                  key={`stat-${stat.label}`}
+                  className="bg-white/10 rounded-xl p-3 backdrop-blur-sm"
+                >
                   <p className="text-xl font-extrabold">{stat.label}</p>
                   <p className="text-xs text-gray-300">{stat.sub}</p>
                 </div>
@@ -244,7 +310,9 @@ export default function AuthClient() {
             <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
               <div>
                 <h1 className="text-2xl font-extrabold text-foreground mb-1">Welcome back!</h1>
-                <p className="text-sm text-muted-foreground">Sign in to manage your tiffin orders</p>
+                <p className="text-sm text-muted-foreground">
+                  Sign in to manage your tiffin orders
+                </p>
               </div>
 
               {loginForm.formState.errors.root && (
@@ -254,42 +322,71 @@ export default function AuthClient() {
               )}
 
               <div>
-                <label className="block text-sm font-600 text-foreground mb-1.5">Email Address</label>
+                <label className="block text-sm font-600 text-foreground mb-1.5">
+                  Email Address
+                </label>
                 <div className="relative">
-                  <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Mail
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
                   <input
-                    {...loginForm.register('email', { required: 'Email is required', pattern: { value: /^\S+@\S+$/i, message: 'Invalid email address' } })}
+                    {...loginForm.register('email', {
+                      required: 'Email is required',
+                      pattern: { value: /^\S+@\S+$/i, message: 'Invalid email address' },
+                    })}
                     type="email"
                     placeholder="you@example.com"
                     className="w-full pl-9 pr-4 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                   />
                 </div>
-                {loginForm.formState.errors.email && <p className="text-red-500 text-xs mt-1">{loginForm.formState.errors.email.message}</p>}
+                {loginForm.formState.errors.email && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {loginForm.formState.errors.email.message}
+                  </p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-600 text-foreground mb-1.5">Password</label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Lock
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
                   <input
                     {...loginForm.register('password', { required: 'Password is required' })}
                     type={showPass ? 'text' : 'password'}
                     placeholder="Enter your password"
                     className="w-full pl-9 pr-10 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                   />
-                  <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
                     {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-                {loginForm.formState.errors.password && <p className="text-red-500 text-xs mt-1">{loginForm.formState.errors.password.message}</p>}
+                {loginForm.formState.errors.password && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {loginForm.formState.errors.password.message}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input {...loginForm.register('remember')} type="checkbox" className="w-4 h-4 accent-primary" />
+                  <input
+                    {...loginForm.register('remember')}
+                    type="checkbox"
+                    className="w-4 h-4 accent-primary"
+                  />
                   <span className="text-sm text-foreground">Remember me</span>
                 </label>
-                <button type="button" className="text-sm text-primary font-600 hover:underline">Forgot password?</button>
+                <button type="button" className="text-sm text-primary font-600 hover:underline">
+                  Forgot password?
+                </button>
               </div>
 
               <button
@@ -299,10 +396,10 @@ export default function AuthClient() {
               >
                 {isLoading ? (
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : 'Sign In'}
+                ) : (
+                  'Sign In'
+                )}
               </button>
-
-
             </form>
           )}
 
@@ -311,20 +408,31 @@ export default function AuthClient() {
               {signupStep === 'details' && (
                 <form onSubmit={signupForm.handleSubmit(handleSignupSubmit)} className="space-y-4">
                   <div>
-                    <h1 className="text-2xl font-extrabold text-foreground mb-1">Create your account</h1>
-                    <p className="text-sm text-muted-foreground">Start enjoying fresh tiffin delivered to your door</p>
+                    <h1 className="text-2xl font-extrabold text-foreground mb-1">
+                      Create your account
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                      Start enjoying fresh tiffin delivered to your door
+                    </p>
                   </div>
 
                   {signupForm.formState.errors.root && (
                     <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                      <p className="text-sm text-red-600">{signupForm.formState.errors.root.message}</p>
+                      <p className="text-sm text-red-600">
+                        {signupForm.formState.errors.root.message}
+                      </p>
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Full Name</label>
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Full Name
+                    </label>
                     <div className="relative">
-                      <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <User
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      />
                       <input
                         {...signupForm.register('name', { required: 'Full name is required' })}
                         type="text"
@@ -332,74 +440,137 @@ export default function AuthClient() {
                         className="w-full pl-9 pr-4 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                       />
                     </div>
-                    {signupForm.formState.errors.name && <p className="text-red-500 text-xs mt-1">{signupForm.formState.errors.name.message}</p>}
+                    {signupForm.formState.errors.name && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {signupForm.formState.errors.name.message}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Mobile Number</label>
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Mobile Number
+                    </label>
                     <div className="relative flex items-center">
                       <Phone size={16} className="absolute left-3 text-muted-foreground z-10" />
-                      <span className="absolute left-9 text-sm font-600 text-foreground z-10">+44</span>
+                      <span className="absolute left-9 text-sm font-600 text-foreground z-10">
+                        +44
+                      </span>
                       <input
-                        {...signupForm.register('phone', { required: 'Mobile number is required', pattern: { value: /^(0?7\d{9}|7\d{9})$/, message: 'Enter a valid UK mobile number (e.g. 7448055754)' } })}
+                        {...signupForm.register('phone', {
+                          required: 'Mobile number is required',
+                          pattern: {
+                            value: /^(0?7\d{9}|7\d{9})$/,
+                            message: 'Enter a valid UK mobile number (e.g. 7448055754)',
+                          },
+                        })}
                         type="tel"
                         placeholder="7448055754"
                         className="w-full pl-16 pr-4 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors relative"
                       />
                     </div>
-                    {signupForm.formState.errors.phone && <p className="text-red-500 text-xs mt-1">{signupForm.formState.errors.phone.message}</p>}
+                    {signupForm.formState.errors.phone && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {signupForm.formState.errors.phone.message}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Email Address</label>
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Email Address
+                    </label>
                     <div className="relative">
-                      <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Mail
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      />
                       <input
-                        {...signupForm.register('email', { required: 'Email is required', pattern: { value: /^\S+@\S+$/i, message: 'Invalid email' } })}
+                        {...signupForm.register('email', {
+                          required: 'Email is required',
+                          pattern: { value: /^\S+@\S+$/i, message: 'Invalid email' },
+                        })}
                         type="email"
                         placeholder="you@example.com"
                         className="w-full pl-9 pr-4 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                       />
                     </div>
-                    {signupForm.formState.errors.email && <p className="text-red-500 text-xs mt-1">{signupForm.formState.errors.email.message}</p>}
+                    {signupForm.formState.errors.email && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {signupForm.formState.errors.email.message}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Password</label>
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Password
+                    </label>
                     <div className="relative">
-                      <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Lock
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      />
                       <input
-                        {...signupForm.register('password', { required: 'Password is required', minLength: { value: 8, message: 'Min 8 characters' } })}
+                        {...signupForm.register('password', {
+                          required: 'Password is required',
+                          minLength: { value: 8, message: 'Min 8 characters' },
+                        })}
                         type={showPass ? 'text' : 'password'}
                         placeholder="Min 8 characters"
                         className="w-full pl-9 pr-10 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                       />
-                      <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
                         {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
-                    {signupForm.formState.errors.password && <p className="text-red-500 text-xs mt-1">{signupForm.formState.errors.password.message}</p>}
+                    {signupForm.formState.errors.password && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {signupForm.formState.errors.password.message}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Confirm Password</label>
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Confirm Password
+                    </label>
                     <div className="relative">
-                      <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Lock
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      />
                       <input
-                        {...signupForm.register('confirmPassword', { required: 'Please confirm password' })}
+                        {...signupForm.register('confirmPassword', {
+                          required: 'Please confirm password',
+                        })}
                         type={showConfirmPass ? 'text' : 'password'}
                         placeholder="Repeat your password"
                         className="w-full pl-9 pr-10 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                       />
-                      <button type="button" onClick={() => setShowConfirmPass(!showConfirmPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
                         {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
-                    {signupForm.formState.errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{signupForm.formState.errors.confirmPassword.message}</p>}
+                    {signupForm.formState.errors.confirmPassword && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {signupForm.formState.errors.confirmPassword.message}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Referral Code (Optional)</label>
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Referral Code (Optional)
+                    </label>
                     <div className="relative">
                       <input
                         {...signupForm.register('referredBy')}
@@ -418,20 +589,34 @@ export default function AuthClient() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-800 text-[#1E3B2B]">Are you a student?</p>
-                      <p className="text-xs text-muted-foreground">Click and verify for extra discount</p>
+                      <p className="text-xs text-muted-foreground">
+                        Click and verify for extra discount
+                      </p>
                     </div>
                   </label>
 
                   <label className="flex items-start gap-2 cursor-pointer">
-                    <input {...signupForm.register('terms', { required: 'You must accept terms' })} type="checkbox" className="w-4 h-4 mt-0.5 accent-primary" />
+                    <input
+                      {...signupForm.register('terms', { required: 'You must accept terms' })}
+                      type="checkbox"
+                      className="w-4 h-4 mt-0.5 accent-primary"
+                    />
                     <span className="text-sm text-foreground">
                       I agree to the{' '}
-                      <Link href="#" className="text-primary hover:underline">Terms of Service</Link>
-                      {' '}and{' '}
-                      <Link href="#" className="text-primary hover:underline">Privacy Policy</Link>
+                      <Link href="#" className="text-primary hover:underline">
+                        Terms of Service
+                      </Link>{' '}
+                      and{' '}
+                      <Link href="#" className="text-primary hover:underline">
+                        Privacy Policy
+                      </Link>
                     </span>
                   </label>
-                  {signupForm.formState.errors.terms && <p className="text-red-500 text-xs">{signupForm.formState.errors.terms.message}</p>}
+                  {signupForm.formState.errors.terms && (
+                    <p className="text-red-500 text-xs">
+                      {signupForm.formState.errors.terms.message}
+                    </p>
+                  )}
 
                   <button
                     type="submit"
@@ -440,23 +625,39 @@ export default function AuthClient() {
                   >
                     {isLoading ? (
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : signupForm.watch('isStudent') ? 'Next: Student Verification' : 'Create Account'}
+                    ) : signupForm.watch('isStudent') ? (
+                      'Next: Student Verification'
+                    ) : (
+                      'Create Account'
+                    )}
                   </button>
                 </form>
               )}
 
               {signupStep === 'student_verification' && (
-                <form onSubmit={handleStudentVerificationSubmit} className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+                <form
+                  onSubmit={handleStudentVerificationSubmit}
+                  className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300"
+                >
                   <div>
-                    <h1 className="text-2xl font-extrabold text-foreground mb-1">Verify Student Status 🎓</h1>
-                    <p className="text-sm text-muted-foreground">Submit details to apply your extra student discount.</p>
+                    <h1 className="text-2xl font-extrabold text-foreground mb-1">
+                      Verify Student Status 🎓
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                      Submit details to apply your extra student discount.
+                    </p>
                   </div>
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-600 text-foreground mb-1.5">Official School / College Email ID</label>
+                      <label className="block text-sm font-600 text-foreground mb-1.5">
+                        Official School / College Email ID
+                      </label>
                       <div className="relative">
-                        <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Mail
+                          size={16}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                        />
                         <input
                           type="email"
                           required
@@ -469,7 +670,9 @@ export default function AuthClient() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-600 text-foreground mb-1.5">College / School ID Card Photo</label>
+                      <label className="block text-sm font-600 text-foreground mb-1.5">
+                        College / School ID Card Photo
+                      </label>
                       <div className="mt-1 flex flex-col items-center justify-center border-2 border-dashed border-border hover:border-[#C39B54]/50 rounded-2xl p-6 bg-muted/20 transition-colors relative cursor-pointer group">
                         <input
                           type="file"
@@ -492,7 +695,9 @@ export default function AuthClient() {
                               className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <p className="text-white text-xs font-700 bg-[#C39B54] px-3 py-1.5 rounded-lg shadow">Change Photo</p>
+                              <p className="text-white text-xs font-700 bg-[#C39B54] px-3 py-1.5 rounded-lg shadow">
+                                Change Photo
+                              </p>
                             </div>
                           </div>
                         ) : (
@@ -501,8 +706,12 @@ export default function AuthClient() {
                               <Upload size={20} />
                             </div>
                             <div>
-                              <p className="text-sm font-700 text-foreground">Click to upload photo</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">JPEG, PNG up to 10MB</p>
+                              <p className="text-sm font-700 text-foreground">
+                                Click to upload photo
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                JPEG, PNG up to 10MB
+                              </p>
                             </div>
                           </div>
                         )}
@@ -522,7 +731,9 @@ export default function AuthClient() {
                           Creating Account & Uploading ID...
                         </span>
                       ) : (
-                        <>Submit Verification <CheckCircle size={16} /></>
+                        <>
+                          Submit Verification <CheckCircle size={16} />
+                        </>
                       )}
                     </button>
 
@@ -561,10 +772,13 @@ export default function AuthClient() {
                     <div className="inline-block bg-green-100 text-green-800 text-xs font-850 px-3.5 py-1.5 rounded-full mb-2">
                       Account Created Successfully! 🎉
                     </div>
-                    <h2 className="text-2xl font-extrabold text-foreground">Verification Under Process! ⏳</h2>
+                    <h2 className="text-2xl font-extrabold text-foreground">
+                      Verification Under Process! ⏳
+                    </h2>
                     <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                      We are currently reviewing your college ID card. Your student discount will be automatically applied as soon as it is approved. 
-                      Feel free to browse the menu and start ordering in the meantime!
+                      We are currently reviewing your college ID card. Your student discount will be
+                      automatically applied as soon as it is approved. Feel free to browse the menu
+                      and start ordering in the meantime!
                     </p>
                   </div>
 
@@ -580,7 +794,9 @@ export default function AuthClient() {
           )}
 
           <p className="text-center text-xs text-muted-foreground mt-6">
-            <Link href="/" className="hover:text-primary transition-colors">← Back to Home</Link>
+            <Link href="/" className="hover:text-primary transition-colors">
+              ← Back to Home
+            </Link>
           </p>
         </div>
       </div>

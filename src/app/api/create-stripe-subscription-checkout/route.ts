@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       studentDiscountPercent,
       allergiesInfo,
       items,
-      dabbaFeeApplied
+      dabbaFeeApplied,
     } = await req.json();
 
     if (!email || !amount || !frequency || !userId || !orderId) {
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         }
       }
     }
-    
+
     // Verify customer exists in this Stripe account/environment
     if (stripeCustomerId) {
       try {
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
     // 3. Create a Price object for Stripe Checkout
     let recurringAmount = amount;
     if (dabbaFeeApplied) {
-      recurringAmount = Math.max(0, amount - 12.00);
+      recurringAmount = Math.max(0, amount - 12.0);
     }
     const unitAmount = Math.round(recurringAmount * 100);
     const interval = 'week';
@@ -139,10 +139,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const lineItems: any[] = [{
-      price: price.id,
-      quantity: 1,
-    }];
+    const lineItems: any[] = [
+      {
+        price: price.id,
+        quantity: 1,
+      },
+    ];
 
     if (dabbaFeeApplied) {
       const dabbaPrice = await stripe.prices.create({
@@ -180,7 +182,7 @@ export async function POST(req: NextRequest) {
       createdAt: dbAdmin ? AdminFieldValue.serverTimestamp() : serverTimestamp(),
       status: 'Pending Payment',
       dabbaFeeApplied: dabbaFeeApplied || false,
-      dabbaFee: dabbaFeeApplied ? 12.00 : 0
+      dabbaFee: dabbaFeeApplied ? 12.0 : 0,
     };
 
     if (dbAdmin) {
@@ -202,7 +204,7 @@ export async function POST(req: NextRequest) {
         type: 'subscription_order',
         userId,
         orderId,
-      }
+      },
     });
 
     return NextResponse.json({ url: session.url });

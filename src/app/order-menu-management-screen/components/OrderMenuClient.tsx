@@ -10,14 +10,18 @@ export default function OrderMenuClient() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-extrabold text-foreground">Orders & Menu Management</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Manage all orders and your tiffin menu from one place</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Manage all orders and your tiffin menu from one place
+        </p>
       </div>
 
       <div className="flex bg-white border border-border rounded-xl p-1 w-fit gap-1">
         <button
           onClick={() => setActiveTab('orders')}
           className={`px-5 py-2.5 text-sm font-700 rounded-lg transition-all duration-150 ${
-            activeTab === 'orders' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            activeTab === 'orders'
+              ? 'bg-primary text-white shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           Orders
@@ -25,7 +29,9 @@ export default function OrderMenuClient() {
         <button
           onClick={() => setActiveTab('menu')}
           className={`px-5 py-2.5 text-sm font-700 rounded-lg transition-all duration-150 ${
-            activeTab === 'menu' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            activeTab === 'menu'
+              ? 'bg-primary text-white shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           Menu Items

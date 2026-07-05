@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
           status: 'Order Received',
           subscriptionStatus: 'active',
           stripeSubscriptionId: session.subscription || null,
-          updatedAt: AdminFieldValue.serverTimestamp()
+          updatedAt: AdminFieldValue.serverTimestamp(),
         });
 
         const walletApplied = Number(orderData.walletApplied) || 0;
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
               type: 'debit',
               status: 'completed',
               description: `Payment for Order #${orderId}`,
-              createdAt: AdminFieldValue.serverTimestamp()
+              createdAt: AdminFieldValue.serverTimestamp(),
             });
           }
         }
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
           status: 'Order Received',
           subscriptionStatus: 'active',
           stripeSubscriptionId: session.subscription || null,
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
         });
 
         const walletApplied = Number(orderData.walletApplied) || 0;
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
               type: 'debit',
               status: 'completed',
               description: `Payment for Order #${orderId}`,
-              createdAt: serverTimestamp()
+              createdAt: serverTimestamp(),
             });
           }
         }

@@ -1,7 +1,30 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Search, Check, X, ShieldAlert, GraduationCap, Calendar, Eye, Mail, Phone, User, Clock, CheckCircle2, XCircle } from 'lucide-react';
-import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  Search,
+  Check,
+  X,
+  ShieldAlert,
+  GraduationCap,
+  Calendar,
+  Eye,
+  Mail,
+  Phone,
+  User,
+  Clock,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  updateDoc,
+  getDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
 
@@ -128,12 +151,16 @@ export default function StudentApprovalsClient() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-[#1E3B2B]">Student Discount Approvals</h1>
-          <p className="text-sm text-muted-foreground">Manage and verify student status submissions</p>
+          <p className="text-sm text-muted-foreground">
+            Manage and verify student status submissions
+          </p>
         </div>
         <div className="bg-[#C39B54]/10 border border-[#C39B54]/30 px-4 py-3 rounded-2xl flex items-center gap-3">
           <GraduationCap className="text-[#C39B54]" size={24} />
           <div>
-            <p className="text-[10px] font-800 text-[#C39B54] uppercase tracking-wider">Active Student Discount</p>
+            <p className="text-[10px] font-800 text-[#C39B54] uppercase tracking-wider">
+              Active Student Discount
+            </p>
             <p className="text-sm font-800 text-foreground">{globalStudentDiscount}% Off Orders</p>
           </div>
         </div>
@@ -174,7 +201,10 @@ export default function StudentApprovalsClient() {
 
         {/* Search */}
         <div className="relative w-full sm:max-w-xs">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search
+            size={14}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -244,8 +274,8 @@ export default function StudentApprovalsClient() {
                         student.studentStatus === 'Approved'
                           ? 'bg-green-50 text-green-700 border-green-200'
                           : student.studentStatus === 'Declined'
-                          ? 'bg-red-50 text-red-600 border-red-200'
-                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                            ? 'bg-red-50 text-red-600 border-red-200'
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
                       }`}
                     >
                       {student.studentStatus === 'Pending' && <Clock size={10} />}
@@ -263,7 +293,9 @@ export default function StudentApprovalsClient() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail size={13} className="shrink-0 text-primary" />
-                      <span className="font-700 text-foreground truncate">Official: {student.studentOfficialEmail}</span>
+                      <span className="font-700 text-foreground truncate">
+                        Official: {student.studentOfficialEmail}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone size={13} className="shrink-0" />
@@ -280,11 +312,12 @@ export default function StudentApprovalsClient() {
                         </span>
                       </div>
                     )}
-                    {student.studentDiscount !== undefined && student.studentStatus === 'Approved' && (
-                      <div className="mt-1 font-800 text-[#C39B54] bg-[#C39B54]/10 inline-block px-2 py-0.5 rounded">
-                        Applied Offer: {student.studentDiscount}% Discount
-                      </div>
-                    )}
+                    {student.studentDiscount !== undefined &&
+                      student.studentStatus === 'Approved' && (
+                        <div className="mt-1 font-800 text-[#C39B54] bg-[#C39B54]/10 inline-block px-2 py-0.5 rounded">
+                          Applied Offer: {student.studentDiscount}% Discount
+                        </div>
+                      )}
                   </div>
                 </div>
 

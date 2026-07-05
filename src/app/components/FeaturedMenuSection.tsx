@@ -34,30 +34,29 @@ export default function FeaturedMenuSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'menuItems'),
-      where('active', '==', true)
-    );
+    const q = query(collection(db, 'menuItems'), where('active', '==', true));
     const unsub = onSnapshot(q, (snap) => {
-      const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem));
+      const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as MenuItem);
       // Sort client-side by createdAt ascending to keep order
-      items.sort((a: any, b: any) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
-      
+      items.sort(
+        (a: any, b: any) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0)
+      );
+
       // Filter out duplicate menu items that have no images if another item with the same name has images
       const nameGroups: Record<string, MenuItem[]> = {};
-      items.forEach(item => {
+      items.forEach((item) => {
         const nameKey = item.name.toLowerCase().trim();
         if (!nameGroups[nameKey]) nameGroups[nameKey] = [];
         nameGroups[nameKey].push(item);
       });
 
-      const cleanItems = items.filter(item => {
+      const cleanItems = items.filter((item) => {
         if (item.category !== 'Menu') return false;
         const nameKey = item.name.toLowerCase().trim();
         const group = nameGroups[nameKey];
         if (group.length > 1) {
           const hasImages = item.images && item.images.length > 0;
-          const groupHasAnyWithImages = group.some(g => g.images && g.images.length > 0);
+          const groupHasAnyWithImages = group.some((g) => g.images && g.images.length > 0);
           if (!hasImages && groupHasAnyWithImages) {
             return false;
           }
@@ -121,7 +120,9 @@ export default function FeaturedMenuSection() {
                   ) : (
                     <div className="h-48 w-full bg-orange-50 flex flex-col items-center justify-center text-primary/40 relative overflow-hidden">
                       <span className="text-2xl">🍃</span>
-                      <span className="text-xs font-600 uppercase tracking-widest mt-1">{item.category}</span>
+                      <span className="text-xs font-600 uppercase tracking-widest mt-1">
+                        {item.category}
+                      </span>
                     </div>
                   )}
 
@@ -144,7 +145,9 @@ export default function FeaturedMenuSection() {
                     <h3 className="font-700 text-foreground text-base mb-1 group-hover:text-primary transition-colors">
                       {item.name}
                     </h3>
-                    <p className="text-xs text-muted-foreground mb-3 leading-relaxed line-clamp-2">{item.desc}</p>
+                    <p className="text-xs text-muted-foreground mb-3 leading-relaxed line-clamp-2">
+                      {item.desc}
+                    </p>
 
                     <div className="flex items-center gap-2 mb-4 mt-auto">
                       <span className="text-xs text-muted-foreground">Spice:</span>

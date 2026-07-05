@@ -12,11 +12,13 @@ export default function HowToHeatPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(0); // First item open by default
   const [settings, setSettings] = useState({
     heatTitle: 'Heating Instructions',
-    heatContent: 'Your DoMeal is delivered ice-packed and cold and lasts for 48 hours in the fridge.\n\nOur meals are best enjoyed heated. Our recommended heating method is the oven at 180°C until piping hot (usually around 30-40 minutes).',
+    heatContent:
+      'Your DoMeal is delivered ice-packed and cold and lasts for 48 hours in the fridge.\n\nOur meals are best enjoyed heated. Our recommended heating method is the oven at 180°C until piping hot (usually around 30-40 minutes).',
     heatBottomTitle: 'Find out if we deliver to your neighbourhood',
-    heatBottomDesc: 'Ready to enjoy piping hot, authentic Indian meals at home? Enter your postcode on our homepage to see if we deliver to you.',
+    heatBottomDesc:
+      'Ready to enjoy piping hot, authentic Indian meals at home? Enter your postcode on our homepage to see if we deliver to you.',
     heatBottomBtn: 'Get Started',
-    heatData: [] as any[]
+    heatData: [] as any[],
   });
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export default function HowToHeatPage() {
         const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
-          setSettings(prev => ({ ...prev, ...data }));
+          setSettings((prev) => ({ ...prev, ...data }));
         }
       } catch (error) {}
     };
@@ -39,24 +41,28 @@ export default function HowToHeatPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <UserNavbar />
-      
+
       <main className="flex-1 w-full pt-12 pb-24 mt-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          
           <div className="mb-12 text-center">
-            <h1 className="text-4xl md:text-5xl font-900 text-[#1E3B2B] mb-6">{settings.heatTitle}</h1>
+            <h1 className="text-4xl md:text-5xl font-900 text-[#1E3B2B] mb-6">
+              {settings.heatTitle}
+            </h1>
             <p className="text-lg text-muted-foreground mb-4 max-w-3xl mx-auto leading-relaxed whitespace-pre-line">
               {settings.heatContent}
             </p>
-            <p className="text-sm font-600 text-primary mt-6">For detailed heating instructions per menu, please see below:</p>
+            <p className="text-sm font-600 text-primary mt-6">
+              For detailed heating instructions per menu, please see below:
+            </p>
           </div>
 
           <div className="bg-white rounded-3xl shadow-xl border border-border overflow-hidden">
             {settings.heatData.map((item, index) => {
               const isOpen = openIndex === index;
               // Map saved string icons or fallback
-              const Icon = (item.icon as any) === 'Package' || item.icon === Package ? Package : ConciergeBell;
-              
+              const Icon =
+                (item.icon as any) === 'Package' || item.icon === Package ? Package : ConciergeBell;
+
               return (
                 <div key={index} className="border-b border-border last:border-0">
                   <button
@@ -66,13 +72,18 @@ export default function HowToHeatPage() {
                     }`}
                   >
                     <div className="flex items-center gap-4 flex-1 pr-4">
-                      <Icon className={`w-6 h-6 md:w-8 md:h-8 shrink-0 ${isOpen ? 'text-[#C39B54]' : 'text-primary'}`} strokeWidth={1.5} />
-                      <span className={`text-xl md:text-2xl font-800 text-left ${isOpen ? 'text-[#1E3B2B]' : 'text-foreground'}`}>
+                      <Icon
+                        className={`w-6 h-6 md:w-8 md:h-8 shrink-0 ${isOpen ? 'text-[#C39B54]' : 'text-primary'}`}
+                        strokeWidth={1.5}
+                      />
+                      <span
+                        className={`text-xl md:text-2xl font-800 text-left ${isOpen ? 'text-[#1E3B2B]' : 'text-foreground'}`}
+                      >
                         {item.title}
                       </span>
                     </div>
-                    <ChevronDown 
-                      className={`w-6 h-6 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#C39B54]' : 'text-muted-foreground'}`} 
+                    <ChevronDown
+                      className={`w-6 h-6 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#C39B54]' : 'text-muted-foreground'}`}
                     />
                   </button>
 
@@ -88,16 +99,19 @@ export default function HowToHeatPage() {
                                 Serves: {item.serves}
                               </span>
                             </div>
-                            
+
                             <div className="space-y-8">
                               <div>
                                 <h3 className="font-800 text-[#1E3B2B] text-lg mb-3 flex items-center gap-2">
-                                  <span className="w-2 h-2 rounded-full bg-[#C39B54]" /> Oven Heating (Recommended)
+                                  <span className="w-2 h-2 rounded-full bg-[#C39B54]" /> Oven
+                                  Heating (Recommended)
                                 </h3>
                                 <ul className="space-y-2 text-muted-foreground pl-4">
                                   {item.oven?.map((step: string, i: number) => (
                                     <li key={i} className="flex gap-2">
-                                      <span className="text-[#C39B54] font-800 select-none">{i + 1}.</span>
+                                      <span className="text-[#C39B54] font-800 select-none">
+                                        {i + 1}.
+                                      </span>
                                       <span className="leading-relaxed">{step}</span>
                                     </li>
                                   ))}
@@ -106,12 +120,15 @@ export default function HowToHeatPage() {
 
                               <div>
                                 <h3 className="font-800 text-[#1E3B2B] text-lg mb-3 flex items-center gap-2">
-                                  <span className="w-2 h-2 rounded-full bg-primary" /> Microwave Heating (Quick & Convenient)
+                                  <span className="w-2 h-2 rounded-full bg-primary" /> Microwave
+                                  Heating (Quick & Convenient)
                                 </h3>
                                 <ul className="space-y-2 text-muted-foreground pl-4">
                                   {item.microwave?.map((step: string, i: number) => (
                                     <li key={i} className="flex gap-2">
-                                      <span className="text-primary font-800 select-none">{i + 1}.</span>
+                                      <span className="text-primary font-800 select-none">
+                                        {i + 1}.
+                                      </span>
                                       <span className="leading-relaxed">{step}</span>
                                     </li>
                                   ))}
@@ -139,16 +156,20 @@ export default function HowToHeatPage() {
           <div className="mt-16 text-center bg-[#1E3B2B] rounded-3xl p-10 md:p-12 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#C39B54] rounded-full blur-3xl opacity-20 translate-x-1/2 -translate-y-1/2" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary rounded-full blur-3xl opacity-20 -translate-x-1/2 translate-y-1/2" />
-            
-            <h2 className="text-3xl font-900 text-white mb-4 relative z-10">{settings.heatBottomTitle}</h2>
+
+            <h2 className="text-3xl font-900 text-white mb-4 relative z-10">
+              {settings.heatBottomTitle}
+            </h2>
             <p className="text-blue-100 mb-8 max-w-xl mx-auto relative z-10 whitespace-pre-line">
               {settings.heatBottomDesc}
             </p>
-            <Link href="/" className="inline-block bg-[#C39B54] text-white font-800 px-8 py-4 rounded-xl hover:bg-[#a17e41] transition-all shadow-lg shadow-yellow-900/20 relative z-10">
+            <Link
+              href="/"
+              className="inline-block bg-[#C39B54] text-white font-800 px-8 py-4 rounded-xl hover:bg-[#a17e41] transition-all shadow-lg shadow-yellow-900/20 relative z-10"
+            >
               {settings.heatBottomBtn}
             </Link>
           </div>
-
         </div>
       </main>
 

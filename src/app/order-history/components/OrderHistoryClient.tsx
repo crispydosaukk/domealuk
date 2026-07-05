@@ -301,13 +301,11 @@ export default function OrderHistoryClient() {
                     <p className="text-xs text-muted-foreground font-500">
                       Placed:{' '}
                       {order.createdAt?.toDate
-                        ? order.createdAt
-                            .toDate()
-                            .toLocaleDateString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })
+                        ? order.createdAt.toDate().toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })
                         : 'Recent'}{' '}
                       · {order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? 's' : ''}
                     </p>

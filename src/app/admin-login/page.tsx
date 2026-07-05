@@ -87,13 +87,18 @@ export default function AdminLoginClient() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-sm font-700 text-foreground mb-1.5 ml-1">Admin Email</label>
+            <label className="block text-sm font-700 text-foreground mb-1.5 ml-1">
+              Admin Email
+            </label>
             <div className="relative">
-              <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Mail
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
               <input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@domeal.co.uk"
                 className="w-full pl-10 pr-4 py-3 border border-border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all font-500"
               />
@@ -103,11 +108,14 @@ export default function AdminLoginClient() {
           <div>
             <label className="block text-sm font-700 text-foreground mb-1.5 ml-1">Password</label>
             <div className="relative">
-              <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Lock
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full pl-10 pr-12 py-3 border border-border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all font-500"
               />
@@ -139,7 +147,9 @@ export default function AdminLoginClient() {
         </form>
 
         <p className="text-center text-xs font-500 text-muted-foreground mt-8">
-          Secure portal for DoMeal staff only.<br />Unauthorized access is prohibited.
+          Secure portal for DoMeal staff only.
+          <br />
+          Unauthorized access is prohibited.
         </p>
       </div>
     </div>

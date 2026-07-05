@@ -27,10 +27,12 @@ export async function POST(req: NextRequest) {
         type: data.type,
         status: data.status,
         description: data.description,
-        createdAt: data.createdAt ? {
-          seconds: data.createdAt.seconds,
-          nanoseconds: data.createdAt.nanoseconds
-        } : null
+        createdAt: data.createdAt
+          ? {
+              seconds: data.createdAt.seconds,
+              nanoseconds: data.createdAt.nanoseconds,
+            }
+          : null,
       };
     });
 

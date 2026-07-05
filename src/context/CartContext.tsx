@@ -26,7 +26,14 @@ export interface CheckoutData {
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (item: { id: string; cartItemId?: string; name: string; price: number; originalPrice?: number; subItems?: { name: string; price: number }[] }) => boolean;
+  addToCart: (item: {
+    id: string;
+    cartItemId?: string;
+    name: string;
+    price: number;
+    originalPrice?: number;
+    subItems?: { name: string; price: number }[];
+  }) => boolean;
   updateQty: (idOrCartItemId: string, delta: number) => void;
   clearCart: () => void;
   cartCount: number;
@@ -85,8 +92,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     // Listen to successful/placed orders to compute completedOrdersCount
     const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
     const unsubOrders = onSnapshot(q, (snap) => {
-      const ordersData = snap.docs.map(doc => doc.data());
-      const successfulOrders = ordersData.filter(o => o.status !== 'Cancelled' && o.status !== 'Pending Payment');
+      const ordersData = snap.docs.map((doc) => doc.data());
+      const successfulOrders = ordersData.filter(
+        (o) => o.status !== 'Cancelled' && o.status !== 'Pending Payment'
+      );
       setCompletedOrdersCount(successfulOrders.length);
     });
 
@@ -106,22 +115,33 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateCheckoutData = async (newData: CheckoutData | ((prev: CheckoutData) => CheckoutData)) => {
+  const updateCheckoutData = async (
+    newData: CheckoutData | ((prev: CheckoutData) => CheckoutData)
+  ) => {
     setCheckoutData((prev) => {
       const resolved = typeof newData === 'function' ? newData(prev) : newData;
       if (user) {
-        setDoc(doc(db, 'users', user.uid), { checkoutData: resolved }, { merge: true }).catch(console.error);
+        setDoc(doc(db, 'users', user.uid), { checkoutData: resolved }, { merge: true }).catch(
+          console.error
+        );
       }
       return resolved;
     });
   };
 
-  const addToCart = (item: { id: string; cartItemId?: string; name: string; price: number; originalPrice?: number; subItems?: { name: string; price: number }[] }) => {
+  const addToCart = (item: {
+    id: string;
+    cartItemId?: string;
+    name: string;
+    price: number;
+    originalPrice?: number;
+    subItems?: { name: string; price: number }[];
+  }) => {
     if (!user) {
       router.push('/sign-up-login-screen');
       return false;
     }
-    
+
     setCart((prev) => {
       const matchId = item.cartItemId || item.id;
       const existing = prev.find((c) => (c.cartItemId || c.id) === matchId);
@@ -131,15 +151,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           (c.cartItemId || c.id) === matchId ? { ...c, qty: c.qty + 1 } : c
         );
       } else {
-        newCart = [...prev, { 
-          id: item.id, 
-          cartItemId: item.cartItemId,
-          name: item.name, 
-          price: item.price, 
-          originalPrice: item.originalPrice,
+        const newItem: CartItem = {
+          id: item.id,
+          name: item.name,
+          price: item.price,
           qty: 1,
-          ...(item.subItems ? { subItems: item.subItems } : {})
-        }];
+        };
+        if (item.cartItemId !== undefined) newItem.cartItemId = item.cartItemId;
+        if (item.originalPrice !== undefined) newItem.originalPrice = item.originalPrice;
+        if (item.subItems !== undefined) newItem.subItems = item.subItems;
+
+        newCart = [...prev, newItem];
       }
       syncToFirestore(newCart);
       return newCart;
@@ -151,7 +173,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQty = (idOrCartItemId: string, delta: number) => {
     setCart((prev) => {
       const newCart = prev
-        .map((c) => ((c.cartItemId || c.id) === idOrCartItemId ? { ...c, qty: Math.max(0, c.qty + delta) } : c))
+        .map((c) =>
+          (c.cartItemId || c.id) === idOrCartItemId ? { ...c, qty: Math.max(0, c.qty + delta) } : c
+        )
         .filter((c) => c.qty > 0);
       syncToFirestore(newCart);
       return newCart;
@@ -165,14 +189,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const cartTotal = cart.reduce((sum, item) => {
-    const activePrice = (completedOrdersCount >= 4 && item.originalPrice && item.originalPrice > 0)
-      ? item.originalPrice
-      : item.price;
+    const activePrice =
+      completedOrdersCount >= 4 && item.originalPrice && item.originalPrice > 0
+        ? item.originalPrice
+        : item.price;
     return sum + activePrice * item.qty;
   }, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, updateQty, clearCart, cartCount, cartTotal, completedOrdersCount, isCartOpen, setIsCartOpen, checkoutData, setCheckoutData: updateCheckoutData as any }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        addToCart,
+        updateQty,
+        clearCart,
+        cartCount,
+        cartTotal,
+        completedOrdersCount,
+        isCartOpen,
+        setIsCartOpen,
+        checkoutData,
+        setCheckoutData: updateCheckoutData as any,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

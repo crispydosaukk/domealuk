@@ -5,7 +5,16 @@ import { Phone, Mail, MapPin } from 'lucide-react';
 
 function InstagramIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
       <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
       <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
@@ -15,7 +24,16 @@ function InstagramIcon({ size = 16 }: { size?: number }) {
 
 function FacebookIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
     </svg>
   );
@@ -63,19 +81,36 @@ export default function UserFooter() {
               &ldquo;Home Food Away From Home&rdquo;
             </p>
             <p className="text-sm text-gray-400 leading-relaxed mb-4">
-              Authentic home-cooked Indian tiffin delivered fresh to your door across London. Made with love, just like home.
+              Authentic home-cooked Indian tiffin delivered fresh to your door across London. Made
+              with love, just like home.
             </p>
             <div className="flex gap-3">
-              <a href="#" aria-label="Facebook" className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
+              <a
+                href="#"
+                aria-label="Facebook"
+                className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
+              >
                 <FacebookIcon size={16} />
               </a>
-              <a href="#" aria-label="Pinterest" className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
+              <a
+                href="#"
+                aria-label="Pinterest"
+                className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
+              >
                 <PinterestIcon size={16} />
               </a>
-              <a href="#" aria-label="Instagram" className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
+              <a
+                href="#"
+                aria-label="Instagram"
+                className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
+              >
                 <InstagramIcon size={16} />
               </a>
-              <a href="#" aria-label="TikTok" className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
+              <a
+                href="#"
+                aria-label="TikTok"
+                className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
+              >
                 <TiktokIcon size={16} />
               </a>
             </div>
@@ -83,7 +118,9 @@ export default function UserFooter() {
 
           {/* Quick Links */}
           <div className="lg:col-span-2">
-            <h4 className="font-700 text-sm uppercase tracking-wider text-gray-400 mb-4">Quick Links</h4>
+            <h4 className="font-700 text-sm uppercase tracking-wider text-gray-400 mb-4">
+              Quick Links
+            </h4>
             <ul className="grid grid-cols-2 gap-y-2 gap-x-4">
               {[
                 { label: 'Home', href: '/' },
@@ -98,7 +135,10 @@ export default function UserFooter() {
                 { label: 'Admin', href: '/admin-dashboard' },
               ]?.map((link) => (
                 <li key={`footer-${link?.label}`}>
-                  <Link href={link?.href} className="text-sm text-gray-300 hover:text-secondary transition-colors">
+                  <Link
+                    href={link?.href}
+                    className="text-sm text-gray-300 hover:text-secondary transition-colors"
+                  >
                     {link?.label}
                   </Link>
                 </li>
@@ -106,33 +146,47 @@ export default function UserFooter() {
             </ul>
           </div>
 
-
-
           {/* Contact */}
           <div>
-            <h4 className="font-700 text-sm uppercase tracking-wider text-gray-400 mb-4">Contact Us</h4>
+            <h4 className="font-700 text-sm uppercase tracking-wider text-gray-400 mb-4">
+              Contact Us
+            </h4>
             <ul className="space-y-4">
               <li className="flex items-start gap-2">
                 <MapPin size={16} className="text-secondary mt-1 shrink-0" />
                 <span className="text-sm text-gray-300 leading-relaxed">
-                  No 1 Sedgecombe Avenue<br />
+                  No 1 Sedgecombe Avenue
+                  <br />
                   Kenton, HA3 0HW
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail size={16} className="text-secondary shrink-0" />
-                <a href="mailto:orders@domeal.co.uk" className="text-sm text-gray-300 hover:text-secondary">orders@domeal.co.uk</a>
+                <a
+                  href="mailto:orders@domeal.co.uk"
+                  className="text-sm text-gray-300 hover:text-secondary"
+                >
+                  orders@domeal.co.uk
+                </a>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-white/10 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-gray-500">© 2026 DoMeal · domeal.co.uk · All rights reserved.</p>
+          <p className="text-xs text-gray-500">
+            © 2026 DoMeal · domeal.co.uk · All rights reserved.
+          </p>
           <div className="flex gap-4">
-            <Link href="/privacy-policy" className="text-xs text-gray-500 hover:text-gray-300">Privacy Policy</Link>
-            <Link href="/terms-of-service" className="text-xs text-gray-500 hover:text-gray-300">Terms of Service</Link>
-            <Link href="/terms-of-business" className="text-xs text-gray-500 hover:text-gray-300">Terms of Business</Link>
+            <Link href="/privacy-policy" className="text-xs text-gray-500 hover:text-gray-300">
+              Privacy Policy
+            </Link>
+            <Link href="/terms-of-service" className="text-xs text-gray-500 hover:text-gray-300">
+              Terms of Service
+            </Link>
+            <Link href="/terms-of-business" className="text-xs text-gray-500 hover:text-gray-300">
+              Terms of Business
+            </Link>
           </div>
         </div>
       </div>

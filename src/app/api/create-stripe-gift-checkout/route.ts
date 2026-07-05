@@ -18,13 +18,20 @@ export async function POST(req: NextRequest) {
       userId,
     } = await req.json();
 
-    if (!senderEmail || !senderName || !recipientFirstName || !recipientLastName || !recipientEmail || !giftAmount) {
+    if (
+      !senderEmail ||
+      !senderName ||
+      !recipientFirstName ||
+      !recipientLastName ||
+      !recipientEmail ||
+      !giftAmount
+    ) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
     // Load Stripe Key: Prioritize .env first, fall back to Firestore settings
     let secretKey = process.env.STRIPE_SECRET_KEY || '';
-    
+
     if (!secretKey) {
       if (dbAdmin) {
         const globalSnap = await dbAdmin.collection('settings').doc('global').get();

@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
         sendOn,
         giftAmount,
         claimed: false,
-        createdAt: FieldValue.serverTimestamp()
+        createdAt: FieldValue.serverTimestamp(),
       });
       giftCardRef = docRef;
       console.log(`Fallback: Created gift card ${docRef.id} for session ${sessionId}`);
@@ -80,29 +80,35 @@ export async function POST(req: NextRequest) {
     // 3. If recipient exists and sendOn is today or in the past, credit them immediately!
     const todayStr = new Date().toISOString().split('T')[0];
     if (sendOn <= todayStr) {
-      const usersSnap = await dbAdmin.collection('users').where('email', '==', recipientEmail.toLowerCase()).get();
+      const usersSnap = await dbAdmin
+        .collection('users')
+        .where('email', '==', recipientEmail.toLowerCase())
+        .get();
       if (!usersSnap.empty) {
         const userDoc = usersSnap.docs[0];
         const recipientUid = userDoc.id;
-        
+
         const userRef = dbAdmin.collection('users').doc(recipientUid);
-        
+
         await dbAdmin.runTransaction(async (transaction: any) => {
           const uSnap = await transaction.get(userRef);
           const gSnap = await transaction.get(giftCardRef);
-          
+
           if (uSnap.exists && gSnap.exists && !gSnap.data().claimed) {
             const currentBalance = uSnap.data().walletBalance || 0;
             transaction.update(userRef, { walletBalance: currentBalance + giftAmount });
             transaction.update(giftCardRef, { claimed: true });
-            transaction.set(dbAdmin.collection('wallet_transactions').doc(`gift_${recipientUid}_${gSnap.id}`), {
-              userId: recipientUid,
-              amount: giftAmount,
-              type: 'credit',
-              status: 'completed',
-              description: `Gift Card from ${senderName}`,
-              createdAt: FieldValue.serverTimestamp()
-            });
+            transaction.set(
+              dbAdmin.collection('wallet_transactions').doc(`gift_${recipientUid}_${gSnap.id}`),
+              {
+                userId: recipientUid,
+                amount: giftAmount,
+                type: 'credit',
+                status: 'completed',
+                description: `Gift Card from ${senderName}`,
+                createdAt: FieldValue.serverTimestamp(),
+              }
+            );
           }
         });
         console.log(`Instantly credited verified gift card to user ${recipientUid}`);

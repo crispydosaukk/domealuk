@@ -10,7 +10,13 @@ const plans = [
     period: 'month',
     desc: 'Fresh morning tiffin delivered daily. Perfect for working professionals.',
     meals: '30 breakfasts/month',
-    features: ['Idli, Dosa, Pongal rotation', 'Sambar + 2 chutneys', 'Delivered by 8:30 AM', 'Skip days anytime', 'Free delivery'],
+    features: [
+      'Idli, Dosa, Pongal rotation',
+      'Sambar + 2 chutneys',
+      'Delivered by 8:30 AM',
+      'Skip days anytime',
+      'Free delivery',
+    ],
     highlight: false,
     badge: null,
   },
@@ -21,7 +27,14 @@ const plans = [
     period: 'month',
     desc: 'Complete nutrition — Breakfast + Lunch + Dinner. Best value for families.',
     meals: '3 meals × 30 days',
-    features: ['All 3 meal slots', 'Varied daily menu', '100% Vegan and Vegetarian', 'Priority delivery', 'Free delivery', 'Monthly recipe booklet'],
+    features: [
+      'All 3 meal slots',
+      'Varied daily menu',
+      '100% Vegan and Vegetarian',
+      'Priority delivery',
+      'Free delivery',
+      'Monthly recipe booklet',
+    ],
     highlight: true,
     badge: 'Most Popular',
   },
@@ -32,7 +45,13 @@ const plans = [
     period: 'month',
     desc: 'Full meals plan for those who manage their own breakfast.',
     meals: '60 meals/month',
-    features: ['Thali + chapati rotation', 'Dal, sabzi, raita', 'Delivered on time', 'Pause anytime', 'Free delivery'],
+    features: [
+      'Thali + chapati rotation',
+      'Dal, sabzi, raita',
+      'Delivered on time',
+      'Pause anytime',
+      'Free delivery',
+    ],
     highlight: false,
     badge: null,
   },
@@ -77,14 +96,19 @@ export default function PlansSection() {
               <p className="text-xs text-muted-foreground mb-4 leading-relaxed">{plan?.desc}</p>
 
               <div className="mb-2">
-                <span className="text-3xl font-extrabold text-foreground tabular-nums">£{plan?.price}</span>
+                <span className="text-3xl font-extrabold text-foreground tabular-nums">
+                  £{plan?.price}
+                </span>
                 <span className="text-sm text-muted-foreground">/{plan?.period}</span>
               </div>
               <p className="text-xs text-primary font-600 mb-5">{plan?.meals}</p>
 
               <ul className="space-y-2 mb-6">
                 {plan?.features?.map((f) => (
-                  <li key={`${plan?.id}-${f}`} className="flex items-center gap-2 text-sm text-foreground">
+                  <li
+                    key={`${plan?.id}-${f}`}
+                    className="flex items-center gap-2 text-sm text-foreground"
+                  >
                     <Check size={14} className="text-green-600 shrink-0" />
                     {f}
                   </li>

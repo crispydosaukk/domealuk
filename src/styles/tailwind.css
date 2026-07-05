@@ -3,21 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --background: #FBFBF9;
-  --foreground: #1E3B2B;
-  --primary: #1E3B2B;
-  --primary-foreground: #FFFFFF;
-  --secondary: #C39B54;
-  --secondary-foreground: #FFFFFF;
-  --accent: #C39B54;
-  --accent-foreground: #FFFFFF;
-  --muted: #E8EBE9;
-  --muted-foreground: #6B8E76;
-  --card: #FFFFFF;
-  --card-foreground: #1E3B2B;
-  --border: #D1D8D4;
-  --input: #E8EBE9;
-  --ring: #1E3B2B;
+  --background: #fbfbf9;
+  --foreground: #1e3b2b;
+  --primary: #1e3b2b;
+  --primary-foreground: #ffffff;
+  --secondary: #c39b54;
+  --secondary-foreground: #ffffff;
+  --accent: #c39b54;
+  --accent-foreground: #ffffff;
+  --muted: #e8ebe9;
+  --muted-foreground: #6b8e76;
+  --card: #ffffff;
+  --card-foreground: #1e3b2b;
+  --border: #d1d8d4;
+  --input: #e8ebe9;
+  --ring: #1e3b2b;
   --radius: 12px;
   --font-sans: var(--font-plus-jakarta-sans), sans-serif;
 }
@@ -36,21 +36,45 @@
   html {
     scroll-behavior: smooth;
   }
-  h1, h2, h3, h4, h5, h6, p {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p {
     margin: 0;
   }
 }
 
 @layer utilities {
-  .text-primary { color: var(--primary); }
-  .text-secondary { color: var(--secondary); }
-  .text-muted-foreground { color: var(--muted-foreground); }
-  .bg-primary { background-color: var(--primary); }
-  .bg-secondary { background-color: var(--secondary); }
-  .bg-muted { background-color: var(--muted); }
-  .bg-card { background-color: var(--card); }
-  .border-border { border-color: var(--border); }
-  .tabular-nums { font-variant-numeric: tabular-nums; }
+  .text-primary {
+    color: var(--primary);
+  }
+  .text-secondary {
+    color: var(--secondary);
+  }
+  .text-muted-foreground {
+    color: var(--muted-foreground);
+  }
+  .bg-primary {
+    background-color: var(--primary);
+  }
+  .bg-secondary {
+    background-color: var(--secondary);
+  }
+  .bg-muted {
+    background-color: var(--muted);
+  }
+  .bg-card {
+    background-color: var(--card);
+  }
+  .border-border {
+    border-color: var(--border);
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 /* Center the Toaster */

@@ -2,13 +2,36 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
-import { MapPin, Clock, CreditCard, Smartphone, CheckCircle, Package, ChevronRight, ChevronLeft, Leaf, CalendarDays, Home, Plus, FileText } from 'lucide-react';
+import {
+  MapPin,
+  Clock,
+  CreditCard,
+  Smartphone,
+  CheckCircle,
+  Package,
+  ChevronRight,
+  ChevronLeft,
+  Leaf,
+  CalendarDays,
+  Home,
+  Plus,
+  FileText,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { getZoneFromPostcode } from '@/app/components/PostcodeSearch';
 
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { doc, getDoc, updateDoc, arrayUnion, setDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  arrayUnion,
+  setDoc,
+  serverTimestamp,
+  addDoc,
+  collection,
+} from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getApiUrl } from '@/lib/api';
 import { db } from '@/lib/firebase';
@@ -35,7 +58,15 @@ const paymentMethods = [
   { id: 'pay-online', label: 'Online Payment', icon: CreditCard, desc: 'Visa, Mastercard, Amex' },
 ];
 
-function CustomDatePicker({ values, onChange, deliveryDays = [1, 4] }: { values: string[], onChange: (dates: string[]) => void, deliveryDays?: number[] }) {
+function CustomDatePicker({
+  values,
+  onChange,
+  deliveryDays = [1, 4],
+}: {
+  values: string[];
+  onChange: (dates: string[]) => void;
+  deliveryDays?: number[];
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -44,10 +75,13 @@ function CustomDatePicker({ values, onChange, deliveryDays = [1, 4] }: { values:
 
   const days = [];
   for (let i = 0; i < firstDayOfMonth; i++) days.push(null);
-  for (let i = 1; i <= daysInMonth; i++) days.push(new Date(currentDate.getFullYear(), currentDate.getMonth(), i));
+  for (let i = 1; i <= daysInMonth; i++)
+    days.push(new Date(currentDate.getFullYear(), currentDate.getMonth(), i));
 
-  const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const handlePrevMonth = () =>
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const handleNextMonth = () =>
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -59,7 +93,17 @@ function CustomDatePicker({ values, onChange, deliveryDays = [1, 4] }: { values:
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between px-4 py-3 border-2 border-border rounded-xl text-sm bg-background text-foreground font-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
       >
-        {values.length > 0 ? values.map(d => new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })).join(', ') : 'Select dates'}
+        {values.length > 0
+          ? values
+              .map((d) =>
+                new Date(d).toLocaleDateString('en-GB', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                })
+              )
+              .join(', ')
+          : 'Select dates'}
         <CalendarDays size={18} className="text-muted-foreground" />
       </button>
 
@@ -68,19 +112,29 @@ function CustomDatePicker({ values, onChange, deliveryDays = [1, 4] }: { values:
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute top-full left-0 mt-2 p-5 bg-white border border-border shadow-2xl rounded-3xl z-50 w-[300px]">
             <div className="flex justify-between items-center mb-6">
-              <button type="button" onClick={handlePrevMonth} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors"
+              >
                 <ChevronLeft size={18} />
               </button>
               <div className="font-800 text-sm text-foreground bg-muted/60 px-4 py-1.5 rounded-full">
                 {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </div>
-              <button type="button" onClick={handleNextMonth} className="p-1.5 bg-rose-500 text-white hover:bg-rose-600 rounded-full shadow-md shadow-rose-200 transition-colors">
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                className="p-1.5 bg-rose-500 text-white hover:bg-rose-600 rounded-full shadow-md shadow-rose-200 transition-colors"
+              >
                 <ChevronRight size={18} />
               </button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center mb-4">
-              {['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].map(d => (
-                <div key={d} className="text-[10px] font-800 text-muted-foreground tracking-wider">{d}</div>
+              {['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].map((d) => (
+                <div key={d} className="text-[10px] font-800 text-muted-foreground tracking-wider">
+                  {d}
+                </div>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-y-2 gap-x-1">
@@ -91,7 +145,9 @@ function CustomDatePicker({ values, onChange, deliveryDays = [1, 4] }: { values:
                 const isValid = !isPast && deliveryDays.includes(dayOfWeek);
 
                 // create local iso string without timezone shifting
-                const dateStr = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                const dateStr = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+                  .toISOString()
+                  .split('T')[0];
                 const isSelected = values.includes(dateStr);
 
                 return (
@@ -115,17 +171,26 @@ function CustomDatePicker({ values, onChange, deliveryDays = [1, 4] }: { values:
                   >
                     {date.getDate()}
                   </button>
-                )
+                );
               })}
             </div>
           </div>
         </>
       )}
     </div>
-  )
+  );
 }
 
-function CheckoutClientContent({ globalSettings }: { globalSettings: { discount: number, count: number, deliveryDays?: number[], deliverySlots?: any[] } }) {
+function CheckoutClientContent({
+  globalSettings,
+}: {
+  globalSettings: {
+    discount: number;
+    count: number;
+    deliveryDays?: number[];
+    deliverySlots?: any[];
+  };
+}) {
   const { cart, cartTotal, completedOrdersCount, clearCart, checkoutData } = useCart();
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -136,7 +201,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
     { id: 'slot-2', label: 'Afternoon', time: '12:00 PM – 1:00 PM', icon: '☀️', enabled: true },
     { id: 'slot-3', label: 'Evening', time: '7:30 PM – 8:30 PM', icon: '🌙', enabled: true },
   ];
-  const activeSlots = dbSlots.filter(s => s.enabled !== false);
+  const activeSlots = dbSlots.filter((s) => s.enabled !== false);
 
   const urlStatus = searchParams.get('status');
   const sessionId = searchParams.get('session_id');
@@ -157,7 +222,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
 
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState(false);
-  const discountAmount = 7.50; // Mock discount amount
+  const discountAmount = 7.5; // Mock discount amount
   const [finalOrderSummary, setFinalOrderSummary] = useState<any>(null);
 
   const [walletBalance, setWalletBalance] = useState(0);
@@ -167,12 +232,17 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
   const [isStudentVerified, setIsStudentVerified] = useState(false);
   const [studentDiscountPercentage, setStudentDiscountPercentage] = useState(0);
 
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<AddressForm>({
-    defaultValues: { city: 'London', postcode: checkoutData?.postcode || '' }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+  } = useForm<AddressForm>({
+    defaultValues: { city: 'London', postcode: checkoutData?.postcode || '' },
   });
 
   useEffect(() => {
-    if (activeSlots.length > 0 && !activeSlots.some(s => s.id === selectedSlot)) {
+    if (activeSlots.length > 0 && !activeSlots.some((s) => s.id === selectedSlot)) {
       setSelectedSlot(activeSlots[0].id);
     }
   }, [activeSlots, selectedSlot]);
@@ -185,7 +255,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
           const res = await fetch(getApiUrl('/api/verify-checkout-session'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId, orderId: urlOrderId })
+            body: JSON.stringify({ sessionId, orderId: urlOrderId }),
           });
           const data = await res.json();
           if (data.success && data.order) {
@@ -197,7 +267,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
               studentDiscountApplied: orderData.studentDiscountApplied,
               studentDiscountPercent: orderData.studentDiscountPercent,
               discountApplied: orderData.discountApplied,
-              walletApplied: orderData.walletApplied
+              walletApplied: orderData.walletApplied,
             });
             clearCart();
             setStep('confirmed');
@@ -221,8 +291,10 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
 
   // Handle late incoming checkoutData
   useEffect(() => {
-    setDeliveryDates((d) => (d.length === 0 && checkoutData?.deliveryDates) ? checkoutData.deliveryDates : d);
-    setNotes((n) => (n === '' && checkoutData?.notes) ? checkoutData.notes : n);
+    setDeliveryDates((d) =>
+      d.length === 0 && checkoutData?.deliveryDates ? checkoutData.deliveryDates : d
+    );
+    setNotes((n) => (n === '' && checkoutData?.notes ? checkoutData.notes : n));
     if (checkoutData?.postcode) setValue('postcode', checkoutData.postcode);
   }, [checkoutData?.deliveryDates, checkoutData?.notes, checkoutData?.postcode, setValue]);
 
@@ -270,7 +342,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
 
     let finalAddress: AddressForm = data;
     if (selectedAddressId !== 'new') {
-      const existing = savedAddresses.find(a => a.id === selectedAddressId);
+      const existing = savedAddresses.find((a) => a.id === selectedAddressId);
       if (existing) {
         finalAddress = existing;
       }
@@ -286,20 +358,23 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
     setIsLoading(true);
 
     try {
-      const checkoutItems = cart.map(item => ({
+      const checkoutItems = cart.map((item) => ({
         ...item,
-        price: (completedOrdersCount >= 4 && item.originalPrice && item.originalPrice > 0)
-          ? item.originalPrice
-          : item.price
+        price:
+          completedOrdersCount >= 4 && item.originalPrice && item.originalPrice > 0
+            ? item.originalPrice
+            : item.price,
       }));
 
       const subtotal = cartTotal * (deliveryDates.length || 1);
-      const studentDiscountAmt = isStudentVerified ? (subtotal * (studentDiscountPercentage / 100)) : 0;
+      const studentDiscountAmt = isStudentVerified
+        ? subtotal * (studentDiscountPercentage / 100)
+        : 0;
       let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
       finalTotal = Math.max(0, finalTotal - studentDiscountAmt);
-      
+
       // Reusable Dabba Deposit Fee (£12.00)
-      const dabbaFee = 12.00;
+      const dabbaFee = 12.0;
       finalTotal = finalTotal + dabbaFee;
 
       const appliedWalletAmount = useWallet ? Math.min(walletBalance, finalTotal) : 0;
@@ -309,7 +384,11 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
         if (selectedAddressId === 'new') {
           const newAddress: SavedAddress = { ...data, id: `addr-${Date.now()}` };
           finalAddress = newAddress;
-          await setDoc(doc(db, 'users', user.uid), { addresses: arrayUnion(newAddress) }, { merge: true });
+          await setDoc(
+            doc(db, 'users', user.uid),
+            { addresses: arrayUnion(newAddress) },
+            { merge: true }
+          );
         }
       }
 
@@ -337,12 +416,12 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
           createdAt: serverTimestamp(),
           status: 'Order Received',
           dabbaFeeApplied: true,
-          dabbaFee: 12.00
+          dabbaFee: 12.0,
         });
 
         if (appliedWalletAmount > 0 && user) {
           await updateDoc(doc(db, 'users', user.uid), {
-            walletBalance: walletBalance - appliedWalletAmount
+            walletBalance: walletBalance - appliedWalletAmount,
           });
           await addDoc(collection(db, 'wallet_transactions'), {
             userId: user.uid,
@@ -350,7 +429,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
             type: 'debit',
             status: 'completed',
             description: `Payment for Order #${orderId}`,
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
           });
         }
 
@@ -362,7 +441,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
           studentDiscountPercent: isStudentVerified ? studentDiscountPercentage : 0,
           discountApplied: discountApplied ? discountAmount : 0,
           walletApplied: appliedWalletAmount,
-          dabbaFee: 12.00
+          dabbaFee: 12.0,
         });
 
         clearCart();
@@ -374,7 +453,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: user?.email || (finalAddress.phone.replace(/\s+/g, '') + '@domeal.co.uk'),
+            email: user?.email || finalAddress.phone.replace(/\s+/g, '') + '@domeal.co.uk',
             name: finalAddress.fullName,
             phone: finalAddress.phone,
             amount: finalTotal,
@@ -392,7 +471,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
             studentDiscountPercent: isStudentVerified ? studentDiscountPercentage : 0,
             allergiesInfo: checkoutData?.allergiesInfo || '',
             items: checkoutItems,
-            dabbaFeeApplied: true
+            dabbaFeeApplied: true,
           }),
         });
 
@@ -402,7 +481,9 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
           sessionData = JSON.parse(resText);
         } catch (e) {
           console.error('Non-JSON response from server:', resText);
-          throw new Error(`Server returned status ${res.status}: ${resText.slice(0, 150) || 'Unknown error (blank response)'}`);
+          throw new Error(
+            `Server returned status ${res.status}: ${resText.slice(0, 150) || 'Unknown error (blank response)'}`
+          );
         }
 
         if (res.ok && sessionData.url) {
@@ -427,7 +508,9 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
             <CheckCircle size={40} className="text-secondary" />
           </div>
           <h1 className="text-3xl font-extrabold text-foreground mb-2">Order Confirmed! 🎉</h1>
-          <p className="text-muted-foreground mb-6">Your fresh tiffin is being prepared with love.</p>
+          <p className="text-muted-foreground mb-6">
+            Your fresh tiffin is being prepared with love.
+          </p>
 
           <div className="bg-orange-50 rounded-2xl p-5 mb-6 text-left">
             <div className="flex items-center justify-between mb-4">
@@ -436,59 +519,82 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
             </div>
             <div className="space-y-2">
               {finalOrderSummary?.items.map((item: any) => (
-                <div key={`conf-${item.cartItemId || item.id}`} className="flex justify-between text-sm items-start gap-4 mb-3 border-b border-border/30 pb-3 last:border-0">
+                <div
+                  key={`conf-${item.cartItemId || item.id}`}
+                  className="flex justify-between text-sm items-start gap-4 mb-3 border-b border-border/30 pb-3 last:border-0"
+                >
                   <div>
-                    <span className="text-foreground font-600">{item.name} × {item.qty}</span>
+                    <span className="text-foreground font-600">
+                      {item.name} × {item.qty}
+                    </span>
                     {item.subItems && item.subItems.length > 0 && (
                       <div className="mt-1 flex flex-col gap-0.5">
                         {item.subItems.map((sub: any, i: number) => (
-                          <span key={i} className="text-[10px] text-muted-foreground flex justify-between leading-tight">
+                          <span
+                            key={i}
+                            className="text-[10px] text-muted-foreground flex justify-between leading-tight"
+                          >
                             <span>+ {sub.name}</span>
                           </span>
                         ))}
                       </div>
                     )}
                   </div>
-                  <span className="font-600 tabular-nums shrink-0">£{(item.price * item.qty).toFixed(2)}</span>
+                  <span className="font-600 tabular-nums shrink-0">
+                    £{(item.price * item.qty).toFixed(2)}
+                  </span>
                 </div>
               ))}
-              
+
               {finalOrderSummary && (
                 <div className="border-t border-border pt-3 mt-3 space-y-1.5 text-xs text-muted-foreground">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span className="tabular-nums">£{(finalOrderSummary.subtotal || 0).toFixed(2)}</span>
+                    <span className="tabular-nums">
+                      £{(finalOrderSummary.subtotal || 0).toFixed(2)}
+                    </span>
                   </div>
                   {finalOrderSummary.studentDiscountApplied > 0 && (
                     <div className="flex justify-between text-[#C39B54] font-700">
                       <span>🎓 Student Discount ({finalOrderSummary.studentDiscountPercent}%)</span>
-                      <span className="tabular-nums">-£{(finalOrderSummary.studentDiscountApplied).toFixed(2)}</span>
+                      <span className="tabular-nums">
+                        -£{finalOrderSummary.studentDiscountApplied.toFixed(2)}
+                      </span>
                     </div>
                   )}
                   {finalOrderSummary.discountApplied > 0 && (
                     <div className="flex justify-between text-orange-600 font-700">
                       <span>🏷️ Discount Applied</span>
-                      <span className="tabular-nums">-£{(finalOrderSummary.discountApplied).toFixed(2)}</span>
+                      <span className="tabular-nums">
+                        -£{finalOrderSummary.discountApplied.toFixed(2)}
+                      </span>
                     </div>
                   )}
                   {finalOrderSummary.walletApplied > 0 && (
                     <div className="flex justify-between text-green-700 font-700">
                       <span>Wallet Applied</span>
-                      <span className="tabular-nums">-£{(finalOrderSummary.walletApplied).toFixed(2)}</span>
+                      <span className="tabular-nums">
+                        -£{finalOrderSummary.walletApplied.toFixed(2)}
+                      </span>
                     </div>
                   )}
                   {finalOrderSummary.dabbaFee > 0 && (
                     <div className="flex justify-between">
                       <span>Reusable Dabba Deposit</span>
-                      <span className="tabular-nums">£{(finalOrderSummary.dabbaFee).toFixed(2)}</span>
+                      <span className="tabular-nums">£{finalOrderSummary.dabbaFee.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
               )}
 
               <div className="border-t border-border pt-2.5 flex justify-between font-700">
-                <span>Total Paid ({deliveryDates.length || 1} {(deliveryDates.length || 1) === 1 ? 'day' : 'days'})</span>
-                <span className="text-primary tabular-nums">£{(finalOrderSummary?.total || 0).toFixed(2)}</span>
+                <span>
+                  Total Paid ({deliveryDates.length || 1}{' '}
+                  {(deliveryDates.length || 1) === 1 ? 'day' : 'days'})
+                </span>
+                <span className="text-primary tabular-nums">
+                  £{(finalOrderSummary?.total || 0).toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
@@ -497,24 +603,44 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
             <Clock size={20} className="text-blue-600 shrink-0" />
             <div>
               <p className="text-sm font-700 text-foreground">Estimated Delivery</p>
-              <p className="text-xs text-muted-foreground">{deliveryDates.map(d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })).join(', ')} • {dbSlots.find(s => s.id === selectedSlot)?.label}</p>
+              <p className="text-xs text-muted-foreground">
+                {deliveryDates
+                  .map((d) =>
+                    new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                  )
+                  .join(', ')}{' '}
+                • {dbSlots.find((s) => s.id === selectedSlot)?.label}
+              </p>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3 mb-8">
             {['Order Received', 'Being Prepared', 'Out for Delivery'].map((s, i) => (
-              <div key={`status-step-${i}`} className={`text-center p-3 rounded-xl ${i === 0 ? 'bg-green-100' : 'bg-muted'}`}>
-                <div className={`w-6 h-6 rounded-full mx-auto mb-1 flex items-center justify-center text-xs font-700 ${i === 0 ? 'bg-secondary text-white' : 'bg-border text-muted-foreground'}`}>{i + 1}</div>
+              <div
+                key={`status-step-${i}`}
+                className={`text-center p-3 rounded-xl ${i === 0 ? 'bg-green-100' : 'bg-muted'}`}
+              >
+                <div
+                  className={`w-6 h-6 rounded-full mx-auto mb-1 flex items-center justify-center text-xs font-700 ${i === 0 ? 'bg-secondary text-white' : 'bg-border text-muted-foreground'}`}
+                >
+                  {i + 1}
+                </div>
                 <p className="text-xs font-600 text-foreground">{s}</p>
               </div>
             ))}
           </div>
 
           <div className="flex gap-3">
-            <Link href="/order-history" className="flex-1 text-center border border-border text-foreground font-600 py-3 rounded-xl hover:bg-muted transition-all">
+            <Link
+              href="/order-history"
+              className="flex-1 text-center border border-border text-foreground font-600 py-3 rounded-xl hover:bg-muted transition-all"
+            >
               View Order History
             </Link>
-            <Link href="/menu" className="flex-1 text-center bg-primary text-white font-700 py-3 rounded-xl hover:bg-orange-700 transition-all active:scale-95">
+            <Link
+              href="/menu"
+              className="flex-1 text-center bg-primary text-white font-700 py-3 rounded-xl hover:bg-orange-700 transition-all active:scale-95"
+            >
               Order Again
             </Link>
           </div>
@@ -524,12 +650,16 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
   }
 
   const currentSubtotal = cartTotal * (deliveryDates.length || 1);
-  const studentDiscountAmtDisplay = isStudentVerified ? (currentSubtotal * (studentDiscountPercentage / 100)) : 0;
-  let finalDisplayTotal = discountApplied ? Math.max(0, currentSubtotal - discountAmount) : currentSubtotal;
+  const studentDiscountAmtDisplay = isStudentVerified
+    ? currentSubtotal * (studentDiscountPercentage / 100)
+    : 0;
+  let finalDisplayTotal = discountApplied
+    ? Math.max(0, currentSubtotal - discountAmount)
+    : currentSubtotal;
   finalDisplayTotal = Math.max(0, finalDisplayTotal - studentDiscountAmtDisplay);
-  
+
   // Reusable Dabba Fee (£12.00)
-  const dabbaFee = 12.00;
+  const dabbaFee = 12.0;
   finalDisplayTotal = finalDisplayTotal + dabbaFee;
 
   const appliedWalletDisplay = useWallet ? Math.min(walletBalance, finalDisplayTotal) : 0;
@@ -555,7 +685,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                 <div className="mb-6 space-y-3">
                   <p className="text-sm font-600 text-muted-foreground">Saved Addresses</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {savedAddresses.map(addr => (
+                    {savedAddresses.map((addr) => (
                       <button
                         key={addr.id}
                         type="button"
@@ -563,11 +693,19 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                         className={`text-left p-4 rounded-xl border-2 transition-all ${selectedAddressId === addr.id ? 'border-primary bg-orange-50' : 'border-border hover:border-orange-200'}`}
                       >
                         <div className="flex items-center gap-2 mb-2">
-                          <Home size={16} className={selectedAddressId === addr.id ? 'text-primary' : 'text-muted-foreground'} />
+                          <Home
+                            size={16}
+                            className={
+                              selectedAddressId === addr.id
+                                ? 'text-primary'
+                                : 'text-muted-foreground'
+                            }
+                          />
                           <p className="font-700 text-sm text-foreground">{addr.fullName}</p>
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2">
-                          {addr.addressLine1}, {addr.addressLine2 ? `${addr.addressLine2}, ` : ''}{addr.city}, {addr.postcode}
+                          {addr.addressLine1}, {addr.addressLine2 ? `${addr.addressLine2}, ` : ''}
+                          {addr.city}, {addr.postcode}
                         </p>
                       </button>
                     ))}
@@ -588,32 +726,78 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
               {selectedAddressId === 'new' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in zoom-in-95 duration-200">
                   <div>
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Full Name</label>
-                    <input {...register('fullName', { required: 'Required' })} className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-                    {errors.fullName && <p className="text-red-500 text-xs mt-1">{errors.fullName.message}</p>}
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Full Name
+                    </label>
+                    <input
+                      {...register('fullName', { required: 'Required' })}
+                      className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                    {errors.fullName && (
+                      <p className="text-red-500 text-xs mt-1">{errors.fullName.message}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Mobile Number</label>
-                    <input {...register('phone', { required: 'Required' })} className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-                    {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Mobile Number
+                    </label>
+                    <input
+                      {...register('phone', { required: 'Required' })}
+                      className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                    {errors.phone && (
+                      <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>
+                    )}
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Address Line 1</label>
-                    <input {...register('addressLine1', { required: 'Required' })} className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-                    {errors.addressLine1 && <p className="text-red-500 text-xs mt-1">{errors.addressLine1.message}</p>}
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Address Line 1
+                    </label>
+                    <input
+                      {...register('addressLine1', { required: 'Required' })}
+                      className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                    {errors.addressLine1 && (
+                      <p className="text-red-500 text-xs mt-1">{errors.addressLine1.message}</p>
+                    )}
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Address Line 2 / Area</label>
-                    <input {...register('addressLine2')} className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Address Line 2 / Area
+                    </label>
+                    <input
+                      {...register('addressLine2')}
+                      className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Landmark</label>
-                    <input {...register('landmark')} placeholder="Near tube station / landmark" className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Landmark
+                    </label>
+                    <input
+                      {...register('landmark')}
+                      placeholder="Near tube station / landmark"
+                      className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-600 text-foreground mb-1.5">Postcode</label>
-                    <input {...register('postcode', { required: 'Required', pattern: { value: /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i, message: 'Valid UK postcode required' } })} placeholder="e.g. E1 6RF" className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary uppercase" />
-                    {errors.postcode && <p className="text-red-500 text-xs mt-1">{errors.postcode.message}</p>}
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Postcode
+                    </label>
+                    <input
+                      {...register('postcode', {
+                        required: 'Required',
+                        pattern: {
+                          value: /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i,
+                          message: 'Valid UK postcode required',
+                        },
+                      })}
+                      placeholder="e.g. E1 6RF"
+                      className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary uppercase"
+                    />
+                    {errors.postcode && (
+                      <p className="text-red-500 text-xs mt-1">{errors.postcode.message}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -625,26 +809,45 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                 <CheckCircle size={18} className="text-primary" />
                 <h2 className="font-700 text-base text-foreground">Your Selected Preferences</h2>
               </div>
-              
-              <Link href="/basket" className="absolute top-5 right-5 text-primary text-xs font-700 hover:underline">
+
+              <Link
+                href="/basket"
+                className="absolute top-5 right-5 text-primary text-xs font-700 hover:underline"
+              >
                 Edit Preferences
               </Link>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-muted/30 border border-border rounded-xl p-3">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-700 mb-1">Delivery Date</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-700 mb-1">
+                    Delivery Date
+                  </p>
                   <p className="font-600 text-sm text-foreground">
-                    {deliveryDates.length > 0 ? deliveryDates.map(d => new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })).join(', ') : 'Not selected'}
+                    {deliveryDates.length > 0
+                      ? deliveryDates
+                          .map((d) =>
+                            new Date(d).toLocaleDateString('en-GB', {
+                              weekday: 'short',
+                              day: 'numeric',
+                              month: 'short',
+                            })
+                          )
+                          .join(', ')
+                      : 'Not selected'}
                   </p>
                 </div>
                 <div className="bg-muted/30 border border-border rounded-xl p-3">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-700 mb-1">Frequency</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-700 mb-1">
+                    Frequency
+                  </p>
                   <p className="font-600 text-sm text-foreground">
                     {checkoutData?.subscriptionFrequency || 'Weekly Delivery'}
                   </p>
                 </div>
                 <div className="bg-muted/30 border border-border rounded-xl p-3">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-700 mb-1">Postcode</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-700 mb-1">
+                    Postcode
+                  </p>
                   <p className="font-600 text-sm text-foreground">
                     {checkoutData?.postcode || 'Not entered'}
                   </p>
@@ -656,7 +859,7 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                 <h2 className="font-700 text-base text-foreground">Choose Delivery Slot</h2>
               </div>
               <div className="grid grid-cols-3 gap-2 mb-4">
-                {activeSlots.map(slot => (
+                {activeSlots.map((slot) => (
                   <button
                     key={slot.id}
                     type="button"
@@ -698,11 +901,14 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                   </div>
                   <div>
                     <p className="font-700 text-sm text-foreground">Online Payment</p>
-                    <p className="text-xs text-muted-foreground">Visa, Mastercard, Amex, Apple Pay, Google Pay</p>
+                    <p className="text-xs text-muted-foreground">
+                      Visa, Mastercard, Amex, Apple Pay, Google Pay
+                    </p>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/80">
-                  Clicking "Place Order" will redirect you to Stripe to complete your transaction securely.
+                  Clicking "Place Order" will redirect you to Stripe to complete your transaction
+                  securely.
                 </p>
               </div>
             </div>
@@ -714,12 +920,21 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
               <h2 className="font-700 text-base text-foreground mb-5">Order Summary</h2>
 
               <div className="space-y-3 mb-5">
-                {cart.map(item => {
-                  const isOriginalPriceApplied = !!(completedOrdersCount >= 4 && item.originalPrice && item.originalPrice > 0);
-                  const itemDisplayPrice = isOriginalPriceApplied ? (item.originalPrice ?? item.price) : item.price;
+                {cart.map((item) => {
+                  const isOriginalPriceApplied = !!(
+                    completedOrdersCount >= 4 &&
+                    item.originalPrice &&
+                    item.originalPrice > 0
+                  );
+                  const itemDisplayPrice = isOriginalPriceApplied
+                    ? (item.originalPrice ?? item.price)
+                    : item.price;
 
                   return (
-                    <div key={`sum-${item.cartItemId || item.id}`} className="flex items-start gap-3">
+                    <div
+                      key={`sum-${item.cartItemId || item.id}`}
+                      className="flex items-start gap-3"
+                    >
                       <div className="w-5 h-5 bg-green-100 rounded flex items-center justify-center shrink-0 mt-0.5">
                         <Leaf size={10} className="text-secondary" />
                       </div>
@@ -727,7 +942,9 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                         <p className="text-sm font-600 text-foreground truncate">
                           {item.name}
                           {isOriginalPriceApplied && (
-                            <span className="text-[9px] text-amber-700 font-700 bg-amber-100/80 px-1 py-0.5 rounded ml-1.5 border border-amber-200">Original</span>
+                            <span className="text-[9px] text-amber-700 font-700 bg-amber-100/80 px-1 py-0.5 rounded ml-1.5 border border-amber-200">
+                              Original
+                            </span>
                           )}
                         </p>
                         {item.subItems && item.subItems.length > 0 && (
@@ -741,7 +958,9 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                         )}
                         <p className="text-xs text-muted-foreground mt-0.5">Qty: {item.qty}</p>
                       </div>
-                      <span className="text-sm font-700 tabular-nums shrink-0">£{(itemDisplayPrice * item.qty).toFixed(2)}</span>
+                      <span className="text-sm font-700 tabular-nums shrink-0">
+                        £{(itemDisplayPrice * item.qty).toFixed(2)}
+                      </span>
                     </div>
                   );
                 })}
@@ -776,21 +995,29 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                         onChange={(e) => setUseWallet(e.target.checked)}
                         className="w-4 h-4 accent-[#b58b42]"
                       />
-                      <span className="text-sm font-700 text-foreground flex-1">Use Wallet Balance (£{walletBalance.toFixed(2)})</span>
+                      <span className="text-sm font-700 text-foreground flex-1">
+                        Use Wallet Balance (£{walletBalance.toFixed(2)})
+                      </span>
                       <span className="text-sm font-900 text-[#b58b42]">
                         {useWallet ? `-£${appliedWalletDisplay.toFixed(2)}` : 'Apply'}
                       </span>
                     </label>
                   )}
 
-                  {completedOrdersCount >= 4 && cart.some(item => item.originalPrice && item.originalPrice > 0) ? (
+                  {completedOrdersCount >= 4 &&
+                  cart.some((item) => item.originalPrice && item.originalPrice > 0) ? (
                     <div className="bg-amber-50 text-amber-800 text-[11px] font-800 px-3 py-2.5 rounded-lg flex items-start gap-1.5 shadow-sm border border-amber-100 mb-4">
                       <span className="text-sm">⚠️</span>
-                      <span>Original prices apply because you have completed {completedOrdersCount} orders.</span>
+                      <span>
+                        Original prices apply because you have completed {completedOrdersCount}{' '}
+                        orders.
+                      </span>
                     </div>
                   ) : (
                     <div className="bg-green-50 text-green-700 text-[11px] font-800 px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm border border-green-100 mb-4">
-                      <span className="text-sm">🎉</span> {globalSettings.discount}% off your first {globalSettings.count} deliveries, applied automatically. Pause or cancel anytime.
+                      <span className="text-sm">🎉</span> {globalSettings.discount}% off your first{' '}
+                      {globalSettings.count} deliveries, applied automatically. Pause or cancel
+                      anytime.
                     </div>
                   )}
 
@@ -800,7 +1027,9 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                   </div>
                   {isStudentVerified && studentDiscountAmtDisplay > 0 && (
                     <div className="flex justify-between text-[15px] font-700 text-[#C39B54] mb-3">
-                      <span className="flex items-center gap-1">🎓 Student Discount ({studentDiscountPercentage}%)</span>
+                      <span className="flex items-center gap-1">
+                        🎓 Student Discount ({studentDiscountPercentage}%)
+                      </span>
                       <span className="tabular-nums">-£{studentDiscountAmtDisplay.toFixed(2)}</span>
                     </div>
                   )}
@@ -816,21 +1045,40 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                     </div>
                   )}
                   <div className="flex justify-between text-[15px] font-500 mb-4">
-                    <span className="text-gray-800 flex items-center gap-1.5">Shipping <span className="text-gray-400 border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-800">?</span></span>
-                    <span className="text-gray-500 text-sm">{selectedAddressId ? 'Free' : 'Enter shipping address'}</span>
+                    <span className="text-gray-800 flex items-center gap-1.5">
+                      Shipping{' '}
+                      <span className="text-gray-400 border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-800">
+                        ?
+                      </span>
+                    </span>
+                    <span className="text-gray-500 text-sm">
+                      {selectedAddressId ? 'Free' : 'Enter shipping address'}
+                    </span>
                   </div>
 
                   <div className="flex justify-between items-end border-t border-border/60 pt-4">
                     <span className="font-800 text-lg text-gray-900">Total</span>
                     <span className="font-800 text-xl text-gray-900 tabular-nums">
-                      <span className="text-xs text-gray-500 font-600 mr-2 uppercase">GBP</span>
-                      £{finalDisplayTotal.toFixed(2)}
+                      <span className="text-xs text-gray-500 font-600 mr-2 uppercase">GBP</span>£
+                      {finalDisplayTotal.toFixed(2)}
                     </span>
                   </div>
 
                   {discountApplied && (
                     <div className="flex items-center gap-2 mt-3 text-sm font-800 text-[#11261a]">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                        <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                      </svg>
                       TOTAL SAVINGS £{discountAmount.toFixed(2)}
                     </div>
                   )}
@@ -839,13 +1087,21 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                     <span className="flex items-center gap-1.5 font-700">
                       Recurring subtotal
                       <div className="relative group/tooltip">
-                        <span className="text-gray-400 border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-800 cursor-help">?</span>
+                        <span className="text-gray-400 border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-800 cursor-help">
+                          ?
+                        </span>
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-gray-900 text-white text-[10px] p-2.5 rounded-lg shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity z-50 text-center font-500 normal-case leading-relaxed">
-                          This is the recurring price for your tiffin plan charged on subsequent renewals. It excludes one-time fees (like the Reusable Dabba deposit).
+                          This is the recurring price for your tiffin plan charged on subsequent
+                          renewals. It excludes one-time fees (like the Reusable Dabba deposit).
                         </div>
                       </div>
                     </span>
-                    <span className="tabular-nums">£{cartTotal.toFixed(2)} {checkoutData?.subscriptionFrequency?.toLowerCase().replace('delivery ', '') || 'every 1 week'}</span>
+                    <span className="tabular-nums">
+                      £{cartTotal.toFixed(2)}{' '}
+                      {checkoutData?.subscriptionFrequency
+                        ?.toLowerCase()
+                        .replace('delivery ', '') || 'every 1 week'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -858,7 +1114,9 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
                 {isLoading ? (
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <>Place Order <ChevronRight size={16} /></>
+                  <>
+                    Place Order <ChevronRight size={16} />
+                  </>
                 )}
               </button>
 
@@ -874,15 +1132,15 @@ function CheckoutClientContent({ globalSettings }: { globalSettings: { discount:
 }
 
 export default function CheckoutClient() {
-  const [globalSettings, setGlobalSettings] = useState({ 
-    discount: 25, 
-    count: 4, 
+  const [globalSettings, setGlobalSettings] = useState({
+    discount: 25,
+    count: 4,
     deliveryDays: [1, 4],
     deliverySlots: [
       { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
       { id: 'slot-2', label: 'Afternoon', time: '12:00 PM – 1:00 PM', icon: '☀️', enabled: true },
       { id: 'slot-3', label: 'Evening', time: '7:30 PM – 8:30 PM', icon: '🌙', enabled: true },
-    ] 
+    ],
   });
   const [loading, setLoading] = useState(true);
 
@@ -897,10 +1155,28 @@ export default function CheckoutClient() {
           count: data.popupOrdersCount || 4,
           deliveryDays: data.deliveryDays || [1, 4],
           deliverySlots: data.deliverySlots || [
-            { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
-            { id: 'slot-2', label: 'Afternoon', time: '12:00 PM – 1:00 PM', icon: '☀️', enabled: true },
-            { id: 'slot-3', label: 'Evening', time: '7:30 PM – 8:30 PM', icon: '🌙', enabled: true },
-          ]
+            {
+              id: 'slot-1',
+              label: 'Morning',
+              time: '7:30 AM – 8:30 AM',
+              icon: '🌅',
+              enabled: true,
+            },
+            {
+              id: 'slot-2',
+              label: 'Afternoon',
+              time: '12:00 PM – 1:00 PM',
+              icon: '☀️',
+              enabled: true,
+            },
+            {
+              id: 'slot-3',
+              label: 'Evening',
+              time: '7:30 PM – 8:30 PM',
+              icon: '🌙',
+              enabled: true,
+            },
+          ],
         });
       } catch (error) {
         console.error('Failed to load settings:', error);

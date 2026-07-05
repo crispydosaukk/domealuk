@@ -2,7 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/lib/firebase';
 import { dbAdmin } from '@/lib/firebase-admin';
-import { collection, query, where, getDocs, doc, updateDoc, setDoc, getDoc, FieldValue } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+  setDoc,
+  getDoc,
+  FieldValue,
+} from 'firebase/firestore';
 import { FieldValue as AdminFieldValue } from 'firebase-admin/firestore';
 
 // Helper function to resolve serverTimestamp or FieldValue.serverTimestamp
@@ -25,7 +35,7 @@ export async function POST(req: NextRequest) {
   try {
     // Load Stripe Key: Prioritize .env first, fall back to Firestore settings
     let secretKey = process.env.STRIPE_SECRET_KEY || '';
-    
+
     if (!secretKey) {
       if (dbAdmin) {
         const globalSnap = await dbAdmin.collection('settings').doc('global').get();
@@ -101,8 +111,11 @@ export async function POST(req: NextRequest) {
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
-              const ordersList = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-              ordersList.sort((a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+              const ordersList = querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+              ordersList.sort(
+                (a: any, b: any) =>
+                  (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
+              );
               latestOrder = ordersList[0];
 
               const latestOrderRef = doc(db, 'orders', latestOrder.id);
@@ -121,13 +134,14 @@ export async function POST(req: NextRequest) {
           const newOrderId = `VSL-${Math.floor(10000 + Math.random() * 90000)}`;
 
           // Calculate the new delivery dates based on the frequency
-          const newDeliveryDates = latestOrder.deliveryDates?.map((dStr: string) => {
-            const d = new Date(dStr);
-            const frequency = latestOrder.subscriptionFrequency || 'Delivery every 1 Week';
-            const daysToAdd = frequency.toLowerCase().includes('2 week') ? 14 : 7;
-            d.setDate(d.getDate() + daysToAdd);
-            return d.toISOString().split('T')[0];
-          }) || [];
+          const newDeliveryDates =
+            latestOrder.deliveryDates?.map((dStr: string) => {
+              const d = new Date(dStr);
+              const frequency = latestOrder.subscriptionFrequency || 'Delivery every 1 Week';
+              const daysToAdd = frequency.toLowerCase().includes('2 week') ? 14 : 7;
+              d.setDate(d.getDate() + daysToAdd);
+              return d.toISOString().split('T')[0];
+            }) || [];
 
           const newOrderPayload = {
             userId: latestOrder.userId,
@@ -145,7 +159,7 @@ export async function POST(req: NextRequest) {
             subscriptionStatus: 'active',
             allergiesInfo: latestOrder.allergiesInfo || '',
             createdAt: getServerTimestamp(),
-            status: 'Order Received'
+            status: 'Order Received',
           };
 
           if (dbAdmin) {
@@ -159,7 +173,9 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          console.log(`Created subsequent recurring order ${newOrderId} for subscription ${subscriptionId}`);
+          console.log(
+            `Created subsequent recurring order ${newOrderId} for subscription ${subscriptionId}`
+          );
         }
         break;
       }
@@ -194,7 +210,9 @@ export async function POST(req: NextRequest) {
             console.error('Client SDK Webhook fallback failed to update failed payment order:', e);
           }
         }
-        console.log(`Marked subscription ${subscriptionId} status as past_due because payment failed.`);
+        console.log(
+          `Marked subscription ${subscriptionId} status as past_due because payment failed.`
+        );
         break;
       }
 
@@ -211,7 +229,7 @@ export async function POST(req: NextRequest) {
           for (const d of querySnapshot.docs) {
             await dbAdmin.collection('orders').doc(d.id).update({
               subscriptionStatus: 'cancelled',
-              status: 'Cancelled'
+              status: 'Cancelled',
             });
           }
         } else {
@@ -223,7 +241,7 @@ export async function POST(req: NextRequest) {
             for (const docSnap of querySnapshot.docs) {
               await updateDoc(doc(db, 'orders', docSnap.id), {
                 subscriptionStatus: 'cancelled',
-                status: 'Cancelled'
+                status: 'Cancelled',
               });
             }
           } catch (e) {
@@ -259,7 +277,7 @@ export async function POST(req: NextRequest) {
               sendOn,
               giftAmount,
               claimed: false,
-              createdAt: AdminFieldValue.serverTimestamp()
+              createdAt: AdminFieldValue.serverTimestamp(),
             });
           }
         } else if (metadata && metadata.type === 'subscription_order') {
@@ -281,7 +299,7 @@ export async function POST(req: NextRequest) {
                 status: 'Order Received',
                 subscriptionStatus: 'active',
                 stripeSubscriptionId: session.subscription || null,
-                updatedAt: AdminFieldValue.serverTimestamp()
+                updatedAt: AdminFieldValue.serverTimestamp(),
               });
 
               const walletApplied = Number(orderData.walletApplied) || 0;
@@ -293,14 +311,16 @@ export async function POST(req: NextRequest) {
                   const newBalance = Math.max(0, currentBalance - walletApplied);
                   transaction.update(userRef, { walletBalance: newBalance });
 
-                  const txRef = dbAdmin.collection('wallet_transactions').doc(`order_debit_${orderId}`);
+                  const txRef = dbAdmin
+                    .collection('wallet_transactions')
+                    .doc(`order_debit_${orderId}`);
                   transaction.set(txRef, {
                     userId,
                     amount: walletApplied,
                     type: 'debit',
                     status: 'completed',
                     description: `Payment for Order #${orderId}`,
-                    createdAt: AdminFieldValue.serverTimestamp()
+                    createdAt: AdminFieldValue.serverTimestamp(),
                   });
                 }
               }
@@ -317,6 +337,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (err: any) {
     console.error('Webhook execution failed:', err);
-    return NextResponse.json({ error: `Webhook execution failed: ${err.message}` }, { status: 500 });
+    return NextResponse.json(
+      { error: `Webhook execution failed: ${err.message}` },
+      { status: 500 }
+    );
   }
 }

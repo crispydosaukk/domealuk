@@ -38,12 +38,14 @@ export default function UserNavbar() {
       setUserData(null);
       return;
     }
-    
+
     // Fetch orders
     const qOrders = query(collection(db, 'orders'), where('userId', '==', user.uid));
     const unsubOrders = onSnapshot(qOrders, (snap) => {
-      const fetched = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      fetched.sort((a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      const fetched = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      fetched.sort(
+        (a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
+      );
       setUserOrders(fetched);
     });
 
@@ -75,13 +77,19 @@ export default function UserNavbar() {
   return (
     <>
       {!isHome && <div className="h-16" />}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isTransparent ? 'bg-transparent' : 'bg-white border-b border-border shadow-sm'}`}>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isTransparent ? 'bg-transparent' : 'bg-white border-b border-border shadow-sm'}`}
+      >
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10">
-          <div className={`flex items-center justify-between transition-all duration-300 ${isTransparent ? 'h-24' : 'h-16'}`}>
+          <div
+            className={`flex items-center justify-between transition-all duration-300 ${isTransparent ? 'h-24' : 'h-16'}`}
+          >
             {/* Logo */}
             <div className="flex items-center gap-4">
               <Link href="/" className="flex items-center">
-                <div className={`rounded-full overflow-hidden border-4 border-[#C39B54] shadow-md flex-shrink-0 transition-all duration-300 bg-white ${isTransparent ? 'w-20 h-20' : 'w-14 h-14'}`}>
+                <div
+                  className={`rounded-full overflow-hidden border-4 border-[#C39B54] shadow-md flex-shrink-0 transition-all duration-300 bg-white ${isTransparent ? 'w-20 h-20' : 'w-14 h-14'}`}
+                >
                   <Image
                     src="/DOMEAL_Logo.png"
                     alt="DoMeal logo"
@@ -111,8 +119,12 @@ export default function UserNavbar() {
             {/* Right actions */}
             <div className="flex items-center gap-4">
               {user && userData && (
-                <Link href="/wallet" className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all hover:scale-105 ${isTransparent ? 'bg-white/10 border-white/20 text-white hover:bg-white/25' : 'bg-green-50 border-green-100 text-green-700 hover:bg-green-100'} font-800 text-sm shadow-sm`}>
-                  <Wallet size={16} className={isTransparent ? 'text-white' : 'text-green-600'} /> £{(userData.walletBalance || 0).toFixed(2)}
+                <Link
+                  href="/wallet"
+                  className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all hover:scale-105 ${isTransparent ? 'bg-white/10 border-white/20 text-white hover:bg-white/25' : 'bg-green-50 border-green-100 text-green-700 hover:bg-green-100'} font-800 text-sm shadow-sm`}
+                >
+                  <Wallet size={16} className={isTransparent ? 'text-white' : 'text-green-600'} /> £
+                  {(userData.walletBalance || 0).toFixed(2)}
                 </Link>
               )}
               <button
@@ -125,14 +137,17 @@ export default function UserNavbar() {
                 className={`relative p-2 rounded-lg transition-colors ${isTransparent ? 'hover:bg-white/10' : 'hover:bg-muted'}`}
                 aria-label="Cart"
               >
-                <ShoppingCart size={20} className={isTransparent ? 'text-white' : 'text-foreground'} />
+                <ShoppingCart
+                  size={20}
+                  className={isTransparent ? 'text-white' : 'text-foreground'}
+                />
                 {cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                     {cartCount}
                   </span>
                 )}
               </button>
-              
+
               {user ? (
                 <div className="flex items-center gap-3">
                   {user.email === 'domealuk79812@gmail.com' && (
@@ -147,7 +162,11 @@ export default function UserNavbar() {
                     onClick={() => setProfileOpen(true)}
                     className={`hidden sm:flex w-10 h-10 rounded-full items-center justify-center font-bold transition-colors border ${isTransparent ? 'bg-white/20 text-white border-white/30 hover:bg-white/30' : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'}`}
                   >
-                    {user.displayName ? user.displayName.charAt(0).toUpperCase() : <User size={18} />}
+                    {user.displayName ? (
+                      user.displayName.charAt(0).toUpperCase()
+                    ) : (
+                      <User size={18} />
+                    )}
                   </button>
                 </div>
               ) : (
@@ -183,7 +202,7 @@ export default function UserNavbar() {
                 {link.label}
               </Link>
             ))}
-            
+
             {user ? (
               <div className="flex flex-col gap-2">
                 {user.email === 'domealuk79812@gmail.com' && (
@@ -222,22 +241,34 @@ export default function UserNavbar() {
       {/* Profile Sidebar */}
       {profileOpen && (
         <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setProfileOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setProfileOpen(false)}
+          />
           <div className="relative w-full max-w-sm h-full bg-white shadow-2xl animate-in slide-in-from-right duration-200 flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-border bg-muted/30">
               <h2 className="font-700 text-lg text-foreground">My Profile</h2>
-              <button onClick={() => setProfileOpen(false)} className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground">
+              <button
+                onClick={() => setProfileOpen(false)}
+                className="p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground"
+              >
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-6 border-b border-border">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold border-2 border-primary/20">
-                   {user?.displayName ? user.displayName.charAt(0).toUpperCase() : <User size={30} />}
+                  {user?.displayName ? (
+                    user.displayName.charAt(0).toUpperCase()
+                  ) : (
+                    <User size={30} />
+                  )}
                 </div>
                 <div>
-                  <h3 className="font-800 text-lg text-foreground">{user?.displayName || 'User'}</h3>
+                  <h3 className="font-800 text-lg text-foreground">
+                    {user?.displayName || 'User'}
+                  </h3>
                   <p className="text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
@@ -246,19 +277,31 @@ export default function UserNavbar() {
             <div className="flex-1 overflow-y-auto p-4 bg-muted/20">
               {/* Wallet & Referral */}
               <div className="mb-6 grid grid-cols-2 gap-3">
-                <Link href="/wallet" onClick={() => setProfileOpen(false)} className="bg-white rounded-xl border border-border p-4 shadow-sm flex flex-col items-center justify-center text-center hover:border-primary/45 hover:bg-gray-50/50 transition-all cursor-pointer">
+                <Link
+                  href="/wallet"
+                  onClick={() => setProfileOpen(false)}
+                  className="bg-white rounded-xl border border-border p-4 shadow-sm flex flex-col items-center justify-center text-center hover:border-primary/45 hover:bg-gray-50/50 transition-all cursor-pointer"
+                >
                   <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 mb-1.5">
                     <Wallet size={16} />
                   </div>
-                  <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider mb-1">Wallet Balance</p>
-                  <p className="font-900 text-xl text-primary tabular-nums">£{(userData?.walletBalance || 0).toFixed(2)}</p>
+                  <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider mb-1">
+                    Wallet Balance
+                  </p>
+                  <p className="font-900 text-xl text-primary tabular-nums">
+                    £{(userData?.walletBalance || 0).toFixed(2)}
+                  </p>
                 </Link>
                 <div className="bg-white rounded-xl border border-border p-4 shadow-sm flex flex-col items-center justify-center text-center">
                   <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-primary mb-1.5">
                     <Gift size={16} />
                   </div>
-                  <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider mb-1">Referral Code</p>
-                  <p className="font-900 text-base text-foreground tracking-widest">{userData?.referralCode || 'N/A'}</p>
+                  <p className="text-xs font-700 text-muted-foreground uppercase tracking-wider mb-1">
+                    Referral Code
+                  </p>
+                  <p className="font-900 text-base text-foreground tracking-widest">
+                    {userData?.referralCode || 'N/A'}
+                  </p>
                 </div>
               </div>
 
@@ -269,44 +312,66 @@ export default function UserNavbar() {
                     <Package size={16} className="text-primary" />
                     Recent Orders
                   </h4>
-                  <Link href="/order-history" onClick={() => setProfileOpen(false)} className="text-xs font-600 text-primary hover:underline">
+                  <Link
+                    href="/order-history"
+                    onClick={() => setProfileOpen(false)}
+                    className="text-xs font-600 text-primary hover:underline"
+                  >
                     View all
                   </Link>
                 </div>
-                
+
                 {userOrders.length === 0 ? (
                   <div className="bg-white rounded-xl border border-border p-5 text-center text-muted-foreground text-xs font-500 shadow-sm">
                     No recent orders found.
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {userOrders.slice(0, 1).map(order => (
-                      <div key={order.id} className="bg-white rounded-xl border border-border p-4 shadow-sm relative overflow-hidden group hover:border-primary/30 transition-colors">
+                    {userOrders.slice(0, 1).map((order) => (
+                      <div
+                        key={order.id}
+                        className="bg-white rounded-xl border border-border p-4 shadow-sm relative overflow-hidden group hover:border-primary/30 transition-colors"
+                      >
                         <div className="flex justify-between items-start mb-3 border-b border-border/50 pb-3">
                           <div>
                             <p className="text-xs font-800 text-foreground mb-0.5">{order.id}</p>
                             <p className="text-[10px] text-muted-foreground font-600 uppercase tracking-wider">
-                              {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Recent'}
+                              {order.createdAt?.toDate
+                                ? order.createdAt
+                                    .toDate()
+                                    .toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+                                : 'Recent'}
                             </p>
                           </div>
-                          <span className={`text-[10px] font-800 px-2 py-1 rounded-md 
-                            ${order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 
-                              order.status === 'Cancelled' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-700'}`}
+                          <span
+                            className={`text-[10px] font-800 px-2 py-1 rounded-md 
+                            ${
+                              order.status === 'Delivered'
+                                ? 'bg-green-100 text-green-700'
+                                : order.status === 'Cancelled'
+                                  ? 'bg-red-100 text-red-600'
+                                  : 'bg-orange-100 text-orange-700'
+                            }`}
                           >
                             {order.status || 'Order Received'}
                           </span>
                         </div>
-                        
+
                         <div className="space-y-2 mb-3">
                           {order.items?.map((item: any, idx: number) => (
                             <div key={idx} className="flex flex-col text-xs text-muted-foreground">
                               <div className="flex justify-between">
-                                <span><span className="font-600 text-foreground">{item.qty}x</span> {item.name}</span>
+                                <span>
+                                  <span className="font-600 text-foreground">{item.qty}x</span>{' '}
+                                  {item.name}
+                                </span>
                               </div>
                               {item.subItems && item.subItems.length > 0 && (
                                 <div className="pl-4 mt-0.5 flex flex-col gap-0.5">
                                   {item.subItems.map((sub: any, i: number) => (
-                                    <span key={i} className="text-[9px]">+ {sub.name}</span>
+                                    <span key={i} className="text-[9px]">
+                                      + {sub.name}
+                                    </span>
                                   ))}
                                 </div>
                               )}
@@ -320,10 +385,13 @@ export default function UserNavbar() {
                               <MapPin size={10} /> {order.address?.postcode || 'Delivery'}
                             </span>
                             <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-500">
-                              <CreditCard size={10} /> {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Card'}
+                              <CreditCard size={10} />{' '}
+                              {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Card'}
                             </span>
                           </div>
-                          <span className="text-sm font-800 text-foreground">£{order.total?.toFixed(2)}</span>
+                          <span className="text-sm font-800 text-foreground">
+                            £{order.total?.toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -337,7 +405,12 @@ export default function UserNavbar() {
                   { icon: Heart, label: 'Saved Meals', href: '#' },
                   { icon: Settings, label: 'Account Settings', href: '#' },
                 ].map((item, i) => (
-                  <Link key={i} href={item.href} onClick={() => setProfileOpen(false)} className="flex items-center gap-3 p-3.5 rounded-xl hover:bg-white border border-transparent hover:border-border hover:shadow-sm text-foreground font-600 transition-all text-sm">
+                  <Link
+                    key={i}
+                    href={item.href}
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 p-3.5 rounded-xl hover:bg-white border border-transparent hover:border-border hover:shadow-sm text-foreground font-600 transition-all text-sm"
+                  >
                     <item.icon size={16} className="text-muted-foreground" />
                     {item.label}
                   </Link>

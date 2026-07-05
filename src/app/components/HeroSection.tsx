@@ -8,7 +8,8 @@ import { getApiUrl } from '@/lib/api';
 export default function HeroSection() {
   const [settings, setSettings] = useState({
     heroTitle: 'Fresh Indian Food,\nDelivered with Love',
-    heroDesc: 'Drawing on 21 years of restaurant expertise, we prepare nutritious vegetarian meals using authentic recipes, fresh ingredients, and sustainable packaging.',
+    heroDesc:
+      'Drawing on 21 years of restaurant expertise, we prepare nutritious vegetarian meals using authentic recipes, fresh ingredients, and sustainable packaging.',
     heroBtn1: 'Start Your DoMeal Journey',
     heroBtn2: 'View Meal Plans',
     heroRating: '4.9 / 5',
@@ -23,7 +24,7 @@ export default function HeroSection() {
       'Balanced Nutrition',
       'Reusable Packaging',
       '21 Years of Culinary Excellence',
-    ]
+    ],
   });
 
   useEffect(() => {
@@ -32,10 +33,10 @@ export default function HeroSection() {
         const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
-          setSettings(prev => ({
+          setSettings((prev) => ({
             ...prev,
             ...data,
-            heroPoints: data.heroPoints || prev.heroPoints
+            heroPoints: data.heroPoints || prev.heroPoints,
           }));
         }
       } catch (error) {}
@@ -47,7 +48,7 @@ export default function HeroSection() {
     <section
       className="relative overflow-hidden bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundImage: `linear-gradient(to right, rgba(30, 59, 43, 0.95) 0%, rgba(30, 59, 43, 0.5) 100%), url('/banner.png')`
+        backgroundImage: `linear-gradient(to right, rgba(30, 59, 43, 0.95) 0%, rgba(30, 59, 43, 0.5) 100%), url('/banner.png')`,
       }}
     >
       {/* Decorative blobs */}
@@ -57,7 +58,13 @@ export default function HeroSection() {
         <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-[#C39B54] rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 opacity-20" />
       </div>
       {/* Subtle dot pattern */}
-      <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, #C39B54 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+      <div
+        className="absolute inset-0 opacity-5"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #C39B54 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+        }}
+      />
 
       <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10 pt-32 pb-12 lg:pt-40 lg:pb-16 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
@@ -148,15 +155,22 @@ export default function HeroSection() {
                   />
                 </div>
                 <h2 className="text-white text-2xl font-extrabold text-center mb-1">DoMeal</h2>
-                <p className="text-[#C39B54] text-xs font-600 text-center tracking-widest uppercase mb-6">Home Food Away From Home</p>
+                <p className="text-[#C39B54] text-xs font-600 text-center tracking-widest uppercase mb-6">
+                  Home Food Away From Home
+                </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                   {settings.heroPoints.map((point, idx) => (
-                    <div key={idx} className={`flex items-center gap-3 bg-white/15 rounded-xl px-4 py-3 border border-white/10 shadow-sm ${idx === settings.heroPoints.length - 1 && settings.heroPoints.length % 2 !== 0 ? 'sm:col-span-2 sm:justify-center' : ''}`}>
+                    <div
+                      key={idx}
+                      className={`flex items-center gap-3 bg-white/15 rounded-xl px-4 py-3 border border-white/10 shadow-sm ${idx === settings.heroPoints.length - 1 && settings.heroPoints.length % 2 !== 0 ? 'sm:col-span-2 sm:justify-center' : ''}`}
+                    >
                       <div className="w-7 h-7 rounded-full bg-[#1E3B2B] flex items-center justify-center flex-shrink-0">
                         <Check size={16} strokeWidth={3} className="text-white" />
                       </div>
-                      <p className="text-white text-xs sm:text-sm font-bold leading-snug drop-shadow-sm">{point}</p>
+                      <p className="text-white text-xs sm:text-sm font-bold leading-snug drop-shadow-sm">
+                        {point}
+                      </p>
                     </div>
                   ))}
                 </div>

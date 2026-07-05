@@ -1,6 +1,18 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Search, Users, Mail, Phone, MapPin, ShoppingBag, Calendar, ChevronDown, ChevronUp, Wallet, Gift } from 'lucide-react';
+import {
+  Search,
+  Users,
+  Mail,
+  Phone,
+  MapPin,
+  ShoppingBag,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Wallet,
+  Gift,
+} from 'lucide-react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -18,64 +30,72 @@ export default function AdminCustomersClient() {
     if (!user || user.email !== 'domealuk79812@gmail.com') return;
 
     const unsub1 = onSnapshot(collection(db, 'users'), (snap) => {
-      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     const unsub2 = onSnapshot(q, (snap) => {
-      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
     const unsub3 = onSnapshot(collection(db, 'wallet_transactions'), (snap) => {
-      setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setTransactions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
-    return () => { unsub1(); unsub2(); unsub3(); };
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+    };
   }, [user]);
 
   // Enrich user data by cross-referencing orders for missing details
   const ADMIN_EMAIL = 'domealuk79812@gmail.com';
 
-  const enriched = users.filter(u => u.email !== ADMIN_EMAIL).map(u => {
-    const userOrders = orders.filter(o => o.userId === u.id);
-    const totalSpent = userOrders.reduce((s, o) => s + (o.total || 0), 0);
-    const latestOrder = userOrders[0];
+  const enriched = users
+    .filter((u) => u.email !== ADMIN_EMAIL)
+    .map((u) => {
+      const userOrders = orders.filter((o) => o.userId === u.id);
+      const totalSpent = userOrders.reduce((s, o) => s + (o.total || 0), 0);
+      const latestOrder = userOrders[0];
 
-    // Calculate Wallet stats from transactions
-    const userTx = transactions.filter(t => t.userId === u.id);
-    const referralEarned = userTx
-      .filter(t => t.type === 'credit' && /referral/i.test(t.description || ''))
-      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-    const giftEarned = userTx
-      .filter(t => t.type === 'credit' && /gift/i.test(t.description || ''))
-      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-    const totalEarned = userTx
-      .filter(t => t.type === 'credit')
-      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      // Calculate Wallet stats from transactions
+      const userTx = transactions.filter((t) => t.userId === u.id);
+      const referralEarned = userTx
+        .filter((t) => t.type === 'credit' && /referral/i.test(t.description || ''))
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      const giftEarned = userTx
+        .filter((t) => t.type === 'credit' && /gift/i.test(t.description || ''))
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      const totalEarned = userTx
+        .filter((t) => t.type === 'credit')
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
-    // Fallback: get name & phone from their order address if missing from user profile
-    const resolvedName = u.name || latestOrder?.address?.fullName || 'Unknown';
-    const resolvedPhone = u.phone || latestOrder?.address?.phone || '—';
-    const resolvedAddress = latestOrder?.address || null;
+      // Fallback: get name & phone from their order address if missing from user profile
+      const resolvedName = u.name || latestOrder?.address?.fullName || 'Unknown';
+      const resolvedPhone = u.phone || latestOrder?.address?.phone || '—';
+      const resolvedAddress = latestOrder?.address || null;
 
-    return {
-      ...u,
-      resolvedName,
-      resolvedPhone,
-      resolvedAddress,
-      orderCount: userOrders.length,
-      totalSpent,
-      latestOrder,
-      orders: userOrders,
-      referralEarned,
-      giftEarned,
-      totalEarned
-    };
-  });
+      return {
+        ...u,
+        resolvedName,
+        resolvedPhone,
+        resolvedAddress,
+        orderCount: userOrders.length,
+        totalSpent,
+        latestOrder,
+        orders: userOrders,
+        referralEarned,
+        giftEarned,
+        totalEarned,
+      };
+    });
 
-  const filtered = enriched.filter(u => {
+  const filtered = enriched.filter((u) => {
     const s = search.toLowerCase();
-    return u.resolvedName.toLowerCase().includes(s)
-      || (u.email || '').toLowerCase().includes(s)
-      || u.resolvedPhone.toLowerCase().includes(s);
+    return (
+      u.resolvedName.toLowerCase().includes(s) ||
+      (u.email || '').toLowerCase().includes(s) ||
+      u.resolvedPhone.toLowerCase().includes(s)
+    );
   });
 
   return (
@@ -94,10 +114,13 @@ export default function AdminCustomersClient() {
 
       {/* Search */}
       <div className="relative max-w-md">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Search
+          size={16}
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
         <input
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name, email or phone..."
           className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 text-sm"
         />
@@ -105,15 +128,22 @@ export default function AdminCustomersClient() {
 
       {/* Customer Cards */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-border p-12 text-center text-muted-foreground">Loading customers...</div>
+        <div className="bg-white rounded-2xl border border-border p-12 text-center text-muted-foreground">
+          Loading customers...
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-border p-12 text-center text-muted-foreground">No customers found.</div>
+        <div className="bg-white rounded-2xl border border-border p-12 text-center text-muted-foreground">
+          No customers found.
+        </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(u => {
+          {filtered.map((u) => {
             const isExpanded = expandedId === u.id;
             return (
-              <div key={u.id} className={`bg-white rounded-2xl border-2 transition-all duration-200 overflow-hidden ${isExpanded ? 'border-primary shadow-md shadow-red-50' : 'border-border hover:border-primary/30'}`}>
+              <div
+                key={u.id}
+                className={`bg-white rounded-2xl border-2 transition-all duration-200 overflow-hidden ${isExpanded ? 'border-primary shadow-md shadow-red-50' : 'border-border hover:border-primary/30'}`}
+              >
                 {/* Customer Row */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : u.id)}
@@ -132,23 +162,37 @@ export default function AdminCustomersClient() {
 
                   {/* Phone */}
                   <div className="hidden sm:block text-sm text-muted-foreground min-w-[120px]">
-                    <p className="text-[10px] font-700 uppercase text-muted-foreground/60 mb-0.5">Phone</p>
+                    <p className="text-[10px] font-700 uppercase text-muted-foreground/60 mb-0.5">
+                      Phone
+                    </p>
                     <p className="font-600">{u.resolvedPhone}</p>
                   </div>
 
                   {/* Orders */}
                   <div className="hidden md:block text-center min-w-[60px]">
-                    <p className="text-[10px] font-700 uppercase text-muted-foreground/60 mb-0.5">Orders</p>
-                    <span className="bg-blue-100 text-blue-700 font-700 text-sm px-2.5 py-0.5 rounded-md">{u.orderCount}</span>
+                    <p className="text-[10px] font-700 uppercase text-muted-foreground/60 mb-0.5">
+                      Orders
+                    </p>
+                    <span className="bg-blue-100 text-blue-700 font-700 text-sm px-2.5 py-0.5 rounded-md">
+                      {u.orderCount}
+                    </span>
                   </div>
 
                   {/* Spent */}
                   <div className="text-right min-w-[70px]">
-                    <p className="text-[10px] font-700 uppercase text-muted-foreground/60 mb-0.5">Spent</p>
-                    <p className="font-800 text-foreground tabular-nums">£{u.totalSpent.toFixed(2)}</p>
+                    <p className="text-[10px] font-700 uppercase text-muted-foreground/60 mb-0.5">
+                      Spent
+                    </p>
+                    <p className="font-800 text-foreground tabular-nums">
+                      £{u.totalSpent.toFixed(2)}
+                    </p>
                   </div>
 
-                  {isExpanded ? <ChevronUp size={16} className="text-muted-foreground shrink-0" /> : <ChevronDown size={16} className="text-muted-foreground shrink-0" />}
+                  {isExpanded ? (
+                    <ChevronUp size={16} className="text-muted-foreground shrink-0" />
+                  ) : (
+                    <ChevronDown size={16} className="text-muted-foreground shrink-0" />
+                  )}
                 </button>
 
                 {/* Expanded Details */}
@@ -157,7 +201,9 @@ export default function AdminCustomersClient() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {/* Contact Info */}
                       <div>
-                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground mb-3">Contact Information</p>
+                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground mb-3">
+                          Contact Information
+                        </p>
                         <div className="space-y-3 bg-white border border-border p-4 rounded-xl shadow-sm text-sm">
                           <div className="flex items-center gap-2.5">
                             <Mail size={15} className="shrink-0 text-primary" />
@@ -169,12 +215,24 @@ export default function AdminCustomersClient() {
                           </div>
                           <div className="flex items-center gap-2.5">
                             <Calendar size={15} className="shrink-0 text-primary" />
-                            <span className="text-muted-foreground text-xs">Joined: {u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown'}</span>
+                            <span className="text-muted-foreground text-xs">
+                              Joined:{' '}
+                              {u.createdAt?.toDate
+                                ? u.createdAt.toDate().toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })
+                                : 'Unknown'}
+                            </span>
                           </div>
                           {u.referralCode && (
                             <div className="flex items-center gap-2.5 pt-2 border-t border-border">
                               <Gift size={15} className="shrink-0 text-primary" />
-                              <span className="text-foreground text-xs font-600">Referral Code: <span className="font-900 tracking-widest">{u.referralCode}</span></span>
+                              <span className="text-foreground text-xs font-600">
+                                Referral Code:{' '}
+                                <span className="font-900 tracking-widest">{u.referralCode}</span>
+                              </span>
                             </div>
                           )}
                         </div>
@@ -182,58 +240,98 @@ export default function AdminCustomersClient() {
 
                       {/* Address */}
                       <div>
-                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground mb-3">Delivery Address</p>
+                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground mb-3">
+                          Delivery Address
+                        </p>
                         <div className="bg-white border border-border p-4 rounded-xl shadow-sm text-sm">
                           {u.resolvedAddress ? (
                             <div className="flex items-start gap-2.5">
                               <MapPin size={15} className="shrink-0 text-primary mt-0.5" />
                               <div className="text-foreground text-xs leading-relaxed">
                                 <p className="font-600">{u.resolvedAddress.fullName}</p>
-                                {u.resolvedAddress.streetAddress && <p>{u.resolvedAddress.streetAddress}</p>}
-                                {(u.resolvedAddress.city || u.resolvedAddress.postcode) && (
-                                  <p>{[u.resolvedAddress.city, u.resolvedAddress.postcode].filter(Boolean).join(', ')}</p>
+                                {u.resolvedAddress.streetAddress && (
+                                  <p>{u.resolvedAddress.streetAddress}</p>
                                 )}
-                                {u.resolvedAddress.phone && <p className="mt-1 text-muted-foreground">📱 {u.resolvedAddress.phone}</p>}
+                                {(u.resolvedAddress.city || u.resolvedAddress.postcode) && (
+                                  <p>
+                                    {[u.resolvedAddress.city, u.resolvedAddress.postcode]
+                                      .filter(Boolean)
+                                      .join(', ')}
+                                  </p>
+                                )}
+                                {u.resolvedAddress.phone && (
+                                  <p className="mt-1 text-muted-foreground">
+                                    📱 {u.resolvedAddress.phone}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           ) : (
-                            <p className="text-muted-foreground text-xs">No address on file — customer has not placed any orders yet.</p>
+                            <p className="text-muted-foreground text-xs">
+                              No address on file — customer has not placed any orders yet.
+                            </p>
                           )}
                         </div>
                       </div>
 
                       {/* Stats */}
                       <div className="flex flex-col gap-3">
-                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground">Order Stats</p>
+                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground">
+                          Order Stats
+                        </p>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="bg-white border border-border rounded-xl p-3 text-center shadow-sm">
-                            <p className="text-[10px] font-700 uppercase tracking-wider text-muted-foreground mb-1">Total Orders</p>
+                            <p className="text-[10px] font-700 uppercase tracking-wider text-muted-foreground mb-1">
+                              Total Orders
+                            </p>
                             <p className="text-xl font-900 text-foreground">{u.orderCount}</p>
                           </div>
                           <div className="bg-white border border-border rounded-xl p-3 text-center shadow-sm">
-                            <p className="text-[10px] font-700 uppercase tracking-wider text-muted-foreground mb-1">Total Spent</p>
-                            <p className="text-xl font-900 text-primary">£{u.totalSpent.toFixed(2)}</p>
+                            <p className="text-[10px] font-700 uppercase tracking-wider text-muted-foreground mb-1">
+                              Total Spent
+                            </p>
+                            <p className="text-xl font-900 text-primary">
+                              £{u.totalSpent.toFixed(2)}
+                            </p>
                           </div>
                         </div>
 
-                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground mt-1">Wallet Details</p>
+                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground mt-1">
+                          Wallet Details
+                        </p>
                         <div className="bg-white border border-border rounded-xl p-4 shadow-sm space-y-3">
                           <div className="flex items-center justify-between border-b border-dashed border-border pb-2">
-                            <span className="text-xs font-700 text-muted-foreground flex items-center gap-1.5"><Wallet size={14} className="text-green-600" /> Current Balance</span>
-                            <span className="text-base font-900 text-green-600">£{(u.walletBalance || 0).toFixed(2)}</span>
+                            <span className="text-xs font-700 text-muted-foreground flex items-center gap-1.5">
+                              <Wallet size={14} className="text-green-600" /> Current Balance
+                            </span>
+                            <span className="text-base font-900 text-green-600">
+                              £{(u.walletBalance || 0).toFixed(2)}
+                            </span>
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-center pt-1">
                             <div>
-                              <p className="text-[9px] font-700 uppercase text-muted-foreground/80 mb-0.5">Referrals</p>
-                              <p className="text-xs font-800 text-blue-600">£{u.referralEarned.toFixed(2)}</p>
+                              <p className="text-[9px] font-700 uppercase text-muted-foreground/80 mb-0.5">
+                                Referrals
+                              </p>
+                              <p className="text-xs font-800 text-blue-600">
+                                £{u.referralEarned.toFixed(2)}
+                              </p>
                             </div>
                             <div>
-                              <p className="text-[9px] font-700 uppercase text-muted-foreground/80 mb-0.5">Gifts</p>
-                              <p className="text-xs font-800 text-purple-600">£{u.giftEarned.toFixed(2)}</p>
+                              <p className="text-[9px] font-700 uppercase text-muted-foreground/80 mb-0.5">
+                                Gifts
+                              </p>
+                              <p className="text-xs font-800 text-purple-600">
+                                £{u.giftEarned.toFixed(2)}
+                              </p>
                             </div>
                             <div>
-                              <p className="text-[9px] font-700 uppercase text-muted-foreground/80 mb-0.5">Total Earned</p>
-                              <p className="text-xs font-800 text-foreground">£{u.totalEarned.toFixed(2)}</p>
+                              <p className="text-[9px] font-700 uppercase text-muted-foreground/80 mb-0.5">
+                                Total Earned
+                              </p>
+                              <p className="text-xs font-800 text-foreground">
+                                £{u.totalEarned.toFixed(2)}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -243,32 +341,60 @@ export default function AdminCustomersClient() {
                     {/* Recent Orders */}
                     {u.orders.length > 0 && (
                       <div className="mt-5">
-                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground mb-3">Order History</p>
+                        <p className="text-[10px] font-800 uppercase tracking-wider text-muted-foreground mb-3">
+                          Order History
+                        </p>
                         <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden">
                           <table className="w-full text-sm">
                             <thead className="bg-muted">
                               <tr>
-                                <th className="text-left px-4 py-2.5 text-[10px] font-700 text-muted-foreground uppercase">Order ID</th>
-                                <th className="text-left px-4 py-2.5 text-[10px] font-700 text-muted-foreground uppercase">Date</th>
-                                <th className="text-left px-4 py-2.5 text-[10px] font-700 text-muted-foreground uppercase">Items</th>
-                                <th className="text-left px-4 py-2.5 text-[10px] font-700 text-muted-foreground uppercase">Status</th>
-                                <th className="text-right px-4 py-2.5 text-[10px] font-700 text-muted-foreground uppercase">Total</th>
+                                <th className="text-left px-4 py-2.5 text-[10px] font-700 text-muted-foreground uppercase">
+                                  Order ID
+                                </th>
+                                <th className="text-left px-4 py-2.5 text-[10px] font-700 text-muted-foreground uppercase">
+                                  Date
+                                </th>
+                                <th className="text-left px-4 py-2.5 text-[10px] font-700 text-muted-foreground uppercase">
+                                  Items
+                                </th>
+                                <th className="text-left px-4 py-2.5 text-[10px] font-700 text-muted-foreground uppercase">
+                                  Status
+                                </th>
+                                <th className="text-right px-4 py-2.5 text-[10px] font-700 text-muted-foreground uppercase">
+                                  Total
+                                </th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
                               {u.orders.slice(0, 10).map((o: any) => (
                                 <tr key={o.id} className="hover:bg-muted/30">
-                                  <td className="px-4 py-3 font-700 text-primary text-xs">{o.id}</td>
-                                  <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('en-GB') : '—'}</td>
-                                  <td className="px-4 py-3 text-muted-foreground text-xs max-w-[200px] truncate">{o.items?.map((i:any) => `${i.qty}x ${i.name}`).join(', ')}</td>
-                                  <td className="px-4 py-3">
-                                    <span className={`text-[10px] font-700 px-2 py-0.5 rounded-md ${
-                                      o.status === 'Delivered' ? 'bg-green-100 text-green-700' :
-                                      o.status === 'Cancelled' ? 'bg-red-100 text-red-600' :
-                                      'bg-amber-100 text-amber-700'
-                                    }`}>{o.status || 'Order Received'}</span>
+                                  <td className="px-4 py-3 font-700 text-primary text-xs">
+                                    {o.id}
                                   </td>
-                                  <td className="px-4 py-3 text-right font-700 tabular-nums">£{(o.total || 0).toFixed(2)}</td>
+                                  <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
+                                    {o.createdAt?.toDate
+                                      ? o.createdAt.toDate().toLocaleDateString('en-GB')
+                                      : '—'}
+                                  </td>
+                                  <td className="px-4 py-3 text-muted-foreground text-xs max-w-[200px] truncate">
+                                    {o.items?.map((i: any) => `${i.qty}x ${i.name}`).join(', ')}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span
+                                      className={`text-[10px] font-700 px-2 py-0.5 rounded-md ${
+                                        o.status === 'Delivered'
+                                          ? 'bg-green-100 text-green-700'
+                                          : o.status === 'Cancelled'
+                                            ? 'bg-red-100 text-red-600'
+                                            : 'bg-amber-100 text-amber-700'
+                                      }`}
+                                    >
+                                      {o.status || 'Order Received'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-700 tabular-nums">
+                                    £{(o.total || 0).toFixed(2)}
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>

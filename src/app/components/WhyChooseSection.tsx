@@ -17,15 +17,34 @@ export default function WhyChooseSection() {
   const [settings, setSettings] = useState({
     whyChooseBadge: 'Why Us',
     whyChooseTitle: 'Why Choose DoMeal?',
-    whyChooseDesc: 'More than just food delivery — we bring the warmth of home-cooking to your daily life in London.',
+    whyChooseDesc:
+      'More than just food delivery — we bring the warmth of home-cooking to your daily life in London.',
     whyChooseReasons: [
-      { title: '100% Vegan and Vegetarian', desc: 'Strictly plant-based and vegetarian options. Perfect for clean eating and conscious dietary preferences.' },
-      { title: 'Food Hygiene Certified', desc: 'Our kitchen holds a 5-star Food Hygiene Rating from the local council. Safe food, always.' },
-      { title: 'Punctual Delivery', desc: 'Breakfast by 8:30 AM, Lunch by 1:00 PM, Dinner by 8:30 PM. We respect your schedule.' },
-      { title: 'Made with Love', desc: 'Every meal is prepared by experienced home cooks using traditional recipes passed down generations.' },
-      { title: 'No Hidden Charges', desc: 'What you see is what you pay. Free delivery on all subscription plans. No surprise fees.' },
-      { title: 'London-Wide Delivery', desc: 'We cover East, North, South, West and Central London. Check your postcode above.' }
-    ]
+      {
+        title: '100% Vegan and Vegetarian',
+        desc: 'Strictly plant-based and vegetarian options. Perfect for clean eating and conscious dietary preferences.',
+      },
+      {
+        title: 'Food Hygiene Certified',
+        desc: 'Our kitchen holds a 5-star Food Hygiene Rating from the local council. Safe food, always.',
+      },
+      {
+        title: 'Punctual Delivery',
+        desc: 'Breakfast by 8:30 AM, Lunch by 1:00 PM, Dinner by 8:30 PM. We respect your schedule.',
+      },
+      {
+        title: 'Made with Love',
+        desc: 'Every meal is prepared by experienced home cooks using traditional recipes passed down generations.',
+      },
+      {
+        title: 'No Hidden Charges',
+        desc: 'What you see is what you pay. Free delivery on all subscription plans. No surprise fees.',
+      },
+      {
+        title: 'London-Wide Delivery',
+        desc: 'We cover East, North, South, West and Central London. Check your postcode above.',
+      },
+    ],
   });
 
   useEffect(() => {
@@ -34,10 +53,10 @@ export default function WhyChooseSection() {
         const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
-          setSettings(prev => ({
+          setSettings((prev) => ({
             ...prev,
             ...data,
-            whyChooseReasons: data.whyChooseReasons || prev.whyChooseReasons
+            whyChooseReasons: data.whyChooseReasons || prev.whyChooseReasons,
           }));
         }
       } catch (error) {}
@@ -55,9 +74,7 @@ export default function WhyChooseSection() {
           <h2 className="text-3xl lg:text-4xl font-extrabold text-foreground mb-3">
             {settings.whyChooseTitle}
           </h2>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            {settings.whyChooseDesc}
-          </p>
+          <p className="text-muted-foreground max-w-lg mx-auto">{settings.whyChooseDesc}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -69,7 +86,9 @@ export default function WhyChooseSection() {
                 key={idx}
                 className="flex gap-4 p-5 rounded-2xl border border-border hover:shadow-md hover:border-primary/20 transition-all duration-200 group"
               >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${style} group-hover:scale-110 transition-transform duration-200`}>
+                <div
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${style} group-hover:scale-110 transition-transform duration-200`}
+                >
                   <Icon size={22} />
                 </div>
                 <div>

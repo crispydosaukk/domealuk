@@ -16,7 +16,13 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, phone: string, referredBy?: string) => Promise<any>;
+  signup: (
+    email: string,
+    password: string,
+    name: string,
+    phone: string,
+    referredBy?: string
+  ) => Promise<any>;
   logout: () => Promise<void>;
 }
 
@@ -36,7 +42,7 @@ const checkAndApplyDueGifts = async (uid: string, email: string) => {
     await fetch(getApiUrl('/api/claim-gift-cards'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: uid, email })
+      body: JSON.stringify({ userId: uid, email }),
     });
   } catch (err) {
     console.error('Failed to trigger gift card claim:', err);
@@ -51,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
-      
+
       if (firebaseUser && firebaseUser.email) {
         await checkAndApplyDueGifts(firebaseUser.uid, firebaseUser.email);
       }
@@ -63,7 +69,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signup = async (email: string, password: string, name: string, phone: string, referredBy?: string) => {
+  const signup = async (
+    email: string,
+    password: string,
+    name: string,
+    phone: string,
+    referredBy?: string
+  ) => {
     let credential;
     try {
       credential = await createUserWithEmailAndPassword(auth, email, password);
@@ -81,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const generatedCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      
+
       await setDoc(doc(db, 'users', credential.user.uid), {
         name,
         email,
@@ -94,7 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Automatically run checking for any due gift cards for this newly registered user
       await checkAndApplyDueGifts(credential.user.uid, email);
-
     } catch (err: any) {
       console.error('setDoc /users/ failed:', err);
       throw err;

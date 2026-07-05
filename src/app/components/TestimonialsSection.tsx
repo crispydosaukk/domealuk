@@ -27,16 +27,16 @@ export default function TestimonialsSection() {
         name: 'Kavitha Moorthi',
         role: 'Homemaker, East Ham',
         rating: 5,
-        text: "Even as a homemaker, I order their Full Meals on busy festival days. The curd rice and pickle combo is outstanding. The tiffin boxes are a lovely touch!",
+        text: 'Even as a homemaker, I order their Full Meals on busy festival days. The curd rice and pickle combo is outstanding. The tiffin boxes are a lovely touch!',
         plan: 'Occasional Orders',
       },
       {
         name: 'Arun Krishnaswamy',
         role: 'Accountant, Romford',
         rating: 5,
-        text: "Switched from another service 6 months ago and never looked back. The variety changes daily so I never get bored. Customer support is also very responsive.",
+        text: 'Switched from another service 6 months ago and never looked back. The variety changes daily so I never get bored. Customer support is also very responsive.',
         plan: 'Breakfast Plan',
-      }
+      },
     ],
     testimonialsCTATitle: 'Ready to taste the difference?',
     testimonialsCTADesc: 'Join 1,200+ happy customers. First week free on any subscription plan.',
@@ -50,10 +50,10 @@ export default function TestimonialsSection() {
         const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
-          setSettings(prev => ({
+          setSettings((prev) => ({
             ...prev,
             ...data,
-            testimonialsList: data.testimonialsList || prev.testimonialsList
+            testimonialsList: data.testimonialsList || prev.testimonialsList,
           }));
         }
       } catch (error) {}
@@ -71,19 +71,24 @@ export default function TestimonialsSection() {
           <h2 className="text-3xl lg:text-4xl font-extrabold text-foreground mb-3">
             {settings.testimonialsTitle}
           </h2>
-          <p className="text-muted-foreground">
-            {settings.testimonialsDesc}
-          </p>
+          <p className="text-muted-foreground">{settings.testimonialsDesc}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
           {settings.testimonialsList.map((t, idx) => (
-            <div key={idx} className="bg-background rounded-2xl border border-border p-5 hover:shadow-md hover:border-primary/20 transition-all duration-200">
+            <div
+              key={idx}
+              className="bg-background rounded-2xl border border-border p-5 hover:shadow-md hover:border-primary/20 transition-all duration-200"
+            >
               <Quote size={24} className="text-primary/20 mb-3" />
               <p className="text-sm text-foreground leading-relaxed mb-4">{t.text}</p>
               <div className="flex gap-0.5 mb-3">
                 {Array.from({ length: t.rating || 5 }, (_, i) => (
-                  <Star key={`star-${idx}-${i}`} size={14} className="text-yellow-400 fill-yellow-400" />
+                  <Star
+                    key={`star-${idx}-${i}`}
+                    size={14}
+                    className="text-yellow-400 fill-yellow-400"
+                  />
                 ))}
               </div>
               <div className="border-t border-border pt-3">
@@ -98,7 +103,13 @@ export default function TestimonialsSection() {
         </div>
 
         <div className="mt-10 bg-gradient-to-r from-primary via-[#10261A] to-[#0A160E] rounded-2xl p-8 text-white text-center relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #C39B54 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: 'radial-gradient(circle, #C39B54 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+            }}
+          />
           <div className="relative z-10">
             <h3 className="text-2xl font-extrabold mb-2">{settings.testimonialsCTATitle}</h3>
             <p className="text-blue-200 mb-6 text-sm">{settings.testimonialsCTADesc}</p>

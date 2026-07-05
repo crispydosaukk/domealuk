@@ -34,7 +34,11 @@ export async function POST(req: NextRequest) {
       const giftId = giftDoc.id;
 
       // Check for 365-day expiration (1 year validity)
-      const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt?.seconds ? new Date(data.createdAt.seconds * 1000) : null);
+      const createdAt = data.createdAt?.toDate
+        ? data.createdAt.toDate()
+        : data.createdAt?.seconds
+          ? new Date(data.createdAt.seconds * 1000)
+          : null;
       const createdTime = createdAt ? createdAt.getTime() : new Date(sendOn).getTime();
       const nowTime = new Date().getTime();
       const daysPassed = (nowTime - createdTime) / (1000 * 60 * 60 * 24);
@@ -47,9 +51,11 @@ export async function POST(req: NextRequest) {
           giftAmount: 0,
           claimed: true,
           expired: true,
-          expiredAt: FieldValue.serverTimestamp()
+          expiredAt: FieldValue.serverTimestamp(),
         });
-        console.log(`Gift card ${giftId} of £${originalAmount} has expired after 365 days. Active amount set to 0.`);
+        console.log(
+          `Gift card ${giftId} of £${originalAmount} has expired after 365 days. Active amount set to 0.`
+        );
         continue;
       }
 
@@ -77,7 +83,7 @@ export async function POST(req: NextRequest) {
             type: 'credit',
             status: 'completed',
             description: `Gift Card from ${senderName}`,
-            createdAt: FieldValue.serverTimestamp()
+            createdAt: FieldValue.serverTimestamp(),
           });
         });
 

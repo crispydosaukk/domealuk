@@ -14,21 +14,25 @@ export default function HowItWorksSection() {
   const [settings, setSettings] = useState({
     howItWorksBadge: 'Simple Process',
     howItWorksTitle: 'How DoMeal Works',
-    howItWorksDesc: 'From your phone to your plate in 3 easy steps. No fuss, no hassle — just great food delivered on time.',
+    howItWorksDesc:
+      'From your phone to your plate in 3 easy steps. No fuss, no hassle — just great food delivered on time.',
     howItWorksSteps: [
       {
         title: 'Choose Your Meals',
-        description: "Browse today's fresh menu or subscribe to a weekly plan. Select from Breakfast, Lunch, Dinner, or a Full Day combo.",
+        description:
+          "Browse today's fresh menu or subscribe to a weekly plan. Select from Breakfast, Lunch, Dinner, or a Full Day combo.",
       },
       {
         title: 'We Cook Fresh',
-        description: 'Our home-cooks prepare your meals fresh every morning using traditional Indian recipes with no preservatives.',
+        description:
+          'Our home-cooks prepare your meals fresh every morning using traditional Indian recipes with no preservatives.',
       },
       {
         title: 'Delivered to You',
-        description: 'Hot tiffin delivered right to your doorstep across London. Track your order in real-time and enjoy a home-cooked meal.',
-      }
-    ]
+        description:
+          'Hot tiffin delivered right to your doorstep across London. Track your order in real-time and enjoy a home-cooked meal.',
+      },
+    ],
   });
 
   useEffect(() => {
@@ -37,10 +41,10 @@ export default function HowItWorksSection() {
         const res = await fetch(getApiUrl('/api/public-settings'), { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
-          setSettings(prev => ({
+          setSettings((prev) => ({
             ...prev,
             ...data,
-            howItWorksSteps: data.howItWorksSteps || prev.howItWorksSteps
+            howItWorksSteps: data.howItWorksSteps || prev.howItWorksSteps,
           }));
         }
       } catch (error) {}
@@ -58,9 +62,7 @@ export default function HowItWorksSection() {
           <h2 className="text-3xl lg:text-4xl font-extrabold text-foreground mb-3">
             {settings.howItWorksTitle}
           </h2>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            {settings.howItWorksDesc}
-          </p>
+          <p className="text-muted-foreground max-w-lg mx-auto">{settings.howItWorksDesc}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
@@ -73,7 +75,9 @@ export default function HowItWorksSection() {
                 className={`relative flex flex-col items-center text-center group p-6 rounded-2xl border-2 ${style.border} hover:shadow-lg transition-all duration-200`}
               >
                 <div className="relative mb-6">
-                  <div className={`w-20 h-20 ${style.color} rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-200`}>
+                  <div
+                    className={`w-20 h-20 ${style.color} rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-200`}
+                  >
                     <Icon size={36} />
                   </div>
                   <span className="absolute -top-2 -right-2 w-7 h-7 bg-primary text-white text-xs font-800 rounded-full flex items-center justify-center">
