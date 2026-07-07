@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ChevronLeft, ChevronRight, Info, Leaf, Loader2, Clock, Calendar, Utensils, Minus, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Info, Leaf, Loader2, Clock, Calendar, Utensils, Minus, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
@@ -100,7 +100,7 @@ export default function ItemDetailsClient() {
 
                {/* Thumbnails */}
                {item.images && item.images.length > 1 && (
-                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                 <div className="flex gap-3 overflow-x-auto pb-2 mb-6 scrollbar-hide">
                    {item.images.map((img: string, idx: number) => (
                      <div key={idx} className="w-20 h-20 shrink-0 rounded-2xl overflow-hidden border border-border shadow-sm">
                        <img src={img} className="w-full h-full object-cover" />
@@ -108,6 +108,74 @@ export default function ItemDetailsClient() {
                    ))}
                  </div>
                )}
+
+               {/* Info Dropdowns */}
+               <div className={`flex flex-col gap-3 ${!(item.images && item.images.length > 1) ? 'mt-6' : ''}`}>
+                 {(item.nutritionalInfo || item.allergens) && (
+                   <details className="group border border-[#fadbc0] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden bg-[#fcefe3] shadow-sm">
+                     <summary className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-[#fadbc0]/30 transition-colors font-700 text-sm text-primary">
+                       <span>Nutritional & Allergen Information</span>
+                       <ChevronDown size={16} className="transition-transform group-open:rotate-180 text-primary" />
+                     </summary>
+                     <div className="px-5 py-2 pb-5 border-t border-primary/20">
+                       
+                       {item.nutritionalInfo && (
+                         <>
+                           <div className="flex justify-end mb-2">
+                             <span className="text-[10px] font-800 text-primary uppercase tracking-widest">per person</span>
+                           </div>
+                           <div className="flex flex-col mb-4">
+                             {item.nutritionalInfo.split('\n').map((line: string, idx: number) => {
+                               const tLine = line.trim();
+                               if (!tLine || tLine.toLowerCase().includes('nutritional information') || tLine.toLowerCase() === 'nutrition' || tLine.toLowerCase().includes('per person')) return null;
+                               
+                               const match = tLine.match(/(.*?)\s+([\d.]+\s*[a-zA-Z%]+)$/);
+                               let key = tLine;
+                               let val = '';
+                               if (match) {
+                                 key = match[1];
+                                 val = match[2];
+                               }
+                               const isIndented = key.toLowerCase().startsWith('of which');
+                               
+                               return (
+                                 <div key={idx} className="flex justify-between items-center py-2.5 border-b border-primary/10 last:border-0">
+                                   <span className={`text-sm text-primary/80 ${isIndented ? 'pl-5 font-400' : 'font-600'}`}>{key}</span>
+                                   <span className="text-sm font-600 text-primary/80">{val}</span>
+                                 </div>
+                               );
+                             })}
+                           </div>
+                         </>
+                       )}
+                       
+                       {item.allergens && (
+                         <div className={`text-xs text-primary/80 font-500 flex items-start gap-1.5 ${item.nutritionalInfo ? 'pt-4 border-t border-primary/20' : 'pt-2'}`}>
+                           <span className="text-red-500 font-900 text-sm leading-none mt-0.5">*</span>
+                           <span className="leading-relaxed text-red-600 font-600">Allergens: <span className="font-500 text-primary/90">{item.allergens}</span></span>
+                         </div>
+                       )}
+
+                     </div>
+                   </details>
+                 )}
+                 
+                 {item.ingredients && (
+                   <details className="group border border-border rounded-xl bg-white overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                     <summary className="flex items-center justify-between px-5 py-4 cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors font-700 text-sm text-foreground">
+                       <span>Description</span>
+                       <ChevronDown size={16} className="transition-transform group-open:rotate-180 text-muted-foreground" />
+                     </summary>
+                     <div className="px-5 py-4 text-sm text-muted-foreground border-t border-border whitespace-pre-wrap">
+                       {item.ingredients}
+                     </div>
+                   </details>
+                 )}
+
+
+
+
+               </div>
             </div>
 
             {/* Right Column: Pricing & Actions */}
@@ -175,19 +243,7 @@ export default function ItemDetailsClient() {
                  </button>
                </div>
 
-               {/* Ingredients & Allergens */}
-               {item.ingredients && (
-                 <div className="mb-6">
-                   <h3 className="font-700 text-sm mb-2 text-foreground">Ingredients</h3>
-                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.ingredients}</p>
-                 </div>
-               )}
-               {item.allergens && (
-                 <div>
-                   <h3 className="font-700 text-sm mb-2 text-foreground">Allergens</h3>
-                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.allergens}</p>
-                 </div>
-               )}
+
             </div>
          </div>
       </div>

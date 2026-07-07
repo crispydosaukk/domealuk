@@ -341,13 +341,6 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                       {item.desc}
                     </p>
 
-                    <Link
-                      href={`/menu/item?item=${encodeURIComponent(item.name)}`}
-                      className="text-[11px] sm:text-xs font-800 text-[#b58b42] hover:text-white hover:bg-[#C39B54] transition-all self-start mb-4 flex items-center gap-1.5 border-2 border-[#C39B54]/50 hover:border-[#C39B54] px-3 py-1.5 rounded-lg uppercase tracking-wide shadow-sm inline-flex"
-                    >
-                      View Details & Ingredients <ChevronRight size={14} />
-                    </Link>
-
                     <div className="mb-4">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-baseline gap-1.5">
@@ -372,31 +365,12 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                     </div>
 
                     <div className="mt-auto">
-                      <button
-                        onClick={() => {
-                          if (item.subItems && item.subItems.length > 0) {
-                            setExpandedMenus((prev) => ({ ...prev, [item.id]: !prev[item.id] }));
-                          } else {
-                            const added = addToCart({
-                              id: item.id,
-                              cartItemId: item.id,
-                              name: item.name,
-                              price: activePrice,
-                              originalPrice: item.originalPrice || undefined,
-                            });
-                            if (added) {
-                              toast.success(`Added ${item.name} to cart`);
-                            }
-                          }
-                        }}
-                        className={`w-full text-white text-sm font-700 py-2.5 rounded-xl transition-all active:scale-95 shadow-sm ${expandedMenus[item.id] ? 'bg-[#C39B54]' : 'bg-[#10261A] hover:bg-primary'}`}
+                      <Link
+                        href={`/menu/item?item=${encodeURIComponent(item.name)}`}
+                        className="flex items-center justify-center w-full text-white text-sm font-700 py-2.5 rounded-xl transition-all active:scale-95 shadow-sm bg-[#10261A] hover:bg-primary"
                       >
-                        {expandedMenus[item.id]
-                          ? 'Close Customization'
-                          : itemQtyInCart > 0
-                            ? `Add Another (${itemQtyInCart} in cart)`
-                            : 'Add to Order'}
-                      </button>
+                        View Details
+                      </Link>
                     </div>
                   </div>
                 </div>

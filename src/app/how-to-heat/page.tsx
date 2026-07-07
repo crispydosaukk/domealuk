@@ -4,12 +4,13 @@ import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
 import { ConciergeBell, Package, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getApiUrl } from '@/lib/api';
 
 export default function HowToHeatPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(0); // First item open by default
+  const [menuItems, setMenuItems] = useState<any[]>([]);
   const [settings, setSettings] = useState({
     heatTitle: 'Heating Instructions',
     heatContent:
@@ -31,7 +32,18 @@ export default function HowToHeatPage() {
         }
       } catch (error) {}
     };
+
+    const fetchMenuItems = async () => {
+      try {
+        const q = query(collection(db, 'menuItems'), where('active', '==', true));
+        const snap = await getDocs(q);
+        const items = snap.docs.map((d) => d.data()).filter((d) => !!d.heatingInstructions);
+        setMenuItems(items);
+      } catch (err) {}
+    };
+
     fetchSettings();
+    fetchMenuItems();
   }, []);
 
   const toggleAccordion = (index: number) => {
@@ -57,11 +69,9 @@ export default function HowToHeatPage() {
           </div>
 
           <div className="bg-white rounded-3xl shadow-xl border border-border overflow-hidden">
-            {settings.heatData.map((item, index) => {
+            {menuItems.map((item, index) => {
               const isOpen = openIndex === index;
-              // Map saved string icons or fallback
-              const Icon =
-                (item.icon as any) === 'Package' || item.icon === Package ? Package : ConciergeBell;
+              const Icon = ConciergeBell;
 
               return (
                 <div key={index} className="border-b border-border last:border-0">
@@ -79,7 +89,7 @@ export default function HowToHeatPage() {
                       <span
                         className={`text-xl md:text-2xl font-800 text-left ${isOpen ? 'text-[#1E3B2B]' : 'text-foreground'}`}
                       >
-                        {item.title}
+                        {item.name}
                       </span>
                     </div>
                     <ChevronDown
@@ -90,67 +100,19 @@ export default function HowToHeatPage() {
                   {isOpen && (
                     <div className="px-6 pb-8 md:px-8 bg-[#1E3B2B]/5 animate-in slide-in-from-top-2 duration-200">
                       <div className="pt-2 pl-10 md:pl-12">
-                        {item.text ? (
-                          <p className="text-foreground leading-relaxed text-lg">{item.text}</p>
-                        ) : (
-                          <>
-                            <div className="mb-6">
-                              <span className="inline-block bg-[#C39B54]/20 text-[#926a2e] font-800 text-xs uppercase tracking-widest px-3 py-1 rounded-full mb-4">
-                                Serves: {item.serves}
-                              </span>
-                            </div>
-
-                            <div className="space-y-8">
-                              <div>
-                                <h3 className="font-800 text-[#1E3B2B] text-lg mb-3 flex items-center gap-2">
-                                  <span className="w-2 h-2 rounded-full bg-[#C39B54]" /> Oven
-                                  Heating (Recommended)
-                                </h3>
-                                <ul className="space-y-2 text-muted-foreground pl-4">
-                                  {item.oven?.map((step: string, i: number) => (
-                                    <li key={i} className="flex gap-2">
-                                      <span className="text-[#C39B54] font-800 select-none">
-                                        {i + 1}.
-                                      </span>
-                                      <span className="leading-relaxed">{step}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-
-                              <div>
-                                <h3 className="font-800 text-[#1E3B2B] text-lg mb-3 flex items-center gap-2">
-                                  <span className="w-2 h-2 rounded-full bg-primary" /> Microwave
-                                  Heating (Quick & Convenient)
-                                </h3>
-                                <ul className="space-y-2 text-muted-foreground pl-4">
-                                  {item.microwave?.map((step: string, i: number) => (
-                                    <li key={i} className="flex gap-2">
-                                      <span className="text-primary font-800 select-none">
-                                        {i + 1}.
-                                      </span>
-                                      <span className="leading-relaxed">{step}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-
-                              {item.tip && (
-                                <div className="bg-white border-l-4 border-[#C39B54] p-4 rounded-r-xl shadow-sm">
-                                  <p className="text-sm text-foreground">
-                                    <strong className="text-[#C39B54]">Tip:</strong> {item.tip}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        )}
+                        <p className="text-foreground leading-relaxed text-lg whitespace-pre-wrap">{item.heatingInstructions}</p>
                       </div>
                     </div>
                   )}
                 </div>
               );
             })}
+            
+            {menuItems.length === 0 && (
+              <div className="p-8 text-center text-muted-foreground">
+                No heating instructions available at the moment.
+              </div>
+            )}
           </div>
 
           <div className="mt-16 text-center bg-[#1E3B2B] rounded-3xl p-10 md:p-12 shadow-xl relative overflow-hidden">

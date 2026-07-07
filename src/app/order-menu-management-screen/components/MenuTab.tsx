@@ -745,9 +745,9 @@ export default function MenuTab() {
                 </div>
               </div>
 
-              {/* Description */}
+              {/* Description (Mapped to Ingredients visually) */}
               <div>
-                <label className="block text-sm font-600 mb-1.5">Description</label>
+                <label className="block text-sm font-600 mb-1.5">Ingredients</label>
                 <textarea
                   {...register('desc', { required: 'Required' })}
                   rows={2}
@@ -773,10 +773,10 @@ export default function MenuTab() {
                 />
               </div>
 
-              {/* Ingredients */}
+              {/* Ingredients (Mapped to Description visually) */}
               <div>
                 <label className="block text-sm font-600 mb-1.5">
-                  Ingredients{' '}
+                  Description{' '}
                   <span className="font-400 text-xs text-muted-foreground">(optional)</span>
                 </label>
                 <textarea
