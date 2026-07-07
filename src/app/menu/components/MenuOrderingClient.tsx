@@ -608,11 +608,7 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                   </span>
                 </div>
                 <Link
-                  href={
-                    cart.length > 0
-                      ? `/menu/item?item=${encodeURIComponent(cart[0].name)}`
-                      : '/basket'
-                  }
+                  href="/basket"
                   onClick={() => setIsCartOpen(false)}
                   className="w-full bg-[#10261A] text-white font-800 py-3.5 rounded-xl hover:bg-primary transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
                 >

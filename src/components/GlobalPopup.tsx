@@ -35,8 +35,8 @@ export default function GlobalPopup() {
 
   useEffect(() => {
     // Check if the user has already seen the popup in this session
-    // const hasSeenPopup = sessionStorage.getItem('hasSeenPopup');
-    // if (hasSeenPopup) return;
+    const hasSeenPopup = sessionStorage.getItem('hasSeenPopup');
+    if (hasSeenPopup) return;
 
     // Open instantly
     setIsOpen(true);
@@ -72,7 +72,10 @@ export default function GlobalPopup() {
     fetchSettings();
   }, []);
 
-  if (pathname.startsWith('/admin')) {
+  if (
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/order-menu-management-screen')
+  ) {
     return null;
   }
 
