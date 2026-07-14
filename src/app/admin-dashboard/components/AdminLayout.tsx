@@ -56,6 +56,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingOrders, setPendingOrders] = useState(0);
   const [pendingStudents, setPendingStudents] = useState(0);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, loading, logout } = useAuth();
   const router = useRouter();
 
@@ -241,10 +242,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
             )}
           </div>
           <button
-            onClick={async () => {
-              await logout();
-              router.push('/admin-login');
-            }}
+            onClick={() => setShowLogoutConfirm(true)}
             className={`flex w-full items-center gap-3 px-3 py-2 mt-1 rounded-xl text-blue-200 hover:text-red-400 hover:bg-white/5 transition-colors ${collapsed ? 'justify-center' : ''}`}
             title={collapsed ? 'Sign Out' : undefined}
           >

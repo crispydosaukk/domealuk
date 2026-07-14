@@ -57,9 +57,34 @@ export default function ItemDetailsClient() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 bg-white">
-        <Loader2 size={36} className="animate-spin text-primary" />
-        <p className="text-sm font-600 text-foreground">Loading details...</p>
+      <div className="min-h-screen bg-white pb-32">
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+          {/* Back button skeleton */}
+          <div className="w-24 h-5 bg-gray-100 rounded-md animate-pulse mb-8" />
+          
+          <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-start">
+            {/* Left Column (Image) Skeleton */}
+            <div className="w-full lg:w-[50%]">
+              <div className="w-full aspect-square md:aspect-[4/3] bg-gray-100 rounded-3xl animate-pulse mb-4" />
+              <div className="flex gap-3 overflow-hidden mb-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-20 h-20 bg-gray-100 rounded-2xl animate-pulse shrink-0" />
+                ))}
+              </div>
+            </div>
+            
+            {/* Right Column (Content) Skeleton */}
+            <div className="w-full lg:w-[50%] flex flex-col pt-2">
+              <div className="w-3/4 h-12 bg-gray-100 rounded-xl animate-pulse mb-4" />
+              <div className="w-full h-16 bg-gray-100 rounded-xl animate-pulse mb-8" />
+              
+              <div className="w-32 h-10 bg-gray-100 rounded-xl animate-pulse mb-10" />
+              
+              <div className="w-full h-24 bg-gray-100 rounded-2xl animate-pulse mb-8" />
+              <div className="w-full h-14 bg-gray-200 rounded-2xl animate-pulse" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -109,80 +134,19 @@ export default function ItemDetailsClient() {
                  </div>
                )}
 
-               {/* Info Dropdowns */}
-               <div className={`flex flex-col gap-3 ${!(item.images && item.images.length > 1) ? 'mt-6' : ''}`}>
-                 {(item.nutritionalInfo || item.allergens) && (
-                   <details className="group border border-[#fadbc0] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden bg-[#fcefe3] shadow-sm">
-                     <summary className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-[#fadbc0]/30 transition-colors font-700 text-sm text-primary">
-                       <span>Nutritional & Allergen Information</span>
-                       <ChevronDown size={16} className="transition-transform group-open:rotate-180 text-primary" />
-                     </summary>
-                     <div className="px-5 py-2 pb-5 border-t border-primary/20">
-                       
-                       {item.nutritionalInfo && (
-                         <>
-                           <div className="flex justify-end mb-2">
-                             <span className="text-[10px] font-800 text-primary uppercase tracking-widest">per person</span>
-                           </div>
-                           <div className="flex flex-col mb-4">
-                             {item.nutritionalInfo.split('\n').map((line: string, idx: number) => {
-                               const tLine = line.trim();
-                               if (!tLine || tLine.toLowerCase().includes('nutritional information') || tLine.toLowerCase() === 'nutrition' || tLine.toLowerCase().includes('per person')) return null;
-                               
-                               const match = tLine.match(/(.*?)\s+([\d.]+\s*[a-zA-Z%]+)$/);
-                               let key = tLine;
-                               let val = '';
-                               if (match) {
-                                 key = match[1];
-                                 val = match[2];
-                               }
-                               const isIndented = key.toLowerCase().startsWith('of which');
-                               
-                               return (
-                                 <div key={idx} className="flex justify-between items-center py-2.5 border-b border-primary/10 last:border-0">
-                                   <span className={`text-sm text-primary/80 ${isIndented ? 'pl-5 font-400' : 'font-600'}`}>{key}</span>
-                                   <span className="text-sm font-600 text-primary/80">{val}</span>
-                                 </div>
-                               );
-                             })}
-                           </div>
-                         </>
-                       )}
-                       
-                       {item.allergens && (
-                         <div className={`text-xs text-primary/80 font-500 flex items-start gap-1.5 ${item.nutritionalInfo ? 'pt-4 border-t border-primary/20' : 'pt-2'}`}>
-                           <span className="text-red-500 font-900 text-sm leading-none mt-0.5">*</span>
-                           <span className="leading-relaxed text-red-600 font-600">Allergens: <span className="font-500 text-primary/90">{item.allergens}</span></span>
-                         </div>
-                       )}
-
-                     </div>
-                   </details>
-                 )}
-                 
-                 {item.ingredients && (
-                   <details className="group border border-border rounded-xl bg-white overflow-hidden [&_summary::-webkit-details-marker]:hidden">
-                     <summary className="flex items-center justify-between px-5 py-4 cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors font-700 text-sm text-foreground">
-                       <span>Description</span>
-                       <ChevronDown size={16} className="transition-transform group-open:rotate-180 text-muted-foreground" />
-                     </summary>
-                     <div className="px-5 py-4 text-sm text-muted-foreground border-t border-border whitespace-pre-wrap">
-                       {item.ingredients}
-                     </div>
-                   </details>
-                 )}
-
-
-
-
-               </div>
             </div>
 
             {/* Right Column: Pricing & Actions */}
             <div className="w-full lg:w-[50%] flex flex-col pt-2">
                
                <h1 className="text-3xl md:text-4xl font-800 text-foreground mb-3">{item.name}</h1>
-               <p className="text-muted-foreground text-base mb-6 leading-relaxed whitespace-pre-wrap">{item.desc}</p>
+               {item.desc && (
+                 <div className="mb-6 bg-[#10261A]/5 border border-[#10261A]/10 rounded-xl p-4 shadow-sm">
+                   <p className="text-base font-700 text-[#10261A] leading-relaxed">
+                     {item.desc}
+                   </p>
+                 </div>
+               )}
 
                {/* Price Section */}
                <div className="flex items-end gap-3 mb-2">
@@ -220,7 +184,7 @@ export default function ItemDetailsClient() {
                </div>
 
                {/* Add Main Item Action */}
-               <div className="flex flex-col gap-3 mb-8">
+               <div className="flex flex-col gap-3 mb-2">
                  <button onClick={() => {
                     const added = addToCart({ 
                       id: item.id, 
@@ -250,7 +214,7 @@ export default function ItemDetailsClient() {
 
       {/* EXTRAS SECTION */}
       {extras.length > 0 && (
-        <div id="extras-section" className="bg-gray-50/50 border-t border-border py-16 mt-8">
+        <div id="extras-section" className="bg-gray-50/50 border-t border-border py-8 mt-2">
            <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
              <h2 className="text-2xl font-800 text-foreground mb-1">Sides and Treats</h2>
              <p className="text-sm text-muted-foreground font-500 mb-8 max-w-lg">Optional extras to make dinner feel complete.</p>

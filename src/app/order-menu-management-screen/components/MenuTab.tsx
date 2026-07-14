@@ -12,7 +12,7 @@ import {
   ImagePlus,
   Images,
 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
   collection,
@@ -114,6 +114,67 @@ const SpiceSelector = ({ value, onChange }: { value: number; onChange: (v: numbe
   </div>
 );
 
+const RichTextEditor = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (editorRef.current && !editorRef.current.innerHTML && value) {
+      editorRef.current.innerHTML = value;
+    }
+  }, [value]);
+
+  const exec = (command: string, arg: string | undefined = undefined) => {
+    document.execCommand(command, false, arg);
+    editorRef.current?.focus();
+  };
+
+  return (
+    <div className="border border-border rounded-xl overflow-hidden bg-white">
+      <div className="flex gap-2 p-2 border-b border-border bg-gray-50 flex-wrap items-center">
+        <button type="button" onClick={() => exec('formatBlock', 'H2')} className="px-3 py-1 bg-white border border-border rounded-lg text-sm font-700 hover:bg-gray-100 transition-colors shadow-sm">Heading</button>
+        <button type="button" onClick={() => exec('formatBlock', 'P')} className="px-3 py-1 bg-white border border-border rounded-lg text-sm font-500 hover:bg-gray-100 transition-colors shadow-sm">Normal</button>
+        <div className="w-px h-6 bg-border mx-1"></div>
+        <button type="button" onClick={() => exec('bold')} className="px-3 py-1 bg-white border border-border rounded-lg text-sm font-900 hover:bg-gray-100 transition-colors shadow-sm">B</button>
+        <button type="button" onClick={() => exec('italic')} className="px-3 py-1 bg-white border border-border rounded-lg text-sm italic hover:bg-gray-100 transition-colors shadow-sm">I</button>
+        <button type="button" onClick={() => exec('underline')} className="px-3 py-1 bg-white border border-border rounded-lg text-sm underline hover:bg-gray-100 transition-colors shadow-sm">U</button>
+        <button type="button" onClick={() => exec('insertUnorderedList')} className="px-3 py-1 bg-white border border-border rounded-lg text-sm hover:bg-gray-100 transition-colors shadow-sm">• List</button>
+        <div className="w-px h-6 bg-border mx-1"></div>
+        
+        {/* Font Size Dropdown */}
+        <select 
+          onChange={(e) => exec('fontSize', e.target.value)} 
+          className="px-2 py-1 bg-white border border-border rounded-lg text-sm hover:bg-gray-100 transition-colors shadow-sm focus:outline-none cursor-pointer"
+          defaultValue="3"
+        >
+          <option value="2">Small Text</option>
+          <option value="3">Normal Text</option>
+          <option value="4">Large Text</option>
+          <option value="5">Huge Text</option>
+          <option value="6">Massive Text</option>
+        </select>
+
+        {/* Color Picker */}
+        <div className="flex items-center gap-1.5 ml-1">
+          <label className="text-xs font-600 text-muted-foreground">Color:</label>
+          <input 
+            type="color" 
+            onChange={(e) => exec('foreColor', e.target.value)} 
+            className="w-7 h-7 rounded cursor-pointer border-0 p-0 bg-transparent"
+            title="Choose text color"
+          />
+        </div>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        className="p-4 min-h-[150px] outline-none prose prose-sm max-w-none text-sm"
+        onBlur={() => onChange(editorRef.current?.innerHTML || '')}
+        onInput={() => onChange(editorRef.current?.innerHTML || '')}
+      />
+    </div>
+  );
+};
+
 export default function MenuTab() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,6 +202,7 @@ export default function MenuTab() {
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors },
   } = useForm<MenuItemForm>();
 
@@ -583,7 +645,7 @@ export default function MenuTab() {
               resetImageState();
             }}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-white rounded-t-2xl z-10">
               <h2 className="font-700 text-lg">
                 {editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}
@@ -750,9 +812,9 @@ export default function MenuTab() {
                 <label className="block text-sm font-600 mb-1.5">Ingredients</label>
                 <textarea
                   {...register('desc', { required: 'Required' })}
-                  rows={2}
+                  rows={4}
                   placeholder="Describe the dish..."
-                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
                 />
                 {errors.desc && <p className="text-red-500 text-xs mt-1">{errors.desc.message}</p>}
               </div>
@@ -767,9 +829,9 @@ export default function MenuTab() {
                 </label>
                 <textarea
                   {...register('nutritionalInfo')}
-                  rows={5}
+                  rows={8}
                   placeholder="Energy 795 kcal&#10;Fat 60g&#10;of which saturates 9.6g&#10;Carbohydrates 52g&#10;of which sugars 12g"
-                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
                 />
               </div>
 
@@ -779,11 +841,12 @@ export default function MenuTab() {
                   Description{' '}
                   <span className="font-400 text-xs text-muted-foreground">(optional)</span>
                 </label>
-                <textarea
-                  {...register('ingredients')}
-                  rows={2}
-                  placeholder="e.g. Rice, Lentils, Spices..."
-                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                <Controller
+                  name="ingredients"
+                  control={control}
+                  render={({ field }) => (
+                    <RichTextEditor value={field.value || ''} onChange={field.onChange} />
+                  )}
                 />
               </div>
 
@@ -793,10 +856,11 @@ export default function MenuTab() {
                   Allergens{' '}
                   <span className="font-400 text-xs text-muted-foreground">(optional)</span>
                 </label>
-                <input
+                <textarea
                   {...register('allergens')}
+                  rows={3}
                   placeholder="e.g. Contains Nuts, Dairy"
-                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
                 />
               </div>
 
@@ -808,9 +872,9 @@ export default function MenuTab() {
                 </label>
                 <textarea
                   {...register('heatingInstructions')}
-                  rows={2}
+                  rows={4}
                   placeholder="e.g. Microwave for 2 minutes..."
-                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
                 />
               </div>
 

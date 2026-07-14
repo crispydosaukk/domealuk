@@ -37,6 +37,7 @@ type SignupForm = {
 export default function AuthClient() {
   const searchParams = useSearchParams();
   const refCode = searchParams.get('ref') || '';
+  const redirectUrl = searchParams.get('redirect') || '/menu';
   const [tab, setTab] = useState<'login' | 'signup'>(refCode ? 'signup' : 'login');
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
@@ -76,7 +77,7 @@ export default function AuthClient() {
       toast.success('Welcome back to DoMeal!', {
         duration: 1500,
       });
-      router.push('/menu');
+      router.push(redirectUrl);
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code || '';
       if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
@@ -120,7 +121,7 @@ export default function AuthClient() {
       toast.success('Account created successfully!', {
         duration: 1500,
       });
-      router.push('/menu');
+      router.push(redirectUrl);
     } catch (error: unknown) {
       const code = (error as { code?: string })?.code || '';
       if (code === 'auth/email-already-in-use') {
@@ -206,7 +207,7 @@ export default function AuthClient() {
 
       await signup(data.email, data.password, data.name, formattedPhone, data.referredBy);
       toast.success('Account created successfully!');
-      router.push('/menu');
+      router.push(redirectUrl);
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || 'Signup failed');
@@ -783,7 +784,7 @@ export default function AuthClient() {
                   </div>
 
                   <button
-                    onClick={() => router.push('/menu')}
+                    onClick={() => router.push(redirectUrl)}
                     className="w-full bg-[#C39B54] text-white font-700 py-3 rounded-xl hover:bg-[#a17e41] transition-all shadow-lg text-sm"
                   >
                     Go to Menu

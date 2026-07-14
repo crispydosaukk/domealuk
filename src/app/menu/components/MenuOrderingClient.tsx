@@ -19,6 +19,8 @@ import { db } from '@/lib/firebase';
 import { useCart } from '@/context/CartContext';
 import { getApiUrl } from '@/lib/api';
 
+
+
 export interface SubMenuItem {
   id: string;
   name: string;
@@ -74,6 +76,7 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState(hideExtras ? 'Menu' : 'All');
+  const [quickViewItem, setQuickViewItem] = useState<{ item: MenuItem; assignedDate: string; selectedImageIdx: number } | null>(null);
   const [customizingItem, setCustomizingItem] = useState<{
     item: MenuItem;
     selections: Record<string, boolean>;
@@ -271,7 +274,8 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
             return (
               <div key={item.id} className="relative flex flex-col h-full">
                 <div
-                  className={`bg-white rounded-2xl border border-border hover:shadow-md hover:border-orange-200 transition-all duration-200 flex flex-col flex-1 relative z-20 ${expandedMenus[item.id] ? 'rounded-b-none border-b-transparent shadow-none' : ''}`}
+                  onClick={() => setQuickViewItem({ item, assignedDate, selectedImageIdx: 0 })}
+                  className={`bg-white rounded-2xl border border-border hover:shadow-md hover:border-orange-200 transition-all duration-200 flex flex-col flex-1 relative z-20 cursor-pointer group ${expandedMenus[item.id] ? 'rounded-b-none border-b-transparent shadow-none' : ''}`}
                 >
                   {/* Image */}
                   {hasImages ? (
@@ -337,7 +341,7 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                       </div>
                     )}
 
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">
+                    <p className="text-sm font-600 text-foreground mb-3 leading-relaxed">
                       {item.desc}
                     </p>
 
@@ -365,12 +369,16 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                     </div>
 
                     <div className="mt-auto">
-                      <Link
-                        href={`/menu/item?item=${encodeURIComponent(item.name)}`}
-                        className="flex items-center justify-center w-full text-white text-sm font-700 py-2.5 rounded-xl transition-all active:scale-95 shadow-sm bg-[#10261A] hover:bg-primary"
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuickViewItem({ item, assignedDate, selectedImageIdx: 0 });
+                        }}
+                        className="flex items-center justify-center w-full text-white text-sm font-700 py-2.5 rounded-xl transition-all active:scale-95 shadow-sm bg-[#10261A] group-hover:bg-primary"
                       >
                         View Details
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -491,6 +499,183 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Quick View Modal */}
+      {quickViewItem && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8 lg:p-12">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setQuickViewItem(null)} />
+          <div className="relative bg-white w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl p-6 md:p-10 animate-in zoom-in-95 duration-200 scrollbar-hide">
+            <button 
+              onClick={() => setQuickViewItem(null)}
+              className="absolute top-4 right-4 z-20 bg-gray-100 p-2 rounded-full text-gray-500 hover:text-black hover:bg-gray-200 shadow-sm transition-all"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="flex flex-col md:flex-row gap-8 md:gap-10 pt-4 md:pt-0">
+              {/* Left side - Image & Thumbnails */}
+              <div className="w-full md:w-[45%] shrink-0 flex flex-col gap-4">
+                {quickViewItem.item.images && quickViewItem.item.images.length > 0 ? (
+                  <>
+                    <div className="w-full aspect-square md:aspect-[4/3] relative rounded-2xl overflow-hidden bg-muted shadow-sm">
+                      <img 
+                        src={quickViewItem.item.images[quickViewItem.selectedImageIdx] || quickViewItem.item.images[0]} 
+                        alt={quickViewItem.item.name} 
+                        className="w-full h-full object-cover"
+                      />
+                      {quickViewItem.item.tag && (
+                        <span className="absolute top-4 left-4 text-sm font-700 bg-primary text-white px-3 py-1 rounded-full shadow-md z-10">
+                          {quickViewItem.item.tag}
+                        </span>
+                      )}
+                    </div>
+                    {/* Thumbnails */}
+                    {quickViewItem.item.images.length > 1 && (
+                      <div className="flex gap-3 overflow-x-auto shrink-0 pb-1">
+                        {quickViewItem.item.images.map((img, idx) => (
+                          <div 
+                            key={idx}
+                            onClick={() => setQuickViewItem(prev => prev ? { ...prev, selectedImageIdx: idx } : null)}
+                            className={`w-16 h-16 shrink-0 rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${quickViewItem.selectedImageIdx === idx ? 'border-primary shadow-md scale-[1.02]' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                          >
+                            <img src={img} className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full aspect-square md:aspect-[4/3] rounded-2xl flex flex-col items-center justify-center bg-orange-50 text-primary/40 shadow-sm">
+                    <Leaf size={48} className="mb-2 opacity-50" />
+                    <span className="text-sm font-600 uppercase tracking-widest">
+                      {getFrontendCategory(quickViewItem.item.category)}
+                    </span>
+                    {quickViewItem.item.tag && (
+                      <span className="absolute top-4 left-4 text-sm font-700 bg-primary text-white px-3 py-1 rounded-full shadow-md">
+                        {quickViewItem.item.tag}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Nutritional & Allergen Info Dropdown */}
+                {(quickViewItem.item.nutritionalInfo || quickViewItem.item.allergens) && (
+                  <details className="group border border-[#fadbc0] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden bg-[#fcefe3] shadow-sm mt-2">
+                    <summary className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-[#fadbc0]/30 transition-colors font-700 text-sm text-[#10261A]">
+                      <span>Nutritional & Allergen Information</span>
+                      <ChevronDown size={16} className="transition-transform group-open:rotate-180 text-[#10261A]" />
+                    </summary>
+                    <div className="px-5 py-2 pb-5 border-t border-[#fadbc0]/50">
+                      
+                      {quickViewItem.item.nutritionalInfo && (
+                        <>
+                          <div className="flex justify-end mb-2">
+                            <span className="text-[10px] font-800 text-[#10261A] uppercase tracking-widest">per person</span>
+                          </div>
+                          <div className="flex flex-col mb-4">
+                            {quickViewItem.item.nutritionalInfo.split('\n').map((line: string, idx: number) => {
+                              const tLine = line.trim();
+                              if (!tLine || tLine.toLowerCase().includes('nutritional information') || tLine.toLowerCase() === 'nutrition' || tLine.toLowerCase().includes('per person')) return null;
+                              
+                              const match = tLine.match(/(.*?)\s+([\d.]+\s*[a-zA-Z%]+)$/);
+                              let key = tLine;
+                              let val = '';
+                              if (match) {
+                                key = match[1];
+                                val = match[2];
+                              }
+                              const isIndented = key.toLowerCase().startsWith('of which');
+                              
+                              return (
+                                <div key={idx} className="flex justify-between items-center py-2.5 border-b border-[#10261A]/10 last:border-0">
+                                  <span className={`text-sm text-[#10261A]/80 ${isIndented ? 'pl-5 font-400' : 'font-600'}`}>{key}</span>
+                                  <span className="text-sm font-600 text-[#10261A]/80">{val}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                      
+                      {quickViewItem.item.allergens && (
+                        <div className={`text-xs text-[#10261A]/80 font-500 flex items-start gap-1.5 ${quickViewItem.item.nutritionalInfo ? 'pt-4 border-t border-[#10261A]/20' : 'pt-2'}`}>
+                          <span className="text-red-500 font-900 text-sm leading-none mt-0.5">*</span>
+                          <span className="leading-relaxed text-red-600 font-600">Allergens: <span className="font-500 text-[#10261A]/90">{quickViewItem.item.allergens}</span></span>
+                        </div>
+                      )}
+                    </div>
+                  </details>
+                )}
+                
+                {quickViewItem.item.heatingInstructions && (
+                  <details className="group border border-[#fadbc0] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden bg-[#fcefe3] shadow-sm mt-2">
+                    <summary className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-[#fadbc0]/30 transition-colors font-700 text-sm text-[#10261A]">
+                      <div className="flex items-center gap-2">
+                        <Flame size={16} className="text-orange-500" />
+                        <span>Heating Instructions</span>
+                      </div>
+                      <ChevronDown size={16} className="transition-transform group-open:rotate-180 text-[#10261A]" />
+                    </summary>
+                    <div className="px-5 py-4 border-t border-[#fadbc0]/50 bg-white">
+                      <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap font-500">
+                        {quickViewItem.item.heatingInstructions}
+                      </p>
+                    </div>
+                  </details>
+                )}
+              </div>
+
+              {/* Right side - Content */}
+              <div className="w-full md:w-[55%] flex flex-col">
+                <div className="flex flex-col w-full pb-8">
+                  <div className="flex justify-between items-start gap-4 mb-4">
+                    <h2 className="text-3xl md:text-4xl font-900 text-foreground leading-tight tracking-tight">{quickViewItem.item.name}</h2>
+                    <div className="flex flex-row items-center gap-3 shrink-0 pt-1">
+                      {quickViewItem.item.originalPrice! > 0 && quickViewItem.item.originalPrice !== (quickViewItem.item.price > 0 ? quickViewItem.item.price : (quickViewItem.item.originalPrice || 0)) && (
+                        <span className="text-xl font-700 text-muted-foreground line-through opacity-60">£{quickViewItem.item.originalPrice!.toFixed(2)}</span>
+                      )}
+                      <span className="text-2xl md:text-3xl font-900 text-[#C39B54]">£{(quickViewItem.item.price > 0 ? quickViewItem.item.price : (quickViewItem.item.originalPrice || 0)).toFixed(2)}</span>
+                    </div>
+                  </div>
+                  
+                  {getFrontendCategory(quickViewItem.item.category) === 'Menu' && quickViewItem.assignedDate && (
+                    <div className="mb-8 flex flex-col xl:flex-row xl:items-center gap-3 xl:gap-4">
+                      <span className="text-xl md:text-2xl font-900 text-foreground tracking-tight">
+                        Next Delivered on:
+                      </span>
+                      <span className="bg-[#F3A144] text-black text-lg md:text-xl font-900 px-4 py-2 rounded-lg inline-flex items-center gap-2 shadow-sm whitespace-nowrap w-fit">
+                        📅 {quickViewItem.assignedDate}
+                      </span>
+                    </div>
+                  )}
+
+                  <div 
+                    className="mb-6 prose prose-sm md:prose-base prose-p:text-muted-foreground prose-headings:text-[#F3A144] prose-headings:font-900 prose-headings:drop-shadow-sm prose-headings:tracking-tight max-w-none"
+                    dangerouslySetInnerHTML={{ __html: quickViewItem.item.ingredients || '' }}
+                  />
+
+                  {quickViewItem.item.desc && (
+                    <div className="mt-2 bg-[#10261A]/5 border border-[#10261A]/10 rounded-2xl p-5 md:p-6 shadow-sm">
+                      <p className="text-base md:text-lg font-700 text-[#10261A] leading-relaxed">
+                        {quickViewItem.item.desc}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="mt-8 mb-2">
+                    <Link
+                      href={`/menu/item?item=${encodeURIComponent(quickViewItem.item.name)}`}
+                      className="group w-fit bg-[#10261A] text-white font-800 px-6 py-3 md:px-8 md:py-3.5 rounded-xl hover:bg-primary transition-all duration-300 flex items-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-1 active:scale-95 active:translate-y-0 text-base md:text-lg"
+                    >
+                      Get Started <ChevronRight size={20} className="group-hover:translate-x-1.5 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

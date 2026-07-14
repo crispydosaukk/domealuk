@@ -72,17 +72,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Listen to Firestore cart when logged in
   useEffect(() => {
     if (!user) {
-      setCart([]);
-      setCheckoutData({});
+      // Don't clear the cart for guests so they can continue adding items
       return;
     }
+
+    let guestCart: any = null;
+    try {
+      const saved = localStorage.getItem('guestCart');
+      if (saved) {
+        guestCart = JSON.parse(saved);
+        localStorage.removeItem('guestCart');
+      }
+    } catch(e) {}
 
     const unsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
       if (docSnap.exists()) {
         const userData = docSnap.data();
-        if (userData.cart) {
+        if (guestCart && guestCart.length > 0) {
+          // Found a guest cart after login! Merge/overwrite to Firestore
+          setDoc(doc(db, 'users', user.uid), { cart: guestCart }, { merge: true }).catch(console.error);
+          setCart(guestCart);
+          guestCart = null; // Only merge once
+        } else if (userData.cart) {
           setCart(userData.cart);
         }
+        
         if (userData.checkoutData) {
           setCheckoutData(userData.checkoutData);
         }
@@ -137,10 +151,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     originalPrice?: number;
     subItems?: { name: string; price: number }[];
   }) => {
-    if (!user) {
-      router.push('/sign-up-login-screen');
-      return false;
-    }
+
 
     setCart((prev) => {
       const matchId = item.cartItemId || item.id;

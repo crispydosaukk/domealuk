@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
-import { Trash2, CalendarDays, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { Trash2, CalendarDays, ChevronLeft, ChevronRight, CheckCircle, User, X } from 'lucide-react';
 import { getZoneFromPostcode } from '@/app/components/PostcodeSearch';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
@@ -143,6 +143,7 @@ export default function BasketClient() {
     count: 4,
     deliveryDays: [1, 4],
   });
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   useEffect(() => {
     const fetchGlobalSettings = async () => {
@@ -217,6 +218,10 @@ export default function BasketClient() {
   }, [postcode]);
 
   const handleCheckout = () => {
+    if (!user) {
+      setShowLoginPrompt(true);
+      return;
+    }
     router.push('/checkout-order-confirmation-screen');
   };
 
@@ -567,6 +572,35 @@ export default function BasketClient() {
           </div>
         </div>
       </div>
+
+      {showLoginPrompt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center relative border border-border">
+            <button 
+              onClick={() => setShowLoginPrompt(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors p-2"
+            >
+              <X size={20} />
+            </button>
+            <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+              <User size={32} />
+            </div>
+            <h3 className="text-2xl font-800 text-foreground mb-3">Almost there!</h3>
+            <p className="text-muted-foreground mb-8 leading-relaxed font-500">
+              You are not logged in yet. Please log in or create an account to securely continue with your checkout.
+            </p>
+            <button
+              onClick={() => {
+                localStorage.setItem('guestCart', JSON.stringify(cart));
+                router.push('/sign-up-login-screen?redirect=/basket');
+              }}
+              className="w-full bg-[#10261A] text-white font-800 py-4 rounded-xl hover:bg-primary transition-all active:scale-[0.98] shadow-md"
+            >
+              Log In to Continue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

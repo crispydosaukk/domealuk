@@ -19,6 +19,7 @@ export default function UserNavbar() {
   const pathname = usePathname();
   const [userOrders, setUserOrders] = useState<any[]>([]);
   const [scrolled, setScrolled] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -420,15 +421,47 @@ export default function UserNavbar() {
 
             <div className="p-6 border-t border-border">
               <button
-                onClick={async () => {
-                  await logout();
+                onClick={() => {
                   setProfileOpen(false);
-                  router.push('/');
-                  router.refresh();
+                  setShowLogoutConfirm(true);
                 }}
                 className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 font-700 py-3.5 rounded-xl hover:bg-red-100 transition-colors active:scale-95"
               >
                 <LogOut size={18} />
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center relative border border-border">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <LogOut size={32} />
+            </div>
+            <h3 className="text-2xl font-800 text-foreground mb-3">Sign Out</h3>
+            <p className="text-muted-foreground mb-8 leading-relaxed font-500">
+              Are you sure you want to sign out of your account?
+            </p>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 bg-gray-100 text-foreground font-700 py-3.5 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  await logout();
+                  setShowLogoutConfirm(false);
+                  router.push('/');
+                  router.refresh();
+                }}
+                className="flex-1 bg-red-600 text-white font-700 py-3.5 rounded-xl hover:bg-red-700 transition-colors shadow-md shadow-red-600/20"
+              >
                 Sign Out
               </button>
             </div>
