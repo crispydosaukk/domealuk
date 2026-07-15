@@ -560,9 +560,9 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                   </div>
                 )}
 
-                {/* Nutritional & Allergen Info Dropdown */}
+                {/* Nutritional & Allergen Info Dropdown - Desktop only */}
                 {(quickViewItem.item.nutritionalInfo || quickViewItem.item.allergens) && (
-                  <details className="group border border-[#fadbc0] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden bg-[#fcefe3] shadow-sm mt-2">
+                  <details className="group border border-[#fadbc0] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden bg-[#fcefe3] shadow-sm mt-2 hidden md:block">
                     <summary className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-[#fadbc0]/30 transition-colors font-700 text-sm text-[#10261A]">
                       <span>Nutritional & Allergen Information</span>
                       <ChevronDown size={16} className="transition-transform group-open:rotate-180 text-[#10261A]" />
@@ -610,7 +610,7 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                 )}
                 
                 {quickViewItem.item.heatingInstructions && (
-                  <details className="group border border-[#fadbc0] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden bg-[#fcefe3] shadow-sm mt-2">
+                  <details className="group border border-[#fadbc0] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden bg-[#fcefe3] shadow-sm mt-2 hidden md:block">
                     <summary className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-[#fadbc0]/30 transition-colors font-700 text-sm text-[#10261A]">
                       <div className="flex items-center gap-2">
                         <Flame size={16} className="text-orange-500" />
@@ -656,13 +656,74 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                     dangerouslySetInnerHTML={{ __html: quickViewItem.item.ingredients || '' }}
                   />
 
-                  {quickViewItem.item.desc && (
-                    <div className="mt-2 bg-[#10261A]/5 border border-[#10261A]/10 rounded-2xl p-5 md:p-6 shadow-sm">
-                      <p className="text-base md:text-lg font-700 text-[#10261A] leading-relaxed">
-                        {quickViewItem.item.desc}
-                      </p>
-                    </div>
-                  )}
+
+                  {/* Info Accordions - Mobile only */}
+                  <div className="md:hidden mt-4 flex flex-col gap-2">
+                    {(quickViewItem.item.nutritionalInfo || quickViewItem.item.allergens) && (
+                      <details className="group border border-[#fadbc0] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden bg-[#fcefe3] shadow-sm">
+                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-[#fadbc0]/30 transition-colors font-700 text-sm text-[#10261A]">
+                          <span>Nutritional & Allergen Information</span>
+                          <ChevronDown size={16} className="transition-transform group-open:rotate-180 text-[#10261A]" />
+                        </summary>
+                        <div className="px-5 py-2 pb-5 border-t border-[#fadbc0]/50">
+                          
+                          {quickViewItem.item.nutritionalInfo && (
+                            <>
+                              <div className="flex justify-end mb-2">
+                                <span className="text-[10px] font-800 text-[#10261A] uppercase tracking-widest">per person</span>
+                              </div>
+                              <div className="flex flex-col mb-4">
+                                {quickViewItem.item.nutritionalInfo.split('\n').map((line: string, idx: number) => {
+                                  const tLine = line.trim();
+                                  if (!tLine || tLine.toLowerCase().includes('nutritional information') || tLine.toLowerCase() === 'nutrition' || tLine.toLowerCase().includes('per person')) return null;
+                                  
+                                  const match = tLine.match(/(.*?)\s+([\d.]+\s*[a-zA-Z%]+)$/);
+                                  let key = tLine;
+                                  let val = '';
+                                  if (match) {
+                                    key = match[1];
+                                    val = match[2];
+                                  }
+                                  const isIndented = key.toLowerCase().startsWith('of which');
+                                  
+                                  return (
+                                    <div key={idx} className="flex justify-between items-center py-2.5 border-b border-[#10261A]/10 last:border-0">
+                                      <span className={`text-sm text-[#10261A]/80 ${isIndented ? 'pl-5 font-400' : 'font-600'}`}>{key}</span>
+                                      <span className="text-sm font-600 text-[#10261A]/80">{val}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                          
+                          {quickViewItem.item.allergens && (
+                            <div className={`text-xs text-[#10261A]/80 font-500 flex items-start gap-1.5 ${quickViewItem.item.nutritionalInfo ? 'pt-4 border-t border-[#10261A]/20' : 'pt-2'}`}>
+                              <span className="text-red-500 font-900 text-sm leading-none mt-0.5">*</span>
+                              <span className="leading-relaxed text-red-600 font-600">Allergens: <span className="font-500 text-[#10261A]/90">{quickViewItem.item.allergens}</span></span>
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    )}
+                    
+                    {quickViewItem.item.heatingInstructions && (
+                      <details className="group border border-[#fadbc0] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden bg-[#fcefe3] shadow-sm">
+                        <summary className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-[#fadbc0]/30 transition-colors font-700 text-sm text-[#10261A]">
+                          <div className="flex items-center gap-2">
+                            <Flame size={16} className="text-orange-500" />
+                            <span>Heating Instructions</span>
+                          </div>
+                          <ChevronDown size={16} className="transition-transform group-open:rotate-180 text-[#10261A]" />
+                        </summary>
+                        <div className="px-5 py-4 border-t border-[#fadbc0]/50 bg-white">
+                          <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap font-500">
+                            {quickViewItem.item.heatingInstructions}
+                          </p>
+                        </div>
+                      </details>
+                    )}
+                  </div>
 
                   <div className="mt-8 mb-2">
                     <Link
