@@ -37,7 +37,6 @@ export default function PrivacyPolicy() {
               <li>visit our website</li>
               <li>place an order or subscribe</li>
               <li>contact customer support</li>
-              <li>enter a competition or promotion</li>
               <li>interact with our marketing, ads, and analytics tools</li>
             </ul>
             <p>
@@ -56,9 +55,7 @@ export default function PrivacyPolicy() {
               <li>delivery address and postcode</li>
               <li>account login details, if you create an account</li>
               <li>order history and subscription preferences</li>
-              <li>dietary notes you choose to provide</li>
               <li>communications with us, including emails and messages</li>
-              <li>competition entries and any information required to administer prizes</li>
             </ul>
 
             <p className="mb-4 font-bold">
