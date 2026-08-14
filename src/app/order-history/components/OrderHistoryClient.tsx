@@ -424,6 +424,14 @@ export default function OrderHistoryClient() {
                                 </span>
                               </div>
                             )}
+                            {order.deliveryFee !== undefined && order.deliveryFee > 0 && (
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Delivery Charge</span>
+                                <span className="tabular-nums">
+                                  £{order.deliveryFee.toFixed(2)}
+                                </span>
+                              </div>
+                            )}
                             {order.dabbaFeeApplied && (
                               <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Reusable Dabba Deposit</span>

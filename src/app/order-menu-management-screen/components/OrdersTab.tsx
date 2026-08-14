@@ -634,6 +634,14 @@ export default function OrdersTab() {
                     <span className="tabular-nums">-£{selectedOrder.walletApplied.toFixed(2)}</span>
                   </div>
                 )}
+                {selectedOrder.deliveryFee !== undefined && selectedOrder.deliveryFee > 0 && (
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Delivery Charge</span>
+                    <span className="tabular-nums">
+                      £{selectedOrder.deliveryFee.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 {selectedOrder.dabbaFeeApplied && (
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Reusable Dabba Deposit</span>

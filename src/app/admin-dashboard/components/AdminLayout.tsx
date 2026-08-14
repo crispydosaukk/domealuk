@@ -18,6 +18,7 @@ import {
   Loader2,
   CreditCard,
   GraduationCap,
+  Building,
 } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -34,6 +35,7 @@ const baseNavItems = [
   },
   { id: 'nav-history', label: 'Order History', href: '/admin-history', icon: History },
   { id: 'nav-customers', label: 'Customers', href: '/admin-customers', icon: Users },
+  { id: 'nav-corporate', label: 'Corporate', href: '/admin-corporate', icon: Building },
   { id: 'nav-payments', label: 'Transactions', href: '/admin-payments', icon: CreditCard },
   {
     id: 'nav-student-approvals',
@@ -56,6 +58,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingOrders, setPendingOrders] = useState(0);
   const [pendingStudents, setPendingStudents] = useState(0);
+  const [pendingCorporate, setPendingCorporate] = useState(0);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, loading, logout } = useAuth();
   const router = useRouter();
@@ -95,6 +98,46 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
     return () => unsub();
   }, [user]);
 
+  React.useEffect(() => {
+    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+
+    const updateBadgeCount = () => {
+      try {
+        const { getLocalCorporateInquiries } = require('@/lib/corporateInquiriesStorage');
+        const items = getLocalCorporateInquiries();
+        const newCount = items.filter((i: any) => i.status === 'New').length;
+        setPendingCorporate(newCount);
+      } catch (_e) {}
+    };
+
+    updateBadgeCount();
+
+    window.addEventListener('domeal-corporate-updated', updateBadgeCount);
+    window.addEventListener('storage', updateBadgeCount);
+
+    let unsub = () => {};
+    try {
+      const q = query(collection(db, 'corporateInquiries'), where('status', '==', 'New'));
+      unsub = onSnapshot(
+        q,
+        (snap) => {
+          if (!snap.empty) {
+            setPendingCorporate(snap.size);
+          }
+        },
+        (_err) => {
+          // Graceful fallback to local storage
+        }
+      );
+    } catch (_err) {}
+
+    return () => {
+      window.removeEventListener('domeal-corporate-updated', updateBadgeCount);
+      window.removeEventListener('storage', updateBadgeCount);
+      unsub();
+    };
+  }, [user]);
+
   const navItems = baseNavItems.map((item) => {
     if (item.id === 'nav-orders') {
       const isActive = activeRoute === item.href;
@@ -109,6 +152,13 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
         ...item,
         badge: pendingStudents > 0 ? pendingStudents.toString() : null,
         badgeColor: 'bg-red-500 text-white',
+      };
+    }
+    if (item.id === 'nav-corporate') {
+      return {
+        ...item,
+        badge: pendingCorporate > 0 ? pendingCorporate.toString() : null,
+        badgeColor: 'bg-[#C39B54] text-white',
       };
     }
     return { ...item, badge: null, badgeColor: null };

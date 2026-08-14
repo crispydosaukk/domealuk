@@ -187,6 +187,7 @@ function CheckoutClientContent({
   globalSettings: {
     discount: number;
     count: number;
+    deliveryFee?: number;
     deliveryDays?: number[];
     deliverySlots?: any[];
   };
@@ -373,6 +374,9 @@ function CheckoutClientContent({
       let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
       finalTotal = Math.max(0, finalTotal - studentDiscountAmt);
 
+      const deliveryFee = globalSettings.deliveryFee ?? 5.0;
+      finalTotal = finalTotal + deliveryFee;
+
       // Reusable Dabba Deposit Fee (£12.00)
       const dabbaFee = 12.0;
       finalTotal = finalTotal + dabbaFee;
@@ -415,6 +419,7 @@ function CheckoutClientContent({
           allergiesInfo: checkoutData?.allergiesInfo || '',
           createdAt: serverTimestamp(),
           status: 'Order Received',
+          deliveryFee: deliveryFee,
           dabbaFeeApplied: true,
           dabbaFee: 12.0,
         });
@@ -441,6 +446,7 @@ function CheckoutClientContent({
           studentDiscountPercent: isStudentVerified ? studentDiscountPercentage : 0,
           discountApplied: discountApplied ? discountAmount : 0,
           walletApplied: appliedWalletAmount,
+          deliveryFee: deliveryFee,
           dabbaFee: 12.0,
         });
 
@@ -465,6 +471,7 @@ function CheckoutClientContent({
             deliverySlot: selectedSlot,
             notes,
             subtotal,
+            deliveryFee,
             walletApplied: appliedWalletAmount,
             discountApplied: discountApplied ? discountAmount : 0,
             studentDiscountApplied: studentDiscountAmt,
@@ -578,6 +585,12 @@ function CheckoutClientContent({
                       </span>
                     </div>
                   )}
+                  {finalOrderSummary.deliveryFee > 0 && (
+                    <div className="flex justify-between">
+                      <span>Delivery Charge</span>
+                      <span className="tabular-nums">£{finalOrderSummary.deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
                   {finalOrderSummary.dabbaFee > 0 && (
                     <div className="flex justify-between">
                       <span>Reusable Dabba Deposit</span>
@@ -657,6 +670,9 @@ function CheckoutClientContent({
     ? Math.max(0, currentSubtotal - discountAmount)
     : currentSubtotal;
   finalDisplayTotal = Math.max(0, finalDisplayTotal - studentDiscountAmtDisplay);
+
+  const deliveryFee = globalSettings.deliveryFee ?? 5.0;
+  finalDisplayTotal = finalDisplayTotal + deliveryFee;
 
   // Reusable Dabba Fee (£12.00)
   const dabbaFee = 12.0;
@@ -1046,13 +1062,13 @@ function CheckoutClientContent({
                   )}
                   <div className="flex justify-between text-[15px] font-500 mb-4">
                     <span className="text-gray-800 flex items-center gap-1.5">
-                      Shipping{' '}
+                      Delivery Charge{' '}
                       <span className="text-gray-400 border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-800">
                         ?
                       </span>
                     </span>
-                    <span className="text-gray-500 text-sm">
-                      {selectedAddressId ? 'Free' : 'Enter shipping address'}
+                    <span className="text-gray-900 font-600 text-sm tabular-nums">
+                      £{deliveryFee.toFixed(2)}
                     </span>
                   </div>
 
@@ -1135,6 +1151,7 @@ export default function CheckoutClient() {
   const [globalSettings, setGlobalSettings] = useState({
     discount: 25,
     count: 4,
+    deliveryFee: 5,
     deliveryDays: [1, 4],
     deliverySlots: [
       { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
@@ -1153,6 +1170,7 @@ export default function CheckoutClient() {
         setGlobalSettings({
           discount: data.popupDiscountPercentage || 25,
           count: data.popupOrdersCount || 4,
+          deliveryFee: data.deliveryFee ?? 5,
           deliveryDays: data.deliveryDays || [1, 4],
           deliverySlots: data.deliverySlots || [
             {

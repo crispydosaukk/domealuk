@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  ...(process.env.EXPORT === 'true' ? { output: 'export' } : {}),
   trailingSlash: true,
   productionBrowserSourceMaps: true,
   distDir: process.env.DIST_DIR || '.next',

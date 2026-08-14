@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
       // Set a fallback for publishable key if not in firestore
       publicSettings.stripePublishableKey =
         publicSettings.stripePublishableKey || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+      publicSettings.deliveryFee = publicSettings.deliveryFee ?? 5;
 
       return NextResponse.json(publicSettings);
     }
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
     stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
     popupDiscountPercentage: 25,
     popupOrdersCount: 4,
+    deliveryFee: 5,
     deliveryDays: [1, 4],
     deliverySlots: [
       { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },

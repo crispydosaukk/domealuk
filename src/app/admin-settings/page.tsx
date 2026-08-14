@@ -123,6 +123,7 @@ const defaultSettings = {
   stripeSecretKey: '',
 
   // Delivery Settings
+  deliveryFee: 5,
   deliveryDays: [1, 4], // 1 = Monday, 4 = Thursday
   deliverySlots: [
     { id: 'slot-1', label: 'Morning', time: '7:30 AM – 8:30 AM', icon: '🌅', enabled: true },
@@ -2422,6 +2423,33 @@ export default function AdminSettingsPage() {
                         )}
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Delivery Fee Section */}
+                <div className="space-y-4 pt-6 border-t border-border">
+                  <div>
+                    <h3 className="text-sm font-800 text-foreground">Delivery Charge (£)</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Set the standard delivery fee applied to orders at checkout.
+                    </p>
+                  </div>
+                  <div className="max-w-xs">
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-800 text-muted-foreground">
+                        £
+                      </span>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        name="deliveryFee"
+                        value={settings.deliveryFee ?? 5}
+                        onChange={handleChange}
+                        className="w-full border border-border rounded-xl pl-8 pr-4 py-2.5 text-sm font-700 focus:outline-none focus:border-primary"
+                        placeholder="5.00"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

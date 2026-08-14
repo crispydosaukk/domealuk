@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       deliverySlot,
       notes,
       subtotal,
+      deliveryFee,
       walletApplied,
       discountApplied,
       studentDiscountApplied,
@@ -183,6 +184,7 @@ export async function POST(req: NextRequest) {
       status: 'Pending Payment',
       dabbaFeeApplied: dabbaFeeApplied || false,
       dabbaFee: dabbaFeeApplied ? 12.0 : 0,
+      deliveryFee: deliveryFee !== undefined ? deliveryFee : 5.0,
     };
 
     if (dbAdmin) {

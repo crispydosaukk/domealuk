@@ -141,6 +141,7 @@ export default function BasketClient() {
   const [globalSettings, setGlobalSettings] = useState({
     discount: 25,
     count: 4,
+    deliveryFee: 5,
     deliveryDays: [1, 4],
   });
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -154,6 +155,7 @@ export default function BasketClient() {
           setGlobalSettings({
             discount: data.popupDiscountPercentage || 25,
             count: data.popupOrdersCount || 4,
+            deliveryFee: data.deliveryFee ?? 5,
             deliveryDays: data.deliveryDays || [1, 4],
           });
         }
@@ -434,9 +436,13 @@ export default function BasketClient() {
                 <span>Reusable Dabba Deposit</span>
                 <span>£12.00</span>
               </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Delivery Charge</span>
+                <span>£{(globalSettings.deliveryFee ?? 5).toFixed(2)}</span>
+              </div>
               <div className="flex justify-between font-800 text-lg border-t border-dashed border-border/80 pt-2 mt-1">
                 <span>Total</span>
-                <span>£{(cartTotal + 12.0).toFixed(2)}</span>
+                <span>£{(cartTotal + 12.0 + (globalSettings.deliveryFee ?? 5)).toFixed(2)}</span>
               </div>
             </div>
 
