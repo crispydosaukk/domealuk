@@ -100,6 +100,8 @@ export default function AdminCorporateClient() {
             });
 
             setInquiries(fetched);
+          } else {
+            setInquiries([]);
           }
           setLoading(false);
         },

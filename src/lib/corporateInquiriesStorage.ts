@@ -18,42 +18,7 @@ export interface CorporateInquiry {
 
 const STORAGE_KEY = 'domeal_corporate_inquiries';
 
-const INITIAL_DEMO_INQUIRIES: CorporateInquiry[] = [
-  {
-    id: 'corp-demo-101',
-    companyName: 'Barclays Tech Hub',
-    contactName: 'Sarah Jenkins',
-    email: 's.jenkins@barclays.co.uk',
-    phone: '+44 7700 900123',
-    eventDate: '2026-09-15',
-    eventTime: '12:30 PM',
-    eventLocation: 'Canary Wharf, London E14 5HP',
-    selectedPackage: 'With Live Dosa Station (£29.99 pp)',
-    packageType: 'live',
-    paxCount: 120,
-    estimatedTotal: 3598.8,
-    specialNotes: 'Executive team celebration. Need 2 Live Dosa stations and Jain vegan options.',
-    status: 'New',
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    id: 'corp-demo-102',
-    companyName: 'Monzo Bank HQ',
-    contactName: 'David Miller',
-    email: 'dmiller@monzo.com',
-    phone: '+44 7890 123456',
-    eventDate: '2026-09-22',
-    eventTime: '1:00 PM',
-    eventLocation: 'Finsbury Square, London EC2A 1BR',
-    selectedPackage: 'Without Live Dosa (£24.99 pp)',
-    packageType: 'standard',
-    paxCount: 75,
-    estimatedTotal: 1874.25,
-    specialNotes: 'Quarterly all-hands lunch. Please include allergen labeling on chafing dishes.',
-    status: 'Contacted',
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-];
+const INITIAL_DEMO_INQUIRIES: CorporateInquiry[] = [];
 
 export function getLocalCorporateInquiries(): CorporateInquiry[] {
   if (typeof window === 'undefined') return INITIAL_DEMO_INQUIRIES;

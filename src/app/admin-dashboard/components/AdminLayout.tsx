@@ -19,6 +19,7 @@ import {
   CreditCard,
   GraduationCap,
   Building,
+  X,
 } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -164,6 +165,15 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
     return { ...item, badge: null, badgeColor: null };
   });
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/admin-login');
+    } catch (err) {
+      console.error('Failed to log out:', err);
+    }
+  };
+
   if (loading || !user || user.email !== 'domealuk79812@gmail.com') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -184,127 +194,98 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full z-50 flex flex-col transition-all duration-300 ease-in-out
-        ${collapsed ? 'w-16' : 'w-60'}
-        ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}
-        style={{ background: 'linear-gradient(180deg, #1E3B2B 0%, #10261A 60%, #1E3B2B 100%)' }}
+        className={`fixed lg:sticky lg:top-0 h-screen z-40 bg-[#1E3B2B] text-white flex flex-col shrink-0 transition-all duration-300 ${
+          collapsed ? 'w-16' : 'w-60'
+        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        {/* Sidebar header */}
-        <div
-          className={`flex items-center border-b border-white/10 h-16 px-3 ${collapsed ? 'justify-center' : 'justify-between'}`}
-        >
+        {/* Header */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-white/10 shrink-0">
           {!collapsed && (
-            <div className="flex items-center gap-2 overflow-hidden">
-              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/20 shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-white p-1 flex items-center justify-center">
                 <Image
                   src="/DOMEAL_Logo.jpg"
-                  alt="DoMeal logo"
-                  width={36}
-                  height={36}
-                  className="w-full h-full object-cover"
+                  alt="DoMeal Logo"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-contain"
                 />
               </div>
-              <div className="min-w-0">
-                <p className="font-800 text-sm text-white truncate">DoMeal</p>
-                <p className="text-xs text-blue-300">Admin Panel</p>
-              </div>
-            </div>
-          )}
-          {collapsed && (
-            <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/20">
-              <Image
-                src="/DOMEAL_Logo.jpg"
-                alt="DoMeal logo"
-                width={36}
-                height={36}
-                className="w-full h-full object-cover"
-              />
+              <span className="font-700 text-white text-base">DoMeal</span>
             </div>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 items-center justify-center transition-colors shrink-0"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="hidden lg:flex p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
           >
-            {collapsed ? (
-              <ChevronRight size={14} className="text-white" />
-            ) : (
-              <ChevronLeft size={14} className="text-white" />
-            )}
+            <ChevronLeft
+              size={18}
+              className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
+            />
+          </button>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        {!collapsed && (
-          <div className="px-3 pt-3">
-            <p className="text-xs font-700 uppercase tracking-widest text-blue-300/60 px-3 mb-2">
-              Navigation
-            </p>
-          </div>
-        )}
-
-        <nav className="flex-1 px-2 py-2 space-y-1 overflow-y-auto">
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          <p className={`text-[10px] font-700 text-[#C39B54] uppercase tracking-wider px-3 mb-2 ${collapsed ? 'hidden' : 'block'}`}>
+            Navigation
+          </p>
           {navItems.map((item) => {
+            const Icon = item.icon;
             const isActive = activeRoute === item.href;
             return (
               <Link
                 key={item.id}
                 href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${
+                  isActive
+                    ? 'bg-[#C39B54] text-white font-600 shadow-md'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white font-500'
+                } ${collapsed ? 'justify-center' : ''}`}
                 title={collapsed ? item.label : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative
-                  ${isActive ? 'bg-[#C39B54] text-white' : 'text-blue-100 hover:bg-white/10 hover:text-white'}
-                  ${collapsed ? 'justify-center' : ''}
-                `}
               >
-                <item.icon size={18} className="shrink-0" />
+                <Icon size={18} className="shrink-0" />
                 {!collapsed && (
                   <>
-                    <span className="text-sm font-600 flex-1">{item.label}</span>
+                    <span className="flex-1 text-sm">{item.label}</span>
                     {item.badge && (
                       <span
-                        className={`${item.badgeColor || 'bg-[#C39B54] text-white'} text-xs font-700 w-5 h-5 rounded-full flex items-center justify-center shrink-0`}
+                        className={`text-xs px-2 py-0.5 rounded-full font-700 ${item.badgeColor || 'bg-[#C39B54] text-white'}`}
                       >
                         {item.badge}
                       </span>
                     )}
                   </>
                 )}
-                {collapsed && item.badge && (
-                  <span
-                    className={`absolute top-1 right-1 w-2 h-2 ${item.badgeColor?.split(' ')[0] || 'bg-[#C39B54]'} rounded-full`}
-                  />
-                )}
               </Link>
             );
           })}
+
+
         </nav>
 
-        <div className="border-t border-white/10 p-3">
-          <div className={`flex items-center gap-3 px-3 py-2 ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-8 h-8 rounded-full bg-[#C39B54] flex items-center justify-center text-white text-xs font-700 shrink-0">
-              DW
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-600 text-white truncate">DoMeal Admin</p>
-                <p className="text-xs text-blue-300">admin@domeal.co.uk</p>
-              </div>
-            )}
-          </div>
+        <div className="border-t border-white/10 p-3 shrink-0 bg-[#1E3B2B]">
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className={`flex w-full items-center gap-3 px-3 py-2 mt-1 rounded-xl text-blue-200 hover:text-red-400 hover:bg-white/5 transition-colors ${collapsed ? 'justify-center' : ''}`}
+            className={`flex w-full items-center gap-3 px-3 py-2 rounded-xl text-red-300 hover:text-red-100 hover:bg-red-500/20 transition-colors ${collapsed ? 'justify-center' : ''}`}
             title={collapsed ? 'Sign Out' : undefined}
           >
-            <LogOut size={16} />
-            {!collapsed && <span className="text-sm font-600">Sign Out</span>}
+            <LogOut size={18} className="text-red-400 shrink-0" />
+            {!collapsed && <span className="text-sm font-700">Sign Out</span>}
           </button>
         </div>
       </aside>
 
       {/* Main content */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${collapsed ? 'lg:ml-16' : 'lg:ml-60'}`}
+        className={`flex-1 flex flex-col transition-all duration-300 min-w-0`}
       >
         {/* Topbar */}
         <header className="h-16 bg-white border-b border-border flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 shadow-sm">
@@ -329,11 +310,45 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
             >
               View Site
             </Link>
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-700 transition-colors cursor-pointer"
+            >
+              <LogOut size={14} />
+              <span>Sign Out</span>
+            </button>
           </div>
         </header>
 
         <main className="flex-1 p-4 lg:p-6 xl:p-8 overflow-auto">{children}</main>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl text-center">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+              <LogOut className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">Sign Out of Admin Panel?</h3>
+            <p className="text-xs text-slate-500">You will be logged out of your session and returned to the admin login screen.</p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-600 text-xs hover:bg-slate-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-600 text-xs hover:bg-red-700 transition-all shadow-md"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
