@@ -249,7 +249,8 @@ export async function generateCorporateMenuPdf() {
   doc.setFontSize(7.5);
   doc.setTextColor(120, 53, 15);
 
-  const termsLines = (config.termsNotice || '• Minimum order requirement is strictly 10 pax per order.').split('\n');
+  const minPax = config.minPax || 10;
+  const termsLines = (config.termsNotice || `• Minimum order requirement is strictly ${minPax} pax per order.`).split('\n');
   termsLines.forEach((term, index) => {
     if (index < 3) {
       doc.text(term, 18, y + 10 + index * 4);

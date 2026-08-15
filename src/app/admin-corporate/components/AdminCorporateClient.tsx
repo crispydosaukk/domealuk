@@ -111,11 +111,26 @@ export default function AdminCorporateClient() {
       setLoading(false);
     }
 
+    let unsubConfig = () => {};
+    try {
+      unsubConfig = onSnapshot(doc(db, 'settings', 'corporateConfig'), (docSnap) => {
+        if (docSnap.exists()) {
+          const remoteData = docSnap.data();
+          const merged = { ...DEFAULT_CORPORATE_CONFIG, ...remoteData };
+          setConfig(merged);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('domeal_corporate_menu_config', JSON.stringify(merged));
+          }
+        }
+      });
+    } catch (_err) {}
+
     return () => {
       window.removeEventListener('domeal-corporate-updated', handleCustomUpdate);
       window.removeEventListener('domeal-corporate-config-updated', handleConfigUpdate);
       window.removeEventListener('storage', handleCustomUpdate);
       unsub();
+      unsubConfig();
     };
   }, []);
 
@@ -183,6 +198,23 @@ export default function AdminCorporateClient() {
           customLogoUrl: result,
         }));
         toast.success('Custom logo uploaded successfully!');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Hero Background Image Upload Handler
+  const handleHeroBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        setConfig((prev) => ({
+          ...prev,
+          heroBgImageUrl: result,
+        }));
+        toast.success('Hero background image uploaded successfully!');
       };
       reader.readAsDataURL(file);
     }
@@ -459,6 +491,129 @@ export default function AdminCorporateClient() {
             </div>
 
             <form onSubmit={handleSaveConfig} className="space-y-6">
+              {/* SECTION: HERO BANNER CONTENT & BADGES */}
+              <div className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-200/80 space-y-4">
+                <h4 className="font-800 text-slate-900 text-sm flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#C39B54]" />
+                  Hero Banner Content & Badges
+                </h4>
+
+                <div className="space-y-4 text-xs">
+                  {/* Badge Text */}
+                  <div>
+                    <label className="font-700 text-slate-700 block mb-1">Badge / Tagline Text</label>
+                    <input
+                      type="text"
+                      value={config.heroBadgeText ?? "LONDON'S PREMIER CORPORATE CATERER"}
+                      onChange={(e) => setConfig({ ...config, heroBadgeText: e.target.value })}
+                      placeholder="e.g. LONDON'S PREMIER CORPORATE CATERER"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-600 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1E3B2B]"
+                    />
+                  </div>
+
+                  {/* Title Split */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="font-700 text-slate-700 block mb-1">Title Prefix</label>
+                      <input
+                        type="text"
+                        value={config.heroTitlePrefix ?? "Corporate Catering & "}
+                        onChange={(e) => setConfig({ ...config, heroTitlePrefix: e.target.value })}
+                        placeholder="e.g. Corporate Catering & "
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-600 text-slate-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-700 text-slate-700 block mb-1">Highlighted Text (Gold)</label>
+                      <input
+                        type="text"
+                        value={config.heroTitleHighlight ?? "Live Station"}
+                        onChange={(e) => setConfig({ ...config, heroTitleHighlight: e.target.value })}
+                        placeholder="e.g. Live Station"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-700 text-[#C39B54] bg-amber-50/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-700 text-slate-700 block mb-1">Title Suffix</label>
+                      <input
+                        type="text"
+                        value={config.heroTitleSuffix ?? " Experiences"}
+                        onChange={(e) => setConfig({ ...config, heroTitleSuffix: e.target.value })}
+                        placeholder="e.g. Experiences"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-600 text-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Subtitle */}
+                  <div>
+                    <label className="font-700 text-slate-700 block mb-1">Hero Subtitle / Description</label>
+                    <textarea
+                      rows={3}
+                      value={config.heroSubtitle ?? "Elevate your corporate galas, office team lunches, tech summits, and VIP events with London’s finest South Indian cuisine, famous live 4ft Jumbo Dosa stations, artisanal curries, and full licensed bar services."}
+                      onChange={(e) => setConfig({ ...config, heroSubtitle: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-500 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1E3B2B]"
+                    />
+                  </div>
+
+                  {/* 3 Feature Pills */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="font-700 text-slate-700 block mb-1">Feature 1 Badge</label>
+                      <input
+                        type="text"
+                        value={config.heroFeature1 ?? "Live Cooking Stations"}
+                        onChange={(e) => setConfig({ ...config, heroFeature1: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-600 text-slate-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-700 text-slate-700 block mb-1">Feature 2 Badge</label>
+                      <input
+                        type="text"
+                        value={config.heroFeature2 ?? "3 Hours On-Site Service"}
+                        onChange={(e) => setConfig({ ...config, heroFeature2: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-600 text-slate-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-700 text-slate-700 block mb-1">Feature 3 Badge</label>
+                      <input
+                        type="text"
+                        value={
+                          config.heroFeature3
+                            ? config.heroFeature3.replace(/Min\.\s*\d+/i, `Min. ${config.minPax || 10}`)
+                            : `Min. ${config.minPax || 10} Pax Per Order`
+                        }
+                        onChange={(e) => setConfig({ ...config, heroFeature3: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-600 text-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Background Image Upload */}
+                  <div>
+                    <label className="font-700 text-slate-700 block mb-1">Hero Background Image</label>
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      {config.heroBgImageUrl && (
+                        <div className="w-24 h-14 rounded-xl overflow-hidden border border-slate-300 flex-shrink-0 relative">
+                          <img
+                            src={config.heroBgImageUrl}
+                            alt="Hero BG Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <label className="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-800 font-700 text-xs hover:bg-slate-100 transition-all cursor-pointer flex items-center gap-2 w-fit">
+                        <Upload className="w-4 h-4 text-[#C39B54]" />
+                        <span>Upload Hero Background Image</span>
+                        <input type="file" accept="image/*" onChange={handleHeroBgUpload} className="hidden" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* SECTION 1: DYNAMIC PRICING & MIN PAX */}
               <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                 <h4 className="font-800 text-slate-900 text-sm flex items-center gap-2">
@@ -498,7 +653,14 @@ export default function AdminCorporateClient() {
                       min="1"
                       required
                       value={config.minPax}
-                      onChange={(e) => setConfig({ ...config, minPax: parseInt(e.target.value) || 10 })}
+                      onChange={(e) => {
+                        const newMin = parseInt(e.target.value) || 10;
+                        setConfig((prev) => ({
+                          ...prev,
+                          minPax: newMin,
+                          heroFeature3: prev.heroFeature3 ? prev.heroFeature3.replace(/Min\.\s*\d+/i, `Min. ${newMin}`) : `Min. ${newMin} Pax Per Order`
+                        }));
+                      }}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-700 text-slate-900"
                     />
                   </div>

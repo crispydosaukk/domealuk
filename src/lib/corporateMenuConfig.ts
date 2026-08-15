@@ -1,3 +1,6 @@
+import { db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+
 export interface CorporateMenuConfig {
   liveDosaPrice: number;
   standardBuffetPrice: number;
@@ -7,6 +10,14 @@ export interface CorporateMenuConfig {
   pdfFileName?: string;
   customLogoUrl?: string;
   heroBgImageUrl?: string;
+  heroBadgeText?: string;
+  heroTitlePrefix?: string;
+  heroTitleHighlight?: string;
+  heroTitleSuffix?: string;
+  heroSubtitle?: string;
+  heroFeature1?: string;
+  heroFeature2?: string;
+  heroFeature3?: string;
   packageInclusions: {
     salads: string;
     chaat: string;
@@ -28,6 +39,15 @@ export const DEFAULT_CORPORATE_CONFIG: CorporateMenuConfig = {
   pdfFileName: '',
   customLogoUrl: '/DOMEAL_Logo.png',
   heroBgImageUrl: '/assets/corporate_catering_hero.jpg',
+  heroBadgeText: "LONDON'S PREMIER CORPORATE CATERER",
+  heroTitlePrefix: 'Corporate Catering & ',
+  heroTitleHighlight: 'Live Station',
+  heroTitleSuffix: ' Experiences',
+  heroSubtitle:
+    'Elevate your corporate galas, office team lunches, tech summits, and VIP events with London’s finest South Indian cuisine, famous live 4ft Jumbo Dosa stations, artisanal curries, and full licensed bar services.',
+  heroFeature1: 'Live Cooking Stations',
+  heroFeature2: '3 Hours On-Site Service',
+  heroFeature3: 'Min. 10 Pax Per Order',
   packageInclusions: {
     salads: 'Vegetable Salad & Fruit Salad',
     chaat: 'Samosa Chaat / Pani Puri / Bhel Puri / Sev Puri / Aloo Papdi Chaat / Dahi Puri',
@@ -65,4 +85,14 @@ export function saveLocalCorporateMenuConfig(config: CorporateMenuConfig) {
   } catch (err) {
     console.error('Failed saving corporate menu config:', err);
   }
+
+  // Also sync to Firestore asynchronously
+  try {
+    setDoc(doc(db, 'settings', 'corporateConfig'), config, { merge: true }).catch((err) => {
+      console.warn('Failed saving corporate menu config to Firestore:', err);
+    });
+  } catch (err) {
+    console.warn('Firestore setDoc error:', err);
+  }
 }
+

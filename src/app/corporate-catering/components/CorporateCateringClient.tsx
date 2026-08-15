@@ -31,20 +31,48 @@ import {
 import { generateCorporateMenuPdf } from '@/lib/generateCorporateMenuPdf';
 import { toast } from 'sonner';
 
-import { getLocalCorporateMenuConfig } from '@/lib/corporateMenuConfig';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { getLocalCorporateMenuConfig, DEFAULT_CORPORATE_CONFIG } from '@/lib/corporateMenuConfig';
 import { saveLocalCorporateInquiry } from '@/lib/corporateInquiriesStorage';
 
 export default function CorporateCateringClient() {
-  // Dynamic Corporate Menu Config
-  const [config, setConfig] = useState(getLocalCorporateMenuConfig());
+  const [mounted, setMounted] = useState(false);
+  // Dynamic Corporate Menu Config (initialized with DEFAULT_CORPORATE_CONFIG for consistent SSR)
+  const [config, setConfig] = useState(DEFAULT_CORPORATE_CONFIG);
 
   React.useEffect(() => {
-    const handleConfigUpdate = () => setConfig(getLocalCorporateMenuConfig());
+    setMounted(true);
+    const initialConfig = getLocalCorporateMenuConfig();
+    setConfig(initialConfig);
+    setPaxCount(initialConfig.minPax || 10);
+
+    const handleConfigUpdate = () => {
+      const updated = getLocalCorporateMenuConfig();
+      setConfig(updated);
+    };
+
     window.addEventListener('domeal-corporate-config-updated', handleConfigUpdate);
     window.addEventListener('storage', handleConfigUpdate);
+
+    let unsub = () => {};
+    try {
+      unsub = onSnapshot(doc(db, 'settings', 'corporateConfig'), (docSnap) => {
+        if (docSnap.exists()) {
+          const remoteData = docSnap.data();
+          const merged = { ...DEFAULT_CORPORATE_CONFIG, ...remoteData };
+          setConfig(merged);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('domeal_corporate_menu_config', JSON.stringify(merged));
+          }
+        }
+      });
+    } catch (_err) {}
+
     return () => {
       window.removeEventListener('domeal-corporate-config-updated', handleConfigUpdate);
       window.removeEventListener('storage', handleConfigUpdate);
+      unsub();
     };
   }, []);
 
@@ -53,7 +81,20 @@ export default function CorporateCateringClient() {
 
   // State for Calculator & Form
   const [selectedPackage, setSelectedPackage] = useState<'live' | 'standard'>('live');
-  const [paxCount, setPaxCount] = useState<number | string>(config.minPax || 10);
+  const [paxCount, setPaxCount] = useState<number | string>(10);
+
+  // Update paxCount if minPax updates from admin
+  React.useEffect(() => {
+    if (mounted && config.minPax) {
+      setPaxCount((prev) => {
+        const val = typeof prev === 'number' ? prev : (parseInt(prev as string, 10) || 0);
+        if (val < config.minPax || val === 10) {
+          return config.minPax;
+        }
+        return prev;
+      });
+    }
+  }, [config.minPax, mounted]);
   const [companyName, setCompanyName] = useState('');
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
@@ -91,9 +132,10 @@ export default function CorporateCateringClient() {
   };
 
   const handlePaxChange = (delta: number) => {
+    const minPax = config.minPax || 10;
     setPaxCount((prev) => {
-      const val = typeof prev === 'number' ? prev : (parseInt(prev, 10) || 0);
-      return Math.max(10, val + delta);
+      const val = typeof prev === 'number' ? prev : (parseInt(prev as string, 10) || 0);
+      return Math.max(minPax, val + delta);
     });
   };
 
@@ -127,9 +169,10 @@ export default function CorporateCateringClient() {
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const minPax = config.minPax || 10;
     const finalPax = typeof paxCount === 'number' ? paxCount : (parseInt(paxCount, 10) || 0);
-    if (!finalPax || finalPax < 10) {
-      toast.error('Minimum order is 10 employees/guests.');
+    if (!finalPax || finalPax < minPax) {
+      toast.error(`Minimum order requirement is ${minPax} employees/guests.`);
       return;
     }
     if (!companyName || !contactName || !email || !phone || !eventDate) {
@@ -146,10 +189,19 @@ export default function CorporateCateringClient() {
       eventDate,
       eventTime: eventTime || 'Not specified',
       eventLocation: eventLocation || 'Not specified',
-      selectedPackage: selectedPackage === 'live' ? 'With Live Dosa Station (£29.99 pp)' : 'Without Live Dosa (£24.99 pp)',
+      selectedPackage: selectedPackage === 'live' 
+        ? `Option 1 (£${config.liveDosaPrice.toFixed(2)} pp)` 
+        : `Option 2 (£${config.standardBuffetPrice.toFixed(2)} pp)`,
       packageType: selectedPackage,
       paxCount: finalPax,
       estimatedTotal: Number((finalPax * pricePerPax).toFixed(2)),
+      selectedDishes: {
+        chaat: selectedChaat,
+        mains: Array.isArray(selectedMains) ? selectedMains.join(', ') : selectedMains,
+        bread: selectedBread,
+        curries: Array.isArray(selectedCurries) ? selectedCurries.join(', ') : selectedCurries,
+        dessert: selectedDessert,
+      },
       specialNotes: specialNotes || '',
       status: 'New' as const,
     };
@@ -241,7 +293,7 @@ export default function CorporateCateringClient() {
       <section
         className="relative overflow-hidden bg-cover bg-center bg-no-repeat text-white pt-8 pb-20 lg:pt-14 lg:pb-28 shadow-2xl"
         style={{
-          backgroundImage: `linear-gradient(to right, rgba(15, 38, 26, 0.94) 0%, rgba(30, 59, 43, 0.65) 100%), url('/assets/corporate_catering_hero.jpg')`,
+          backgroundImage: `linear-gradient(to right, rgba(15, 38, 26, 0.94) 0%, rgba(30, 59, 43, 0.65) 100%), url('${config.heroBgImageUrl || '/assets/corporate_catering_hero.jpg'}')`,
         }}
       >
         {/* Decorative ambient background glows */}
@@ -256,32 +308,42 @@ export default function CorporateCateringClient() {
             
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-[#C39B54]/40 text-[#F3E5AB] text-xs sm:text-sm font-bold tracking-wide uppercase shadow-inner">
+              <div suppressHydrationWarning className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-[#C39B54]/40 text-[#F3E5AB] text-xs sm:text-sm font-bold tracking-wide uppercase shadow-inner">
                 <Sparkles className="w-4 h-4 text-[#C39B54]" />
-                LONDON'S PREMIER CORPORATE CATERER
+                {config.heroBadgeText || "LONDON'S PREMIER CORPORATE CATERER"}
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.15]">
-                Corporate Catering & <span className="bg-gradient-to-r from-[#F5D77F] via-[#C39B54] to-[#E6B85C] bg-clip-text text-transparent">Live Station</span> Experiences
+              <h1 suppressHydrationWarning className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.15]">
+                {config.heroTitlePrefix ?? "Corporate Catering & "}
+                {config.heroTitleHighlight && (
+                  <span className="bg-gradient-to-r from-[#F5D77F] via-[#C39B54] to-[#E6B85C] bg-clip-text text-transparent">
+                    {config.heroTitleHighlight}
+                  </span>
+                )}
+                {config.heroTitleSuffix ?? " Experiences"}
               </h1>
 
-              <p className="text-base sm:text-lg text-emerald-100/90 max-w-2xl font-normal leading-relaxed">
-                Elevate your corporate galas, office team lunches, tech summits, and VIP events with London’s finest South Indian cuisine, famous live 4ft Jumbo Dosa stations, artisanal curries, and full licensed bar services.
+              <p suppressHydrationWarning className="text-base sm:text-lg text-emerald-100/90 max-w-2xl font-normal leading-relaxed">
+                {config.heroSubtitle ?? "Elevate your corporate galas, office team lunches, tech summits, and VIP events with London’s finest South Indian cuisine, famous live 4ft Jumbo Dosa stations, artisanal curries, and full licensed bar services."}
               </p>
 
               {/* Key Features Badges */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
                 <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-xl p-3 backdrop-blur-md">
                   <Flame className="w-5 h-5 text-[#C39B54] flex-shrink-0" />
-                  <span className="text-xs font-semibold text-white">Live Cooking Stations</span>
+                  <span suppressHydrationWarning className="text-xs font-semibold text-white">{config.heroFeature1 || "Live Cooking Stations"}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-xl p-3 backdrop-blur-md">
                   <Clock className="w-5 h-5 text-[#C39B54] flex-shrink-0" />
-                  <span className="text-xs font-semibold text-white">3 Hours On-Site Service</span>
+                  <span suppressHydrationWarning className="text-xs font-semibold text-white">{config.heroFeature2 || config.serviceDuration || "3 Hours On-Site Service"}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-xl p-3 backdrop-blur-md col-span-2 sm:col-span-1">
                   <Users className="w-5 h-5 text-[#C39B54] flex-shrink-0" />
-                  <span className="text-xs font-semibold text-white">Min. 10 Pax Per Order</span>
+                  <span suppressHydrationWarning className="text-xs font-semibold text-white">
+                    {config.heroFeature3
+                      ? config.heroFeature3.replace(/Min\.\s*\d+/i, `Min. ${config.minPax || 10}`)
+                      : `Min. ${config.minPax || 10} Pax Per Order`}
+                  </span>
                 </div>
               </div>
 
@@ -338,9 +400,9 @@ export default function CorporateCateringClient() {
                   <div className="absolute top-0 right-0 bg-[#C39B54] text-[#0F261A] text-[9px] font-extrabold px-3 py-0.5 rounded-bl-lg uppercase tracking-wider">
                     Most Popular
                   </div>
-                  <div className="text-sm font-bold text-white mb-0.5">With Live Dosa Station</div>
-                  <div className="text-2xl font-black text-[#F5D77F]">£{config.liveDosaPrice.toFixed(2)} <span className="text-xs font-normal text-emerald-200">/ per person</span></div>
-                  <p className="text-xs text-emerald-100/90 mt-1">Includes {config.serviceDuration || '3 hrs live preparation of 4ft Jumbo Dosa, Medu Vada & Idly on-site'}.</p>
+                  <div className="text-sm font-bold text-white mb-0.5">Option 1 Package</div>
+                  <div suppressHydrationWarning className="text-2xl font-black text-[#F5D77F]">£{config.liveDosaPrice.toFixed(2)} <span className="text-xs font-normal text-emerald-200">/ per person</span></div>
+                  <p suppressHydrationWarning className="text-xs text-emerald-100/90 mt-1">Includes {config.serviceDuration || '3 hrs live preparation of 4ft Jumbo Dosa, Medu Vada & Idly on-site'}.</p>
                 </div>
 
                 {/* Option 2 Brief */}
@@ -351,13 +413,13 @@ export default function CorporateCateringClient() {
                   }}
                   className="p-4 rounded-2xl bg-white/10 border border-white/15 cursor-pointer hover:bg-white/20 transition-all"
                 >
-                  <div className="text-sm font-bold text-white mb-0.5">Without Live Dosa</div>
-                  <div className="text-2xl font-black text-white">£{config.standardBuffetPrice.toFixed(2)} <span className="text-xs font-normal text-emerald-200">/ per person</span></div>
+                  <div className="text-sm font-bold text-white mb-0.5">Option 2 Package</div>
+                  <div suppressHydrationWarning className="text-2xl font-black text-white">£{config.standardBuffetPrice.toFixed(2)} <span className="text-xs font-normal text-emerald-200">/ per person</span></div>
                   <p className="text-xs text-emerald-100/90 mt-1">Premium hot buffet arrangement setup with chafing dish warmers.</p>
                 </div>
 
                 <div className="pt-1 text-center border-t border-white/10">
-                  <div className="text-xs text-emerald-200/90 font-semibold flex items-center justify-center gap-1.5">
+                  <div suppressHydrationWarning className="text-xs text-emerald-200/90 font-semibold flex items-center justify-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-[#C39B54]" />
                     Minimum requirement: {config.minPax} pax per order
                   </div>
@@ -428,28 +490,7 @@ export default function CorporateCateringClient() {
 
 
 
-      {/* 4. OFFICIAL MENU CATALOG & PDF DOWNLOAD */}
-      <section className="py-14 max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10 border-t border-slate-200/60">
-        <div className="text-center max-w-3xl mx-auto space-y-4">
-          <h2 className="text-xs font-bold text-[#C39B54] uppercase tracking-widest">OFFICIAL MENU CATALOG</h2>
-          <h3 className="text-3xl sm:text-4xl font-black text-slate-900">
-            Explore Our Corporate Catering Menu & PDF
-          </h3>
-          <p className="text-slate-600">
-            Download our complete officially formatted business PDF document with full item catalog & package details.
-          </p>
 
-          <div className="pt-4 flex justify-center">
-            <button
-              onClick={generateCorporateMenuPdf}
-              className="px-8 py-4 rounded-xl bg-gradient-to-r from-[#1E3B2B] to-[#0F261A] text-white font-extrabold text-sm shadow-xl hover:shadow-emerald-900/30 flex items-center gap-3 cursor-pointer hover:scale-[1.02] transition-all"
-            >
-              <Download className="w-5 h-5 text-[#C39B54]" />
-              Download Complete Corporate Menu PDF
-            </button>
-          </div>
-        </div>
-      </section>
 
 
       {/* 5. BOOKING FORM & REAL-TIME PRICE ESTIMATOR */}
@@ -457,70 +498,114 @@ export default function CorporateCateringClient() {
         <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             
-            {/* Left Info & Calculator Summary */}
-            <div className="lg:col-span-5 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C39B54]/20 border border-[#C39B54] text-[#F5D77F] text-xs font-bold tracking-wider uppercase">
-                INSTANT PRICE ESTIMATOR
-              </div>
-
+            {/* Left Info & Corporate Catering Packages Side-by-Side */}
+            <div className="lg:col-span-6 space-y-6">
               <h3 className="text-3xl sm:text-4xl font-black text-white leading-tight">
-                Calculate & Book Your Corporate Catering
+                Explore Our Corporate Catering Packages & Menu PDF
               </h3>
 
-              <p className="text-emerald-100/80 text-sm sm:text-base leading-relaxed">
-                Select your package options, pax count, and dish preferences for an instant estimate. Our corporate team will confirm availability within 2 business hours.
+              <p className="text-emerald-100/80 text-sm leading-relaxed">
+                Select your preferred package option below, choose your guest count, and pick your dish preferences for an instant estimate.
               </p>
 
-              {/* Package Selection Buttons */}
+              {/* Corporate Catering Packages Side by Side */}
               <div className="space-y-3 pt-2">
-                <label className="text-xs font-bold text-[#F5D77F] uppercase tracking-wider">Select Package Format</label>
+                <h4 className="text-xs font-bold text-[#F5D77F] uppercase tracking-wider">Corporate Catering Packages</h4>
                 
-                <div
-                  onClick={() => setSelectedPackage('live')}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                    selectedPackage === 'live'
-                      ? 'bg-white/15 border-[#C39B54] shadow-lg ring-2 ring-[#C39B54]/50'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  <div>
-                    <div className="font-bold text-white text-base">With Live Dosa Station</div>
-                    <div className="text-xs text-emerald-200">3 Hours Live Serving (4ft Jumbo Dosa, Medu Vada, Idly)</div>
-                  </div>
-                  <div className="text-xl font-extrabold text-[#F5D77F]">£29.99 <span className="text-xs text-white/70 font-normal">/pp</span></div>
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Option 1 Card */}
+                  <div
+                    onClick={() => setSelectedPackage('live')}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-3 relative ${
+                      selectedPackage === 'live'
+                        ? 'bg-white/15 border-[#C39B54] shadow-xl ring-2 ring-[#C39B54]/60'
+                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div>
+                        <span className="font-extrabold uppercase text-[#F5D77F] tracking-wider text-sm">Option 1</span>
+                      </div>
+                      {selectedPackage === 'live' && (
+                        <span className="w-5 h-5 rounded-full bg-[#C39B54] text-[#0F261A] flex items-center justify-center text-xs font-bold">✓</span>
+                      )}
+                    </div>
 
-                <div
-                  onClick={() => setSelectedPackage('standard')}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                    selectedPackage === 'standard'
-                      ? 'bg-white/15 border-[#C39B54] shadow-lg ring-2 ring-[#C39B54]/50'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  <div>
-                    <div className="font-bold text-white text-base">Without Live Dosa</div>
-                    <div className="text-xs text-emerald-200">Premium Hot Buffet Setup with Chafing Dishes</div>
+                    <ul className="text-xs text-emerald-100/90 space-y-1 font-medium list-disc list-inside">
+                      <li>Vegetable Salad</li>
+                      <li>Fruit Salad</li>
+                      <li>Chaat 1</li>
+                      <li>Main Course 2</li>
+                      <li>Breads 1</li>
+                      <li>Curries 2</li>
+                      <li>Dessert 1</li>
+                    </ul>
+
+                    <div className="pt-2 border-t border-white/10 space-y-1">
+                      <div className="text-sm font-extrabold text-[#F5D77F]" suppressHydrationWarning>
+                        Price is £{config.liveDosaPrice.toFixed(2)} pp
+                      </div>
+                      <p className="text-[11px] text-white/70 leading-tight" suppressHydrationWarning>
+                        *Three hours Serving<br />
+                        *Minimum number required is {config.minPax || 50} pax per order.
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-xl font-extrabold text-white">£24.99 <span className="text-xs text-white/70 font-normal">/pp</span></div>
+
+                  {/* Option 2 Card */}
+                  <div
+                    onClick={() => setSelectedPackage('standard')}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-3 relative ${
+                      selectedPackage === 'standard'
+                        ? 'bg-white/15 border-[#C39B54] shadow-xl ring-2 ring-[#C39B54]/60'
+                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div>
+                        <span className="font-extrabold uppercase text-white/90 tracking-wider text-sm">Option 2</span>
+                      </div>
+                      {selectedPackage === 'standard' && (
+                        <span className="w-5 h-5 rounded-full bg-[#C39B54] text-[#0F261A] flex items-center justify-center text-xs font-bold">✓</span>
+                      )}
+                    </div>
+
+                    <ul className="text-xs text-emerald-100/90 space-y-1 font-medium list-disc list-inside">
+                      <li>Vegetable Salad</li>
+                      <li>Fruit Salad</li>
+                      <li>Chaat 1</li>
+                      <li>Main Course 2</li>
+                      <li>Breads 1</li>
+                      <li>Curries 2</li>
+                      <li>Dessert 1</li>
+                    </ul>
+
+                    <div className="pt-2 border-t border-white/10 space-y-1">
+                      <div className="text-sm font-extrabold text-white" suppressHydrationWarning>
+                        Price is £{config.standardBuffetPrice.toFixed(2)} pp
+                      </div>
+                      <p className="text-[11px] text-white/70 leading-tight" suppressHydrationWarning>
+                        *Three hours Serving<br />
+                        *Minimum number required is {config.minPax || 50} pax per order.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-
 
               {/* Download PDF Menu Button */}
               <button
                 type="button"
                 onClick={generateCorporateMenuPdf}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#C39B54] via-[#D4AF37] to-[#B8860B] text-[#0F261A] font-extrabold text-base shadow-2xl hover:shadow-[#C39B54]/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#C39B54] via-[#D4AF37] to-[#B8860B] text-[#0F261A] font-extrabold text-sm shadow-xl hover:shadow-[#C39B54]/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer"
               >
-                <Download className="w-5 h-5 text-[#0F261A]" />
+                <Download className="w-4 h-4 text-[#0F261A]" />
                 <span>Download Complete Menu PDF</span>
               </button>
             </div>
 
             {/* Right Booking Form */}
-            <div className="lg:col-span-7 bg-white text-slate-900 rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-200">
+            <div className="lg:col-span-6 bg-white text-slate-900 rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-200">
               {bookingSuccess ? (
                 <div className="text-center py-12 space-y-6">
                   <div className="w-20 h-20 rounded-full bg-emerald-100 text-[#1E3B2B] flex items-center justify-center mx-auto shadow-inner">
@@ -544,6 +629,22 @@ export default function CorporateCateringClient() {
                   <div className="border-b border-slate-200 pb-4">
                     <h4 className="text-xl font-extrabold text-slate-900">Corporate Booking Inquiry Form</h4>
                     <p className="text-xs text-slate-500">Fill in your event details for quick quotation confirmation.</p>
+                  </div>
+
+                  {/* Selected Package Format in Form */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <UtensilsCrossed className="w-3.5 h-3.5 text-[#C39B54]" />
+                      Select Catering Package *
+                    </label>
+                    <select
+                      value={selectedPackage}
+                      onChange={(e) => setSelectedPackage(e.target.value as 'live' | 'standard')}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1E3B2B] focus:outline-none text-sm font-700 bg-emerald-50/50 text-[#1E3B2B]"
+                    >
+                      <option value="live">Option 1 (£{config.liveDosaPrice.toFixed(2)} pp)</option>
+                      <option value="standard">Option 2 (£{config.standardBuffetPrice.toFixed(2)} pp)</option>
+                    </select>
                   </div>
 
                   {/* Company & Contact */}
@@ -620,11 +721,11 @@ export default function CorporateCateringClient() {
                     </label>
                     <input
                       type="number"
-                      min={10}
+                      min={config.minPax || 10}
                       required
                       value={paxCount}
                       onChange={(e) => setPaxCount(e.target.value)}
-                      placeholder="e.g. 10 (Minimum 10 required)"
+                      placeholder={`e.g. ${config.minPax || 10} (Minimum ${config.minPax || 10} required)`}
                       className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1E3B2B] focus:outline-none text-sm font-600"
                     />
                   </div>
@@ -908,8 +1009,8 @@ export default function CorporateCateringClient() {
                     onChange={(e) => setSelectedPackage(e.target.value as any)}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-[#1E3B2B]"
                   >
-                    <option value="live">Live Dosa (£29.99 pp)</option>
-                    <option value="standard">Standard Buffet (£24.99 pp)</option>
+                    <option value="live">Live Dosa (£{config.liveDosaPrice.toFixed(2)} pp)</option>
+                    <option value="standard">Standard Buffet (£{config.standardBuffetPrice.toFixed(2)} pp)</option>
                   </select>
                 </div>
 
@@ -917,9 +1018,9 @@ export default function CorporateCateringClient() {
                   <label className="text-xs font-bold text-slate-700">Guest Count (Pax)</label>
                   <input
                     type="number"
-                    min={50}
+                    min={config.minPax || 10}
                     value={paxCount}
-                    onChange={(e) => setPaxCount(Math.max(50, parseInt(e.target.value) || 50))}
+                    onChange={(e) => setPaxCount(Math.max(config.minPax || 10, parseInt(e.target.value) || (config.minPax || 10)))}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-[#1E3B2B]"
                   />
                 </div>

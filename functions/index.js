@@ -67,6 +67,7 @@ exports.sendCorporateInquiryNotification = onDocumentCreated(
       selectedPackage = "Not specified",
       paxCount = 0,
       estimatedTotal = 0,
+      selectedDishes = null,
       specialNotes = "",
       createdAt,
     } = inquiry;
@@ -93,7 +94,7 @@ exports.sendCorporateInquiryNotification = onDocumentCreated(
                 🍱 New Corporate Catering Inquiry
               </h1>
               <p style="color: #C39B54; margin: 6px 0 0 0; font-size: 14px; font-weight: 600;">
-                DoMeal London - Instant Lead Alert
+                DoMeal - Instant Lead Alert
               </p>
             </td>
           </tr>
@@ -151,7 +152,7 @@ exports.sendCorporateInquiryNotification = onDocumentCreated(
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; font-weight: 600; color: #64748b;">Package Selected:</td>
-                    <td style="padding: 6px 0; font-weight: 600; color: #111827;">${selectedPackage}</td>
+                    <td style="padding: 6px 0; font-weight: 700; color: #1E3B2B;">${selectedPackage}</td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 0; font-weight: 600; color: #64748b;">Number of Pax:</td>
@@ -163,6 +164,42 @@ exports.sendCorporateInquiryNotification = onDocumentCreated(
                   </tr>
                 </table>
               </div>
+
+              <!-- Selected Menu Choices -->
+              ${selectedDishes ? `
+              <div style="background-color: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+                <h2 style="margin-top: 0; color: #1E3B2B; font-size: 16px; border-bottom: 2px solid #C39B54; padding-bottom: 8px;">
+                  🍽️ Selected Menu & Dish Choices
+                </h2>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
+                  ${selectedDishes.chaat ? `
+                  <tr>
+                    <td style="padding: 6px 0; font-weight: 600; color: #64748b; width: 140px;">Chaat Selection:</td>
+                    <td style="padding: 6px 0; font-weight: 600; color: #111827;">${selectedDishes.chaat}</td>
+                  </tr>` : ''}
+                  ${selectedDishes.mains ? `
+                  <tr>
+                    <td style="padding: 6px 0; font-weight: 600; color: #64748b;">Main Course:</td>
+                    <td style="padding: 6px 0; font-weight: 600; color: #111827;">${selectedDishes.mains}</td>
+                  </tr>` : ''}
+                  ${selectedDishes.bread ? `
+                  <tr>
+                    <td style="padding: 6px 0; font-weight: 600; color: #64748b;">Bread Selection:</td>
+                    <td style="padding: 6px 0; font-weight: 600; color: #111827;">${selectedDishes.bread}</td>
+                  </tr>` : ''}
+                  ${selectedDishes.curries ? `
+                  <tr>
+                    <td style="padding: 6px 0; font-weight: 600; color: #64748b;">Curries:</td>
+                    <td style="padding: 6px 0; font-weight: 600; color: #111827;">${selectedDishes.curries}</td>
+                  </tr>` : ''}
+                  ${selectedDishes.dessert ? `
+                  <tr>
+                    <td style="padding: 6px 0; font-weight: 600; color: #64748b;">Dessert Selection:</td>
+                    <td style="padding: 6px 0; font-weight: 600; color: #111827;">${selectedDishes.dessert}</td>
+                  </tr>` : ''}
+                </table>
+              </div>
+              ` : ''}
 
               <!-- Special Notes -->
               ${specialNotes ? `
