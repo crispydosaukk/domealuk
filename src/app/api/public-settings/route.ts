@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { dbAdmin } from '@/lib/firebase-admin';
 
 export async function POST(req: NextRequest) {
   try {
-    const snap = await getDoc(doc(db, 'settings', 'global'));
-    if (snap.exists()) {
-      const data = snap.data();
+    const snap = await dbAdmin.collection('settings').doc('global').get();
+    if (snap.exists) {
+      const data = snap.data() || {};
 
       // Exclude sensitive credentials before serving to the client
       const { stripeSecretKey, ...publicSettings } = data;

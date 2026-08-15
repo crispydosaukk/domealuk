@@ -169,6 +169,17 @@ export default function CorporateCateringClient() {
       console.warn('Firestore sync note:', err);
     }
 
+    // Direct email notification trigger
+    try {
+      await fetch('/api/send-corporate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inquiryPayload),
+      });
+    } catch (emailErr) {
+      console.warn('Direct email notification trigger note:', emailErr);
+    }
+
     setIsSubmitting(false);
     setBookingSuccess(true);
     toast.success('Corporate Catering Inquiry Received! Our corporate team will contact you shortly.');
@@ -601,38 +612,21 @@ export default function CorporateCateringClient() {
                     </div>
                   </div>
 
-                  {/* Catering Format & Number of Employees */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                        <Flame className="w-3.5 h-3.5 text-[#C39B54]" />
-                        Select Catering Option *
-                      </label>
-                      <select
-                        value={selectedPackage}
-                        onChange={(e) => setSelectedPackage(e.target.value as 'live' | 'standard')}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1E3B2B] focus:outline-none text-sm bg-white font-600 text-slate-900 cursor-pointer"
-                      >
-                        <option value="live">With Live Dosa Station (£29.99 / pp)</option>
-                        <option value="standard">Without Live Dosa (£24.99 / pp)</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-[#C39B54]" />
-                        Number of Employees / Guests (Pax) *
-                      </label>
-                      <input
-                        type="number"
-                        min={10}
-                        required
-                        value={paxCount}
-                        onChange={(e) => setPaxCount(e.target.value)}
-                        placeholder="e.g. 10 (Minimum 10 required)"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1E3B2B] focus:outline-none text-sm font-600"
-                      />
-                    </div>
+                  {/* Number of Employees */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-[#C39B54]" />
+                      Number of Employees / Guests (Pax) *
+                    </label>
+                    <input
+                      type="number"
+                      min={10}
+                      required
+                      value={paxCount}
+                      onChange={(e) => setPaxCount(e.target.value)}
+                      placeholder="e.g. 10 (Minimum 10 required)"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1E3B2B] focus:outline-none text-sm font-600"
+                    />
                   </div>
 
                   {/* Event Date, Time & Venue */}

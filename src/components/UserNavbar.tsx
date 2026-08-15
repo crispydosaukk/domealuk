@@ -66,13 +66,12 @@ export default function UserNavbar() {
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Menu', href: '/menu' },
-    { label: 'Corporate Catering', href: '/corporate-catering' },
     { label: 'Refer a Friend', href: '/refer-a-friend' },
     { label: 'How to Heat', href: '/how-to-heat' },
     { label: 'Student Discounts', href: '/student-discounts' },
     { label: 'Gift', href: '/gift' },
     ...(user ? [{ label: 'Wallet', href: '/wallet' }] : []),
-    { label: 'FAQ', href: '/#faq' },
+    { label: 'Corporate Catering', href: '/corporate-catering' },
   ];
 
   return (
