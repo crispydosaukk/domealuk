@@ -1,7 +1,13 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ChevronDown, Eye, X, Wallet } from 'lucide-react';
+import { Search, Filter, ChevronDown, Eye, X, Wallet, FileText, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  exportDeliveriesToPdf,
+  exportDeliveriesToExcel,
+  formatOrderDeliveryDateTime,
+  DeliveryExportItem,
+} from '@/lib/exportUtils';
 import {
   collection,
   query,
@@ -30,13 +36,13 @@ const statusOptions = [
 ];
 
 const statusColors: Record<string, string> = {
-  'Order Received': 'bg-blue-100 text-blue-700',
-  Delivered: 'bg-green-100 text-green-700',
-  'Out for Delivery': 'bg-blue-100 text-blue-700',
-  Preparing: 'bg-amber-100 text-amber-700',
-  Confirmed: 'bg-purple-100 text-purple-700',
-  Pending: 'bg-yellow-100 text-yellow-700',
-  Cancelled: 'bg-red-100 text-red-600',
+  'Order Received': 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+  Delivered: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100',
+  'Out for Delivery': 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100',
+  Preparing: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+  Confirmed: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
+  Pending: 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
+  Cancelled: 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100',
 };
 
 const slotNames: Record<string, string> = {
@@ -50,8 +56,6 @@ export default function OrdersTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [page, setPage] = useState(1);
   const perPage = 8;
@@ -141,7 +145,6 @@ export default function OrdersTab() {
         }
       }
 
-      setOpenStatusDropdown(null);
       toast.success(`Order ${orderId} → ${newStatus}`);
     } catch (err) {
       console.error(err);
@@ -168,9 +171,83 @@ export default function OrdersTab() {
       .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
+  const formatDeliveryDateTime = (order: any) => {
+    let datePart = '';
+    if (Array.isArray(order.deliveryDates) && order.deliveryDates.length > 0) {
+      datePart = order.deliveryDates.join(', ');
+    } else if (order.deliveryDate) {
+      datePart = order.deliveryDate;
+    } else if (order.createdAt?.toDate) {
+      datePart = order.createdAt.toDate().toLocaleDateString('en-GB');
+    } else {
+      datePart = 'Date N/A';
+    }
+
+    const slotPart = slotNames[order.deliverySlot] || order.deliverySlot || '';
+    return slotPart ? `${datePart} (${slotPart})` : datePart;
+  };
+
+  const formatFullAddress = (addr: any) => {
+    if (!addr) return 'Not provided';
+    const parts = [
+      addr.addressLine1,
+      addr.addressLine2,
+      addr.landmark,
+      addr.city,
+      addr.postcode,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : 'Not provided';
+  };
+
+  const formatSpecialNotes = (order: any) => {
+    const notes = order.notes || order.deliveryInstructions || '';
+    const allergies = order.allergiesInfo ? `Allergies: ${order.allergiesInfo}` : '';
+    const combined = [notes, allergies].filter(Boolean).join(' | ');
+    return combined || 'None';
+  };
+
+  const mapOrdersToDeliveryExport = (items: any[]): DeliveryExportItem[] => {
+    return items.map((o) => ({
+      fullName: o.address?.fullName || o.userName || 'Customer',
+      deliveryDateTime: formatOrderDeliveryDateTime(o),
+      deliveryFullAddress: formatFullAddress(o.address),
+      specialNotes: formatSpecialNotes(o),
+    }));
+  };
+
+  const handleDownloadPdf = async () => {
+    const dataToExport = filtered.length > 0 ? filtered : orders;
+    const exportItems = mapOrdersToDeliveryExport(dataToExport);
+
+    await exportDeliveriesToPdf({
+      title: 'Orders Delivery Schedule',
+      subtitle:
+        statusFilter === 'All'
+          ? `All Orders (${exportItems.length} records)`
+          : `Status Filter: ${statusFilter} (${exportItems.length} records)`,
+      filename: `DoMeal_Orders_${new Date().toISOString().slice(0, 10)}`,
+      items: exportItems,
+    });
+
+    toast.success(`Downloaded PDF (${exportItems.length} order records)`);
+  };
+
+  const handleDownloadExcel = () => {
+    const dataToExport = filtered.length > 0 ? filtered : orders;
+    const exportItems = mapOrdersToDeliveryExport(dataToExport);
+
+    exportDeliveriesToExcel({
+      filename: `DoMeal_Orders_${new Date().toISOString().slice(0, 10)}`,
+      sheetName: 'Orders Manifest',
+      items: exportItems,
+    });
+
+    toast.success(`Downloaded Excel (.xlsx) (${exportItems.length} order records)`);
+  };
+
   return (
     <div className="space-y-4">
-      {/* Filters */}
+      {/* Filters & Export Actions */}
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div className="flex flex-wrap gap-3 items-center">
           <div className="relative">
@@ -206,7 +283,30 @@ export default function OrdersTab() {
             </select>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">{filtered.length} orders found</p>
+
+        <div className="flex items-center gap-2">
+          {/* Download PDF Button */}
+          <button
+            onClick={handleDownloadPdf}
+            className="px-3 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 font-700 text-xs border border-rose-200 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            title="Download Minimal Delivery PDF"
+          >
+            <FileText className="w-3.5 h-3.5 text-rose-600" />
+            <span>Download PDF</span>
+          </button>
+
+          {/* Download Excel Button */}
+          <button
+            onClick={handleDownloadExcel}
+            className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 font-700 text-xs border border-emerald-200 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            title="Download Minimal Delivery Excel (.xlsx)"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Download Excel</span>
+          </button>
+
+          <p className="text-xs text-muted-foreground ml-2">{filtered.length} orders found</p>
+        </div>
       </div>
 
       {/* Table */}
@@ -282,18 +382,32 @@ export default function OrdersTab() {
                     <td className="px-4 py-3 font-700 tabular-nums whitespace-nowrap">
                       £{(order.total || 0).toFixed(2)}
                     </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          setDropdownPos({ top: rect.bottom + 4, left: rect.left });
-                          setOpenStatusDropdown(openStatusDropdown === order.id ? null : order.id);
-                        }}
-                        className={`inline-flex items-center gap-1.5 text-xs font-700 px-2.5 py-1 rounded-full ${statusColors[order.status] || 'bg-gray-100 text-gray-700'} hover:opacity-80 transition-opacity`}
-                      >
-                        {order.status || 'Order Received'}
-                        <ChevronDown size={10} />
-                      </button>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="relative inline-flex items-center">
+                        <select
+                          value={order.status || 'Order Received'}
+                          onChange={(e) => updateStatus(order.id, e.target.value)}
+                          className={`appearance-none text-xs font-700 pl-3 pr-7 py-1.5 rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all border shadow-xs ${
+                            statusColors[order.status] || 'bg-gray-100 text-gray-700 border-gray-200'
+                          }`}
+                        >
+                          {statusOptions
+                            .filter((s) => s !== 'All')
+                            .map((s) => (
+                              <option
+                                key={`status-opt-${order.id}-${s}`}
+                                value={s}
+                                className="bg-white text-slate-800 font-600 py-1"
+                              >
+                                {s}
+                              </option>
+                            ))}
+                        </select>
+                        <ChevronDown
+                          size={12}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60"
+                        />
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <button
@@ -344,42 +458,6 @@ export default function OrdersTab() {
           </div>
         </div>
       </div>
-
-      {/* Fixed-position status dropdown */}
-      {openStatusDropdown && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpenStatusDropdown(null)} />
-          <div
-            className="fixed z-50 bg-white border border-border rounded-2xl shadow-2xl py-2 min-w-[180px]"
-            style={{ top: dropdownPos.top, left: dropdownPos.left }}
-          >
-            <p className="px-3 pb-2 text-[10px] font-800 text-muted-foreground uppercase tracking-wider border-b border-border mb-1">
-              Update Status
-            </p>
-            {statusOptions
-              .filter((s) => s !== 'All')
-              .map((s) => {
-                const currentOrder = orders.find((o) => o.id === openStatusDropdown);
-                const isCurrent = currentOrder?.status === s;
-                return (
-                  <button
-                    key={`status-opt-${s}`}
-                    onClick={() => updateStatus(openStatusDropdown, s)}
-                    className={`w-full text-left px-3 py-2 text-xs font-600 hover:bg-muted transition-colors flex items-center gap-2 ${isCurrent ? 'text-primary bg-orange-50' : 'text-foreground'}`}
-                  >
-                    <span
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColors[s]?.split(' ')[0] || 'bg-gray-200'}`}
-                    />
-                    {s}
-                    {isCurrent && (
-                      <span className="ml-auto text-[10px] font-700 text-primary">Current</span>
-                    )}
-                  </button>
-                );
-              })}
-          </div>
-        </>
-      )}
 
       {/* Order Details Modal */}
       {selectedOrder && (

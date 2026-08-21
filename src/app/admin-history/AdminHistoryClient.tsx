@@ -1,9 +1,22 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, CheckCircle, Package } from 'lucide-react';
+import { Search, Filter, CheckCircle, Package, FileText, Download } from 'lucide-react';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
+import {
+  exportDeliveriesToPdf,
+  exportDeliveriesToExcel,
+  formatOrderDeliveryDateTime,
+  DeliveryExportItem,
+} from '@/lib/exportUtils';
+
+const slotNames: Record<string, string> = {
+  'slot-1': 'Morning (7:30 AM – 8:30 AM)',
+  'slot-2': 'Afternoon (12:00 PM – 1:00 PM)',
+  'slot-3': 'Evening (7:30 PM – 8:30 PM)',
+};
 
 export default function AdminHistoryClient() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -25,7 +38,7 @@ export default function AdminHistoryClient() {
       setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [user]);
 
   const filtered = orders.filter((o) => {
     const name = o.address?.fullName || '';
@@ -35,16 +48,110 @@ export default function AdminHistoryClient() {
     );
   });
 
+  const formatDeliveryDateTime = (order: any) => {
+    let datePart = '';
+    if (Array.isArray(order.deliveryDates) && order.deliveryDates.length > 0) {
+      datePart = order.deliveryDates.join(', ');
+    } else if (order.deliveryDate) {
+      datePart = order.deliveryDate;
+    } else if (order.createdAt?.toDate) {
+      datePart = order.createdAt.toDate().toLocaleDateString('en-GB');
+    } else {
+      datePart = 'Date N/A';
+    }
+
+    const slotPart = slotNames[order.deliverySlot] || order.deliverySlot || '';
+    return slotPart ? `${datePart} • ${slotPart}` : datePart;
+  };
+
+  const formatFullAddress = (addr: any) => {
+    if (!addr) return 'Not provided';
+    const parts = [
+      addr.addressLine1,
+      addr.addressLine2,
+      addr.landmark,
+      addr.city,
+      addr.postcode,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : 'Not provided';
+  };
+
+  const formatSpecialNotes = (order: any) => {
+    const notes = order.notes || order.deliveryInstructions || '';
+    const allergies = order.allergiesInfo ? `Allergies: ${order.allergiesInfo}` : '';
+    const combined = [notes, allergies].filter(Boolean).join(' | ');
+    return combined || 'None';
+  };
+
+  const mapOrdersToDeliveryExport = (items: any[]): DeliveryExportItem[] => {
+    return items.map((o) => ({
+      fullName: o.address?.fullName || o.userName || 'Customer',
+      deliveryDateTime: formatOrderDeliveryDateTime(o),
+      deliveryFullAddress: formatFullAddress(o.address),
+      specialNotes: formatSpecialNotes(o),
+    }));
+  };
+
+  const handleDownloadPdf = async () => {
+    const dataToExport = filtered.length > 0 ? filtered : orders;
+    const exportItems = mapOrdersToDeliveryExport(dataToExport);
+
+    await exportDeliveriesToPdf({
+      title: 'Order History Delivery Schedule',
+      subtitle: `Completed delivered orders (${exportItems.length} records)`,
+      filename: `DoMeal_Delivered_Orders_${new Date().toISOString().slice(0, 10)}`,
+      items: exportItems,
+    });
+
+    toast.success(`Downloaded PDF (${exportItems.length} delivery records)`);
+  };
+
+  const handleDownloadExcel = () => {
+    const dataToExport = filtered.length > 0 ? filtered : orders;
+    const exportItems = mapOrdersToDeliveryExport(dataToExport);
+
+    exportDeliveriesToExcel({
+      filename: `DoMeal_Delivered_Orders_${new Date().toISOString().slice(0, 10)}`,
+      sheetName: 'Delivered Orders',
+      items: exportItems,
+    });
+
+    toast.success(`Downloaded Excel (.xlsx) (${exportItems.length} delivery records)`);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-foreground">Completed Order History</h1>
-          <p className="text-sm text-muted-foreground">View all past delivered orders</p>
+          <p className="text-sm text-muted-foreground">View and export all past delivered orders</p>
         </div>
-        <div className="bg-green-50 text-green-700 px-4 py-2 rounded-xl flex items-center gap-2 border border-green-200">
-          <CheckCircle size={18} />
-          <span className="font-700">{orders.length} Completed</span>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Download PDF Button */}
+          <button
+            onClick={handleDownloadPdf}
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 font-700 text-xs border border-rose-200 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            title="Download Minimal Delivery PDF"
+          >
+            <FileText className="w-4 h-4 text-rose-600" />
+            <span>Download PDF</span>
+          </button>
+
+          {/* Download Excel Button */}
+          <button
+            onClick={handleDownloadExcel}
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 font-700 text-xs border border-emerald-200 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            title="Download Minimal Delivery Excel (.xlsx)"
+          >
+            <Download className="w-4 h-4 text-emerald-600" />
+            <span>Download Excel</span>
+          </button>
+
+          <div className="bg-green-50 text-green-700 px-3.5 py-2 rounded-xl flex items-center gap-1.5 border border-green-200 text-xs">
+            <CheckCircle size={16} />
+            <span className="font-700">{orders.length} Completed</span>
+          </div>
         </div>
       </div>
 

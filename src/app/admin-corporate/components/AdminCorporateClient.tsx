@@ -44,6 +44,12 @@ import {
   DEFAULT_CORPORATE_CONFIG
 } from '@/lib/corporateMenuConfig';
 import { generateCorporateMenuPdf } from '@/lib/generateCorporateMenuPdf';
+import {
+  exportDeliveriesToPdf,
+  exportDeliveriesToExcel,
+  formatCorporateDeliveryDateTime,
+  DeliveryExportItem,
+} from '@/lib/exportUtils';
 
 export default function AdminCorporateClient() {
   const [inquiries, setInquiries] = useState<CorporateInquiry[]>([]);
@@ -250,33 +256,93 @@ export default function AdminCorporateClient() {
   const confirmedCount = inquiries.filter((i) => i.status === 'Confirmed').length;
   const totalPax = inquiries.reduce((acc, curr) => acc + (curr.paxCount || 10), 0);
 
+  // Minimal Export Handlers (Full Name, Delivery date and Time, Delivery Full Address, Special Notes)
+  const mapInquiriesToDeliveryExport = (items: CorporateInquiry[]): DeliveryExportItem[] => {
+    return items.map((item) => ({
+      fullName: item.contactName
+        ? item.companyName
+          ? `${item.contactName} (${item.companyName})`
+          : item.contactName
+        : item.companyName || 'Corporate Client',
+      deliveryDateTime: formatCorporateDeliveryDateTime(item),
+      deliveryFullAddress: item.eventLocation || 'Not specified',
+      specialNotes: item.specialNotes || 'None',
+    }));
+  };
+
+  const handleDownloadPdf = async () => {
+    const dataToExport = filteredInquiries.length > 0 ? filteredInquiries : inquiries;
+    const exportItems = mapInquiriesToDeliveryExport(dataToExport);
+
+    await exportDeliveriesToPdf({
+      title: 'Corporate Catering Delivery Schedule',
+      subtitle:
+        statusFilter === 'All'
+          ? 'Corporate inquiries & scheduled catering events'
+          : `Filtered Status: ${statusFilter} (${exportItems.length} records)`,
+      filename: `DoMeal_Corporate_Deliveries_${new Date().toISOString().slice(0, 10)}`,
+      items: exportItems,
+    });
+
+    toast.success(`Downloaded PDF (${exportItems.length} delivery records)`);
+  };
+
+  const handleDownloadExcel = () => {
+    const dataToExport = filteredInquiries.length > 0 ? filteredInquiries : inquiries;
+    const exportItems = mapInquiriesToDeliveryExport(dataToExport);
+
+    exportDeliveriesToExcel({
+      filename: `DoMeal_Corporate_Deliveries_${new Date().toISOString().slice(0, 10)}`,
+      sheetName: 'Corporate Deliveries',
+      items: exportItems,
+    });
+
+    toast.success(`Downloaded Excel (.xlsx) (${exportItems.length} delivery records)`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Title & Dynamic Settings Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-800 text-slate-900 flex items-center gap-2.5">
             <Building className="w-7 h-7 text-[#1E3B2B]" />
             Corporate Inquiries & Menu Management
           </h1>
           <p className="text-sm text-slate-500 font-500">
-            Manage corporate catering requests, pricing, menu inclusions, and dynamic PDF catalog settings.
+            Manage corporate catering requests, pricing, menu inclusions, and export delivery schedules.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Download PDF Button */}
+          <button
+            onClick={handleDownloadPdf}
+            className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-rose-50 text-rose-700 font-700 text-xs border border-rose-200 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            title="Download Minimal Delivery PDF"
+          >
+            <FileText className="w-4 h-4 text-rose-600" />
+            <span>Download PDF</span>
+          </button>
+
+          {/* Download Excel Button */}
+          <button
+            onClick={handleDownloadExcel}
+            className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 font-700 text-xs border border-emerald-200 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            title="Download Minimal Delivery Excel (.xlsx)"
+          >
+            <Download className="w-4 h-4 text-emerald-600" />
+            <span>Download Excel</span>
+          </button>
+
+          {/* Dynamic PDF Config Button */}
           <button
             onClick={() => setIsConfigModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-[#C39B54] hover:bg-[#b58c46] text-[#0F261A] font-800 text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-[#C39B54] hover:bg-[#b58c46] text-[#0F261A] font-800 text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
           >
             <Settings className="w-4 h-4 text-[#0F261A]" />
             Edit Menu & PDF Settings
           </button>
-
-          <span className="px-3.5 py-1.5 rounded-full bg-[#1E3B2B] text-white text-xs font-700 flex items-center gap-1.5 shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-[#C39B54]" />
-            {newCount} New Requests
-          </span>
         </div>
       </div>
 

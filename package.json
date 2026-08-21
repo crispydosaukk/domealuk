@@ -70,7 +70,8 @@
     "recharts": "^2.15.2",
     "sonner": "^1.7.4",
     "stripe": "^22.2.3",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
