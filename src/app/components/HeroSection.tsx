@@ -176,11 +176,6 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              {/* Floating badge */}
-              <div className="absolute -top-4 -right-4 bg-[#C39B54] text-white rounded-2xl shadow-xl p-3 text-center border-2 border-yellow-400">
-                <p className="text-2xl font-extrabold tabular-nums">{settings.heroDailyOrders}</p>
-                <p className="text-xs font-600">{settings.heroDailyOrdersLabel}</p>
-              </div>
 
               {/* Bottom badge */}
               <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl p-3 border border-border">
