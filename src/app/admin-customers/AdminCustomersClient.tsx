@@ -29,16 +29,25 @@ export default function AdminCustomersClient() {
   useEffect(() => {
     if (!user || user.email !== 'domealuk79812@gmail.com') return;
 
+    // Track how many of the 3 listeners have fired at least once
+    let resolved = 0;
+    const trySetLoaded = () => {
+      resolved++;
+      if (resolved >= 3) setLoading(false);
+    };
+
     const unsub1 = onSnapshot(collection(db, 'users'), (snap) => {
       setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      trySetLoaded();
     });
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     const unsub2 = onSnapshot(q, (snap) => {
       setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      trySetLoaded();
     });
     const unsub3 = onSnapshot(collection(db, 'wallet_transactions'), (snap) => {
       setTransactions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setLoading(false);
+      trySetLoaded();
     });
     return () => {
       unsub1();

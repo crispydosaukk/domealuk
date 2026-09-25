@@ -38,6 +38,7 @@ const slotNames: Record<string, string> = {
 
 export default function AdminDashboardClient() {
   const [liveOrders, setLiveOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const { user } = useAuth();
 
@@ -51,9 +52,10 @@ export default function AdminDashboardClient() {
         ...doc.data(),
       }));
       setLiveOrders(fetched);
+      setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [user]);
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -107,6 +109,70 @@ export default function AdminDashboardClient() {
       borderColor: 'border-red-200',
     },
   ];
+
+  // ── Loading skeleton ────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-7 w-32 bg-muted rounded-xl" />
+            <div className="h-4 w-56 bg-muted rounded-lg" />
+          </div>
+          <div className="h-8 w-24 bg-muted rounded-lg" />
+        </div>
+
+        {/* KPI cards skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border-2 border-border p-5 space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="w-10 h-10 rounded-xl bg-muted" />
+                <div className="w-4 h-4 rounded bg-muted" />
+              </div>
+              <div className="h-3 w-24 bg-muted rounded" />
+              <div className="h-8 w-16 bg-muted rounded" />
+              <div className="h-3 w-12 bg-muted rounded" />
+            </div>
+          ))}
+        </div>
+
+        {/* Charts skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[0, 1].map((i) => (
+            <div key={i} className="bg-white rounded-2xl border border-border p-6 space-y-4">
+              <div className="h-5 w-40 bg-muted rounded" />
+              <div className="h-4 w-52 bg-muted rounded" />
+              <div className="h-40 bg-muted rounded-xl" />
+            </div>
+          ))}
+        </div>
+
+        {/* Table skeleton */}
+        <div className="bg-white rounded-2xl border border-border overflow-hidden">
+          <div className="p-5 border-b border-border flex items-center justify-between">
+            <div className="space-y-1.5">
+              <div className="h-5 w-36 bg-muted rounded" />
+              <div className="h-3 w-24 bg-muted rounded" />
+            </div>
+          </div>
+          <div className="divide-y divide-border">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3">
+                <div className="h-4 w-24 bg-muted rounded" />
+                <div className="h-4 w-28 bg-muted rounded" />
+                <div className="flex-1 h-4 bg-muted rounded" />
+                <div className="h-4 w-16 bg-muted rounded" />
+                <div className="h-4 w-16 bg-muted rounded" />
+                <div className="h-6 w-20 bg-muted rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
