@@ -19,6 +19,7 @@ import {
   EyeOff,
   Layout,
   Clock,
+  QrCode,
 } from 'lucide-react';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -26,8 +27,11 @@ import { db, storage } from '@/lib/firebase';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import WebsiteQRCodeManager from '@/components/admin/WebsiteQRCodeManager';
 
 const defaultSettings = {
+  // Website QR Code
+  qrTargetUrl: 'https://domeal.co.uk/',
   // Referral
   referralAmount: 10,
   referralTitle: 'Give £{amount}, Get £{amount}',
@@ -305,6 +309,16 @@ export default function AdminSettingsPage() {
   const [openHomepageSubTab, setOpenHomepageSubTab] = useState('hero');
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam) {
+        setActiveTab(tabParam);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (!user || user.email !== 'domealuk79812@gmail.com') return;
     const fetchSettings = async () => {
       try {
@@ -547,6 +561,13 @@ export default function AdminSettingsPage() {
       icon: Clock,
       color: 'text-teal-600',
       bg: 'bg-teal-50',
+    },
+    {
+      id: 'qrcode',
+      label: 'Website QR Code',
+      icon: QrCode,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50',
     },
   ];
 
@@ -2453,6 +2474,24 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* QR CODE TAB */}
+          {activeTab === 'qrcode' && (
+            <div className="animate-in fade-in duration-200 p-6">
+              <WebsiteQRCodeManager
+                initialUrl={(settings as any).qrTargetUrl || 'https://domeal.co.uk/'}
+                onSaveUrl={async (newUrl) => {
+                  setSettings((prev: any) => ({ ...prev, qrTargetUrl: newUrl }));
+                  await setDoc(
+                    doc(db, 'settings', 'global'),
+                    { qrTargetUrl: newUrl },
+                    { merge: true }
+                  );
+                }}
+                isEmbeddedInSettings={true}
+              />
             </div>
           )}
         </div>
