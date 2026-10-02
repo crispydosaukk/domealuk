@@ -1,40 +1,30 @@
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { initializeApp } = require("firebase-admin/app");
 const nodemailer = require("nodemailer");
+const { getFirestore } = require('firebase-admin/firestore');
+
 
 initializeApp();
 
-/**
- * Configure Nodemailer Transporter.
- * You can set these environment variables using Firebase Secret Manager or .env file:
- * firebase functions:secrets:set SMTP_USER
- * firebase functions:secrets:set SMTP_PASS
- */
-const getTransporter = () => {
-  const host = process.env.SMTP_HOST || "smtp.gmail.com";
-  const port = parseInt(process.env.SMTP_PORT || "465", 10);
-  const secure = process.env.SMTP_SECURE !== "false";
-  const user = process.env.SMTP_USER || "domealuk@gmail.com";
-  const pass = process.env.SMTP_PASS || "elqwohzzejtphnyr";
 
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: {
-      user,
-      pass,
-    },
-  });
+/**
+ * Target Recipient Email Addresses (Dynamic)
+ */
+const getAdminRecipients = async () => {
+  try {
+    const db = getFirestore();
+    const doc = await db.collection('settings').doc('emailRecipients').get();
+    if (doc.exists && doc.data().adminEmails) {
+      const activeEmails = doc.data().adminEmails.filter(e => e.enabled).map(e => e.email);
+      if (activeEmails.length > 0) return activeEmails;
+    }
+  } catch (error) {
+    console.error('Error fetching admin recipients:', error);
+  }
+  // Fallback
+  return ['Digitalbotsolutions@gmail.com', 'rahulbadugu22@gmail.com'];
 };
 
-/**
- * Target Recipient Email Addresses
- */
-const RECIPIENTS = [
-  "Digitalbotsolutions@gmail.com",
-  "rahulbadugu22@gmail.com",
-];
 
 /**
  * Firebase Cloud Function triggered when a new Corporate Inquiry document is created in Firestore.
@@ -42,7 +32,6 @@ const RECIPIENTS = [
 exports.sendCorporateInquiryNotification = onDocumentCreated(
   {
     document: "corporateInquiries/{inquiryId}",
-    secrets: ["SMTP_USER", "SMTP_PASS"], // Optional: Firebase Secret Manager integration
   },
   async (event) => {
     const snapshot = event.data;
@@ -235,17 +224,170 @@ exports.sendCorporateInquiryNotification = onDocumentCreated(
 
     const mailOptions = {
       from: `"DoMeal Corporate Inquiries" <${process.env.SMTP_USER || "domealuk@gmail.com"}>`,
-      to: RECIPIENTS,
+      to: await getAdminRecipients(),
       subject: `🍱 New Corporate Catering Inquiry: ${companyName} (${paxCount} Pax - ${eventDate})`,
       html: htmlBody,
     };
 
     try {
       const info = await transporter.sendMail(mailOptions);
-      console.log(`✅ Email notification sent successfully to [${RECIPIENTS.join(", ")}]. Message ID: ${info.messageId}`);
+      console.log(`✅ Email notification sent successfully to [${(await getAdminRecipients()).join(", ")}]. Message ID: ${info.messageId}`);
     } catch (error) {
       console.error(`❌ Failed to send email for corporate inquiry ${inquiryId}:`, error);
       throw error;
+    }
+  }
+);
+
+
+/**
+ * Firebase Cloud Function triggered when a new User document is created.
+ */
+exports.sendUserRegistrationEmail = onDocumentCreated(
+  {
+    document: 'users/{userId}',
+  },
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+
+    const user = snapshot.data();
+    if (!user.email) return;
+
+    const transporter = getTransporter();
+    
+    // Email to User
+    const htmlBodyUser = `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>Welcome to DoMeal, ${user.name || 'Foodie'}!</h2>
+        <p>Thank you for registering with us. We are excited to serve you authentic Indian meals.</p>
+        <p>Your journey to great home-cooked food starts here.</p>
+        <br/>
+        <p>Best Regards,</p>
+        <p>The DoMeal Team</p>
+      </body>
+      </html>
+    `;
+
+    const userMailOptions = {
+      from: '"DoMeal" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
+      to: user.email,
+      subject: 'Welcome to DoMeal!',
+      html: htmlBodyUser,
+    };
+
+    // Email to Admin
+    const adminRecipients = await getAdminRecipients();
+    const htmlBodyAdmin = `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>New User Registration</h2>
+        <p><strong>Name:</strong> ${user.name}</p>
+        <p><strong>Email:</strong> ${user.email}</p>
+        <p><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
+      </body>
+      </html>
+    `;
+
+    const adminMailOptions = {
+      from: '"DoMeal Notifications" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
+      to: adminRecipients,
+      subject: 'New User Registered: ' + user.name,
+      html: htmlBodyAdmin,
+    };
+
+    try {
+      await transporter.sendMail(userMailOptions);
+      if (adminRecipients.length > 0) {
+        await transporter.sendMail(adminMailOptions);
+      }
+      console.log('✅ Registration emails sent successfully');
+    } catch (error) {
+      console.error('❌ Failed to send registration emails:', error);
+    }
+  }
+);
+
+
+/**
+ * Firebase Cloud Function triggered when a new Order document is created.
+ */
+exports.sendOrderConfirmationEmail = onDocumentCreated(
+  {
+    document: 'orders/{orderId}',
+  },
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+
+    const order = snapshot.data();
+    const orderId = event.params.orderId;
+    
+    // We only want to send email when it's just placed or successfully paid
+    if (order.status !== 'Placed' && order.status !== 'Paid') return;
+    
+    // Wait for customer email
+    let customerEmail = order.customerEmail || order.email;
+    if (!customerEmail) return;
+
+    const transporter = getTransporter();
+    
+    // Email to User
+    const htmlBodyUser = `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>Order Confirmation - ${orderId}</h2>
+        <p>Thank you for your order!</p>
+        <p><strong>Total Amount:</strong> £${Number(order.totalAmount || order.amount || 0).toFixed(2)}</p>
+        <p><strong>Status:</strong> ${order.status}</p>
+        <p>We are preparing your meal and will deliver it at the scheduled time.</p>
+        <br/>
+        <p>Best Regards,</p>
+        <p>The DoMeal Team</p>
+      </body>
+      </html>
+    `;
+
+    const userMailOptions = {
+      from: '"DoMeal" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
+      to: customerEmail,
+      subject: 'Your DoMeal Order Confirmation',
+      html: htmlBodyUser,
+    };
+
+    // Email to Admin
+    const adminRecipients = await getAdminRecipients();
+    const htmlBodyAdmin = `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>New Order Received: ${orderId}</h2>
+        <p><strong>Customer Email:</strong> ${customerEmail}</p>
+        <p><strong>Total Amount:</strong> £${Number(order.totalAmount || order.amount || 0).toFixed(2)}</p>
+        <p><strong>Status:</strong> ${order.status}</p>
+      </body>
+      </html>
+    `;
+
+    const adminMailOptions = {
+      from: '"DoMeal Notifications" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
+      to: adminRecipients,
+      subject: 'New Order Received: ' + orderId,
+      html: htmlBodyAdmin,
+    };
+
+    try {
+      await transporter.sendMail(userMailOptions);
+      if (adminRecipients.length > 0) {
+        await transporter.sendMail(adminMailOptions);
+      }
+      console.log('✅ Order confirmation emails sent successfully');
+    } catch (error) {
+      console.error('❌ Failed to send order confirmation emails:', error);
     }
   }
 );
