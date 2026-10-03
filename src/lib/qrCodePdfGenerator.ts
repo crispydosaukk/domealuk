@@ -276,7 +276,7 @@ export async function generateQRCodeFlyerPdf({
   doc.setFontSize(7.5);
   doc.setTextColor(210, 220, 214);
   doc.text(
-    'Website: https://domeal.co.uk  ·  Email: domealuk79812@gmail.com  ·  London, United Kingdom',
+    'Website: https://domeal.co.uk  ·  Email: admin@vegchennaisrilalitha.co.uk  ·  London, United Kingdom',
     pageWidth / 2,
     footerY + 11.5,
     {

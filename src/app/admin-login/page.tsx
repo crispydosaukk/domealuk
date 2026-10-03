@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Lock, Mail, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { isAdminEmail } from '@/lib/adminAuth';
 
 export default function AdminLoginClient() {
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ export default function AdminLoginClient() {
 
   useEffect(() => {
     // If already logged in as admin, redirect
-    if (!loading && user?.email === 'domealuk79812@gmail.com') {
+    if (!loading && isAdminEmail(user?.email)) {
       router.push('/admin-dashboard');
     }
   }, [user, loading, router]);
@@ -29,7 +30,7 @@ export default function AdminLoginClient() {
       return;
     }
 
-    if (email !== 'domealuk79812@gmail.com') {
+    if (!isAdminEmail(email)) {
       setError('Unauthorized email address. Access denied.');
       return;
     }
@@ -99,7 +100,7 @@ export default function AdminLoginClient() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@domeal.co.uk"
+                placeholder="admin@vegchennaisrilalitha.co.uk"
                 className="w-full pl-10 pr-4 py-3 border border-border rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all font-500"
               />
             </div>

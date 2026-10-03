@@ -16,6 +16,7 @@ import {
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { isAdminEmail } from '@/lib/adminAuth';
 
 const OrderVolumeChart = dynamic(() => import('./OrderVolumeChart'), { ssr: false });
 const RevenueChart = dynamic(() => import('./RevenueChart'), { ssr: false });
@@ -43,7 +44,7 @@ export default function AdminDashboardClient() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+    if (!user || !isAdminEmail(user.email)) return;
 
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
     const unsub = onSnapshot(q, (snap) => {

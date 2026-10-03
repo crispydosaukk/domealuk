@@ -24,6 +24,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { isAdminEmail } from '@/lib/adminAuth';
 
 const statusOptions = [
   'All',
@@ -62,7 +63,7 @@ export default function OrdersTab() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+    if (!user || !isAdminEmail(user.email)) return;
 
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, (snap) => {

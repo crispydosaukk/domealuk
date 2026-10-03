@@ -4,6 +4,7 @@ import { Search, Filter, CheckCircle, Package, FileText, Download } from 'lucide
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { isAdminEmail } from '@/lib/adminAuth';
 import { toast } from 'sonner';
 import {
   exportDeliveriesToPdf,
@@ -25,7 +26,7 @@ export default function AdminHistoryClient() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+    if (!user || !isAdminEmail(user.email)) return;
 
     // Only fetch Completed/Delivered orders for history
     const q = query(collection(db, 'orders'), where('status', '==', 'Delivered'));

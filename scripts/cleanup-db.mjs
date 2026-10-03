@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DoMeal UK — Production Database Cleanup Script
  * Run: node scripts/cleanup-db.mjs
  *
@@ -10,7 +10,7 @@ import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
-const ADMIN_EMAIL = 'domealuk79812@gmail.com';
+const ADMIN_EMAILS = ['admin@vegchennaisrilalitha.co.uk', 'domealuk79812@gmail.com'];
 
 const serviceAccount = {
   type: 'service_account',
@@ -82,7 +82,7 @@ async function main() {
   const authUids = [];
   for (const doc of usersSnap.docs) {
     const data = doc.data();
-    if (data.email === ADMIN_EMAIL) { console.log('  Keeping admin: ' + data.email); kept++; continue; }
+    if (ADMIN_EMAILS.includes(data.email)) { console.log('  Keeping admin: ' + data.email); kept++; continue; }
     await doc.ref.delete();
     if (data.uid) authUids.push(data.uid);
     deleted++;

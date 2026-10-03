@@ -9,6 +9,7 @@ import { useCart } from '@/context/CartContext';
 import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Package, MapPin, CreditCard, Wallet, Gift } from 'lucide-react';
+import { isAdminEmail } from '@/lib/adminAuth';
 
 export default function UserNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -150,7 +151,7 @@ export default function UserNavbar() {
 
               {user ? (
                 <div className="flex items-center gap-3">
-                  {user.email === 'domealuk79812@gmail.com' && (
+                  {isAdminEmail(user.email) && (
                     <Link
                       href="/admin-dashboard"
                       className="hidden sm:flex items-center gap-1.5 bg-secondary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-[#1E3B2B] transition-all duration-150 active:scale-95 shadow-sm"
@@ -205,7 +206,7 @@ export default function UserNavbar() {
 
             {user ? (
               <div className="flex flex-col gap-2">
-                {user.email === 'domealuk79812@gmail.com' && (
+                {isAdminEmail(user.email) && (
                   <Link
                     href="/admin-dashboard"
                     onClick={() => setMobileOpen(false)}

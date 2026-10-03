@@ -16,6 +16,7 @@ import {
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { isAdminEmail } from '@/lib/adminAuth';
 
 export default function AdminCustomersClient() {
   const [users, setUsers] = useState<any[]>([]);
@@ -27,7 +28,7 @@ export default function AdminCustomersClient() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+    if (!user || !isAdminEmail(user.email)) return;
 
     // Track how many of the 3 listeners have fired at least once
     let resolved = 0;
@@ -57,10 +58,8 @@ export default function AdminCustomersClient() {
   }, [user]);
 
   // Enrich user data by cross-referencing orders for missing details
-  const ADMIN_EMAIL = 'domealuk79812@gmail.com';
-
   const enriched = users
-    .filter((u) => u.email !== ADMIN_EMAIL)
+    .filter((u) => !isAdminEmail(u.email))
     .map((u) => {
       const userOrders = orders.filter((o) => o.userId === u.id);
       const totalSpent = userOrders.reduce((s, o) => s + (o.total || 0), 0);

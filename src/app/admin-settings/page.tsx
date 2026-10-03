@@ -28,12 +28,14 @@ import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import WebsiteQRCodeManager from '@/components/admin/WebsiteQRCodeManager';
+import { isAdminEmail } from '@/lib/adminAuth';
 
 const defaultSettings = {
   // Website QR Code
   qrTargetUrl: 'https://domeal.co.uk/',
   // Email Settings
   adminEmails: [
+    { email: 'admin@vegchennaisrilalitha.co.uk', enabled: true },
     { email: 'Digitalbotsolutions@gmail.com', enabled: true },
     { email: 'rahulbadugu22@gmail.com', enabled: true }
   ],
@@ -325,7 +327,7 @@ export default function AdminSettingsPage() {
   }, []);
 
   useEffect(() => {
-    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+    if (!user || !isAdminEmail(user.email)) return;
     const fetchSettings = async () => {
       try {
         const docRef = doc(db, 'settings', 'global');

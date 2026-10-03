@@ -35,6 +35,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getLocalCorporateMenuConfig, DEFAULT_CORPORATE_CONFIG } from '@/lib/corporateMenuConfig';
 import { saveLocalCorporateInquiry } from '@/lib/corporateInquiriesStorage';
+import { getApiUrl } from '@/lib/api';
 
 export default function CorporateCateringClient() {
   const [mounted, setMounted] = useState(false);
@@ -223,7 +224,7 @@ export default function CorporateCateringClient() {
 
     // Direct email notification trigger
     try {
-      await fetch('/api/send-corporate-email', {
+      await fetch(getApiUrl('/api/send-corporate-email'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(inquiryPayload),

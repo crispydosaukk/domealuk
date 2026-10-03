@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { isAdminEmail } from '@/lib/adminAuth';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -65,13 +66,13 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
   const router = useRouter();
 
   React.useEffect(() => {
-    if (!loading && (!user || user.email !== 'domealuk79812@gmail.com')) {
+    if (!loading && (!user || !isAdminEmail(user.email))) {
       router.push('/admin-login');
     }
   }, [user, loading, router]);
 
   React.useEffect(() => {
-    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+    if (!user || !isAdminEmail(user.email)) return;
 
     // Only count orders that are explicitly 'Order Received' or 'Pending' or 'Preparing' or 'Confirmed'
     // Alternatively, just count everything that isn't 'Delivered' or 'Cancelled'
@@ -90,7 +91,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
   }, [user]);
 
   React.useEffect(() => {
-    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+    if (!user || !isAdminEmail(user.email)) return;
 
     const q = query(collection(db, 'users'), where('studentStatus', '==', 'Pending'));
     const unsub = onSnapshot(q, (snap) => {
@@ -100,7 +101,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
   }, [user]);
 
   React.useEffect(() => {
-    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+    if (!user || !isAdminEmail(user.email)) return;
 
     const updateBadgeCount = () => {
       try {
@@ -174,7 +175,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
     }
   };
 
-  if (loading || !user || user.email !== 'domealuk79812@gmail.com') {
+  if (loading || !user || !isAdminEmail(user.email)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="animate-spin text-primary w-10 h-10" />

@@ -39,13 +39,15 @@ export const useAuth = () => useContext(AuthContext);
 // Call the server API to atomically claim due gift cards securely using Admin SDK
 const checkAndApplyDueGifts = async (uid: string, email: string) => {
   try {
-    await fetch(getApiUrl('/api/claim-gift-cards'), {
+    const url = getApiUrl('/api/claim-gift-cards');
+    await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: uid, email }),
     });
   } catch (err) {
-    console.error('Failed to trigger gift card claim:', err);
+    // Non-blocking background check
+    console.warn('Gift card auto-check note:', err);
   }
 };
 

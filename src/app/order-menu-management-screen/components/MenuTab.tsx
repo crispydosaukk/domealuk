@@ -29,6 +29,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { db, storage } from '@/lib/firebase';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
+import { isAdminEmail } from '@/lib/adminAuth';
 
 export interface SubMenuItem {
   id: string;
@@ -207,7 +208,7 @@ export default function MenuTab() {
   } = useForm<MenuItemForm>();
 
   useEffect(() => {
-    if (!user || user.email !== 'domealuk79812@gmail.com') return;
+    if (!user || !isAdminEmail(user.email)) return;
 
     const q = query(collection(db, 'menuItems'), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snap) => {
