@@ -230,7 +230,22 @@ export default function BasketClient() {
   const isFormValid = postcodeValid && deliveryDates.length > 0 && termsAccepted && cart.length > 0;
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4 py-10 lg:py-16">
+    <div className="max-w-screen-xl mx-auto px-4 py-8 lg:py-12">
+      <button
+        type="button"
+        onClick={() => {
+          if (typeof window !== 'undefined' && window.history.length > 1) {
+            router.back();
+          } else {
+            router.push('/menu');
+          }
+        }}
+        className="inline-flex items-center gap-2 text-sm font-700 text-muted-foreground hover:text-primary mb-6 transition-colors group cursor-pointer"
+      >
+        <ChevronLeft size={18} className="transition-transform group-hover:-translate-x-1 text-primary" />
+        Back
+      </button>
+
       <h1 className="text-3xl font-extrabold text-foreground mb-8 text-[#11261a]">Your Basket</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

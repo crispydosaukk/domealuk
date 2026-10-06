@@ -83,7 +83,15 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
   } | null>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const [menuSelections, setMenuSelections] = useState<Record<string, Record<string, boolean>>>({});
-  const [globalSettings, setGlobalSettings] = useState({ discount: 25, count: 4 });
+  const [globalSettings, setGlobalSettings] = useState<{
+    discount: number;
+    count: number;
+    deliveryDays: number[];
+  }>({
+    discount: 25,
+    count: 4,
+    deliveryDays: [1, 4],
+  });
   const {
     cart,
     addToCart,
@@ -104,6 +112,10 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
           setGlobalSettings({
             discount: data.popupDiscountPercentage || 25,
             count: data.popupOrdersCount || 4,
+            deliveryDays:
+              Array.isArray(data.deliveryDays) && data.deliveryDays.length > 0
+                ? data.deliveryDays
+                : [1, 4],
           });
         }
       } catch (error) {
@@ -249,14 +261,17 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
             const itemQtyInCart = getQty(item.id);
             const hasImages = item.images && item.images.length > 0;
 
-            // Calculate a sequence of delivery dates (Sundays and Wednesdays)
-            // Using a simple inline logic based on index to ensure we have enough dates
+            // Calculate a sequence of delivery dates matching the allowed deliveryDays dynamically
             const getDeliveryDateForIndex = (idx: number) => {
+              const allowedDays =
+                Array.isArray(globalSettings.deliveryDays) && globalSettings.deliveryDays.length > 0
+                  ? globalSettings.deliveryDays
+                  : [1, 4];
               const d = new Date();
-              d.setDate(d.getDate() + 1); // Start from tomorrow
+              d.setHours(0, 0, 0, 0);
               let foundCount = 0;
               while (true) {
-                if (d.getDay() === 0 || d.getDay() === 3) {
+                if (allowedDays.includes(d.getDay())) {
                   if (foundCount === idx) {
                     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
                   }
@@ -280,7 +295,7 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                   {/* Image */}
                   {hasImages ? (
                     <div
-                      className={`relative h-40 w-full bg-muted overflow-hidden ${expandedMenus[item.id] ? 'rounded-t-2xl' : 'rounded-t-2xl'}`}
+                      className={`relative h-40 w-full bg-muted overflow-hidden shrink-0 ${expandedMenus[item.id] ? 'rounded-t-2xl' : 'rounded-t-2xl'}`}
                     >
                       <img
                         src={item.images![0]}
@@ -300,7 +315,7 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                     </div>
                   ) : (
                     <div
-                      className={`h-40 w-full bg-orange-50 flex flex-col items-center justify-center text-primary/40 relative overflow-hidden ${expandedMenus[item.id] ? 'rounded-t-2xl' : 'rounded-t-2xl'}`}
+                      className={`h-40 w-full bg-orange-50 flex flex-col items-center justify-center text-primary/40 relative overflow-hidden shrink-0 ${expandedMenus[item.id] ? 'rounded-t-2xl' : 'rounded-t-2xl'}`}
                     >
                       <Leaf size={32} className="mb-2 opacity-50" />
                       <span className="text-xs font-600 uppercase tracking-widest">
@@ -317,7 +332,7 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                   {/* Content */}
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex justify-between items-start gap-2 mb-1.5">
-                      <h3 className="font-800 text-foreground leading-tight text-lg">
+                      <h3 className="font-800 text-foreground leading-tight text-lg line-clamp-2">
                         {item.name}
                       </h3>
                       {item.spice > 0 && <SpiceLevel level={item.spice} />}
@@ -345,30 +360,31 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
                       {item.desc}
                     </p>
 
-                    <div className="mb-4">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-baseline gap-1.5">
-                          {showStrikethrough && (
-                            <span className="text-xl font-800 text-[#C39B54] line-through tabular-nums opacity-60">
-                              £{item.originalPrice!.toFixed(2)}
+                    {/* Price and Action Section pinned to bottom with mt-auto */}
+                    <div className="mt-auto pt-2">
+                      <div className="mb-3">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-baseline gap-1.5">
+                            {showStrikethrough && (
+                              <span className="text-xl font-800 text-[#C39B54] line-through tabular-nums opacity-60">
+                                £{item.originalPrice!.toFixed(2)}
+                              </span>
+                            )}
+                            <span className="text-3xl font-900 text-[#C39B54] tabular-nums tracking-tight">
+                              £{activePrice.toFixed(2)}
+                            </span>
+                          </div>
+                          {item.portionPrice && (
+                            <span className="bg-[#C39B54] text-[#1E3B2B] text-xs font-800 px-3 py-1.5 rounded-full tracking-wide self-start mt-1">
+                              {item.portionPrice}
                             </span>
                           )}
-                          <span className="text-3xl font-900 text-[#C39B54] tabular-nums tracking-tight">
-                            £{activePrice.toFixed(2)}
-                          </span>
                         </div>
-                        {item.portionPrice && (
-                          <span className="bg-[#C39B54] text-[#1E3B2B] text-xs font-800 px-3 py-1.5 rounded-full tracking-wide self-start mt-1">
-                            {item.portionPrice}
-                          </span>
+                        {item.offerText && (
+                          <p className="text-sm font-600 text-[#1E3B2B] mt-2">{item.offerText}</p>
                         )}
                       </div>
-                      {item.offerText && (
-                        <p className="text-sm font-600 text-[#1E3B2B] mt-2">{item.offerText}</p>
-                      )}
-                    </div>
 
-                    <div className="mt-auto">
                       <button
                         type="button"
                         onClick={(e) => {
