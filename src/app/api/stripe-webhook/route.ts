@@ -145,6 +145,8 @@ export async function POST(req: NextRequest) {
 
           const newOrderPayload = {
             userId: latestOrder.userId,
+            customerEmail: latestOrder.customerEmail || latestOrder.email || '',
+            email: latestOrder.customerEmail || latestOrder.email || '',
             items: latestOrder.items,
             total: latestOrder.total,
             walletApplied: 0,
@@ -160,6 +162,7 @@ export async function POST(req: NextRequest) {
             allergiesInfo: latestOrder.allergiesInfo || '',
             createdAt: getServerTimestamp(),
             status: 'Order Received',
+            confirmationEmailSent: false,
           };
 
           if (dbAdmin) {
@@ -295,12 +298,27 @@ export async function POST(req: NextRequest) {
                 return;
               }
 
-              transaction.update(orderRef, {
+              const resolvedCustomerEmail =
+                orderData.customerEmail ||
+                orderData.email ||
+                metadata?.customerEmail ||
+                session.customer_details?.email ||
+                session.customer_email ||
+                null;
+
+              const updateData: any = {
                 status: 'Order Received',
                 subscriptionStatus: 'active',
                 stripeSubscriptionId: session.subscription || null,
                 updatedAt: AdminFieldValue.serverTimestamp(),
-              });
+              };
+
+              if (resolvedCustomerEmail && !orderData.customerEmail) {
+                updateData.customerEmail = resolvedCustomerEmail;
+                updateData.email = resolvedCustomerEmail;
+              }
+
+              transaction.update(orderRef, updateData);
 
               const walletApplied = Number(orderData.walletApplied) || 0;
               if (walletApplied > 0 && userId && userId !== 'guest-user') {

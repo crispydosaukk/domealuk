@@ -164,6 +164,8 @@ export async function POST(req: NextRequest) {
     // 4. Create Order document in Firestore with 'Pending Payment'
     const orderPayload = {
       userId,
+      customerEmail: email,
+      email: email,
       items: items || [],
       total: amount,
       subtotal,
@@ -185,6 +187,7 @@ export async function POST(req: NextRequest) {
       dabbaFeeApplied: dabbaFeeApplied || false,
       dabbaFee: dabbaFeeApplied ? 12.0 : 0,
       deliveryFee: deliveryFee !== undefined ? deliveryFee : 5.0,
+      confirmationEmailSent: false,
     };
 
     if (dbAdmin) {
@@ -206,6 +209,7 @@ export async function POST(req: NextRequest) {
         type: 'subscription_order',
         userId,
         orderId,
+        customerEmail: email,
       },
     });
 

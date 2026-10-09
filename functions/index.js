@@ -1,11 +1,30 @@
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onDocumentCreated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { initializeApp } = require("firebase-admin/app");
 const nodemailer = require("nodemailer");
 const { getFirestore } = require('firebase-admin/firestore');
 
-
 initializeApp();
 
+/**
+ * Configure Nodemailer Transporter.
+ */
+const getTransporter = () => {
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const port = parseInt(process.env.SMTP_PORT || "465", 10);
+  const secure = process.env.SMTP_SECURE !== "false";
+  const user = process.env.SMTP_USER || "domealuk@gmail.com";
+  const pass = process.env.SMTP_PASS || "elqwohzzejtphnyr";
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: {
+      user,
+      pass,
+    },
+  });
+};
 
 /**
  * Target Recipient Email Addresses (Dynamic)
@@ -13,9 +32,19 @@ initializeApp();
 const getAdminRecipients = async () => {
   try {
     const db = getFirestore();
+    const globalDoc = await db.collection('settings').doc('global').get();
+    if (globalDoc.exists && Array.isArray(globalDoc.data().adminEmails)) {
+      const activeEmails = globalDoc.data().adminEmails
+        .filter(e => e && e.enabled && e.email)
+        .map(e => e.email.trim());
+      if (activeEmails.length > 0) return activeEmails;
+    }
+
     const doc = await db.collection('settings').doc('emailRecipients').get();
-    if (doc.exists && doc.data().adminEmails) {
-      const activeEmails = doc.data().adminEmails.filter(e => e.enabled).map(e => e.email);
+    if (doc.exists && Array.isArray(doc.data().adminEmails)) {
+      const activeEmails = doc.data().adminEmails
+        .filter(e => e && e.enabled && e.email)
+        .map(e => e.email.trim());
       if (activeEmails.length > 0) return activeEmails;
     }
   } catch (error) {
@@ -335,28 +364,88 @@ exports.sendUserRegistrationEmail = onDocumentCreated(
 
 
 /**
- * Firebase Cloud Function triggered when a new Order document is created.
+ * Firebase Cloud Function triggered when an Order document is created or updated in Firestore.
  */
-exports.sendOrderConfirmationEmail = onDocumentCreated(
+exports.sendOrderConfirmationEmail = onDocumentWritten(
   {
     document: 'orders/{orderId}',
   },
   async (event) => {
     const snapshot = event.data;
-    if (!snapshot) return;
+    if (!snapshot || !snapshot.after || !snapshot.after.exists) return;
 
-    const order = snapshot.data();
+    const order = snapshot.after.data();
     const orderId = event.params.orderId;
-    
-    // We only want to send email when it's just placed or successfully paid
-    if (order.status !== 'Placed' && order.status !== 'Paid') return;
-    
-    // Wait for customer email
-    let customerEmail = order.customerEmail || order.email;
-    if (!customerEmail) return;
+
+    // 1. Prevent duplicate email sending
+    if (order.confirmationEmailSent) {
+      return;
+    }
+
+    // 2. Validate confirmation status
+    // Order is confirmed when status is 'Order Received', 'Confirmed', 'Placed', or 'Paid'
+    const CONFIRMED_STATUSES = ['Order Received', 'Confirmed', 'Placed', 'Paid'];
+    if (!CONFIRMED_STATUSES.includes(order.status)) {
+      return;
+    }
+
+    // 3. Resolve customer email
+    let customerEmail = order.customerEmail || order.email || order.userEmail || (order.address && order.address.email);
+
+    // If customer email is not directly on the order, look up users/{userId}
+    if (!customerEmail && order.userId && order.userId !== 'guest-user') {
+      try {
+        const db = getFirestore();
+        const userDoc = await db.collection('users').doc(order.userId).get();
+        if (userDoc.exists && userDoc.data().email) {
+          customerEmail = userDoc.data().email;
+        }
+      } catch (err) {
+        console.error(`Error resolving customer email for user ${order.userId}:`, err);
+      }
+    }
+
+    console.log(`Processing order confirmation email for Order ID: ${orderId}, Customer: ${customerEmail || 'Unknown'}`);
 
     const transporter = getTransporter();
-    
+
+    // Format items list if available
+    let itemsHtml = '';
+    if (Array.isArray(order.items) && order.items.length > 0) {
+      itemsHtml = `
+        <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+          <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #1E3B2B; font-weight: 700;">Ordered Items:</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            ${order.items.map((item) => `
+              <tr>
+                <td style="padding: 4px 0; color: #334155;">${item.quantity || 1}x ${item.name || item.title || 'Meal'}</td>
+                <td style="padding: 4px 0; text-align: right; color: #64748b; font-weight: 600;">£${Number(item.price || 0).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </table>
+        </div>
+      `;
+    }
+
+    // Format delivery address if available
+    let addressHtml = '';
+    if (order.address) {
+      const addr = order.address;
+      addressHtml = `
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; vertical-align: top;">Delivery Address:</td>
+          <td style="padding: 8px 0; font-weight: 500; color: #111827;">
+            ${addr.fullName ? `<strong>${addr.fullName}</strong><br/>` : ''}
+            ${addr.addressLine1 || ''}${addr.addressLine2 ? `, ${addr.addressLine2}` : ''}<br/>
+            ${addr.city || ''} ${addr.postcode || ''}<br/>
+            ${addr.phone ? `Phone: ${addr.phone}` : ''}
+          </td>
+        </tr>
+      `;
+    }
+
+    const totalAmount = Number(order.totalAmount || order.total || order.amount || 0).toFixed(2);
+
     // Email to User
     const htmlBodyUser = `
       <!DOCTYPE html>
@@ -390,11 +479,13 @@ exports.sendOrderConfirmationEmail = onDocumentCreated(
                     <td style="padding: 8px 0; color: #64748b;">Status:</td>
                     <td style="padding: 8px 0; font-weight: 600; color: #C39B54;">${order.status}</td>
                   </tr>
+                  ${addressHtml}
                   <tr>
                     <td style="padding: 8px 0; color: #64748b; border-top: 1px solid #e2e8f0;">Total Amount:</td>
-                    <td style="padding: 8px 0; font-weight: 700; color: #1E3B2B; border-top: 1px solid #e2e8f0; font-size: 18px;">£${Number(order.totalAmount || order.amount || 0).toFixed(2)}</td>
+                    <td style="padding: 8px 0; font-weight: 700; color: #1E3B2B; border-top: 1px solid #e2e8f0; font-size: 18px;">£${totalAmount}</td>
                   </tr>
                 </table>
+                ${itemsHtml}
               </div>
 
               <p style="font-size: 16px; line-height: 1.6; margin-bottom: 0;">Warmly,<br><strong style="color: #1E3B2B;">The DoMeal Team</strong></p>
@@ -410,13 +501,6 @@ exports.sendOrderConfirmationEmail = onDocumentCreated(
       </html>
     `;
 
-    const userMailOptions = {
-      from: '"DoMeal" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
-      to: customerEmail,
-      subject: 'Your DoMeal Order Confirmation',
-      html: htmlBodyUser,
-    };
-
     // Email to Admin
     const adminRecipients = await getAdminRecipients();
     const htmlBodyAdmin = `
@@ -424,28 +508,65 @@ exports.sendOrderConfirmationEmail = onDocumentCreated(
       <html>
       <body style="font-family: Arial, sans-serif; padding: 20px;">
         <h2>New Order Received: ${orderId}</h2>
-        <p><strong>Customer Email:</strong> ${customerEmail}</p>
-        <p><strong>Total Amount:</strong> £${Number(order.totalAmount || order.amount || 0).toFixed(2)}</p>
+        <p><strong>Customer Email:</strong> ${customerEmail || 'Not specified'}</p>
+        <p><strong>Customer Name:</strong> ${order.address?.fullName || 'Not specified'}</p>
+        <p><strong>Total Amount:</strong> £${totalAmount}</p>
         <p><strong>Status:</strong> ${order.status}</p>
+        ${itemsHtml}
       </body>
       </html>
     `;
 
-    const adminMailOptions = {
-      from: '"DoMeal Notifications" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
-      to: adminRecipients,
-      subject: 'New Order Received: ' + orderId,
-      html: htmlBodyAdmin,
-    };
+    let emailSentToUser = false;
+    let emailSentToAdmin = false;
 
-    try {
-      await transporter.sendMail(userMailOptions);
-      if (adminRecipients.length > 0) {
-        await transporter.sendMail(adminMailOptions);
+    // Send customer email if email is present
+    if (customerEmail) {
+      try {
+        const userMailOptions = {
+          from: '"DoMeal" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
+          to: customerEmail,
+          subject: 'Your DoMeal Order Confirmation - ' + orderId,
+          html: htmlBodyUser,
+        };
+        await transporter.sendMail(userMailOptions);
+        emailSentToUser = true;
+        console.log(`✅ Order confirmation email sent to customer: ${customerEmail}`);
+      } catch (err) {
+        console.error(`❌ Failed to send order confirmation email to customer (${customerEmail}):`, err);
       }
-      console.log('✅ Order confirmation emails sent successfully');
-    } catch (error) {
-      console.error('❌ Failed to send order confirmation emails:', error);
+    } else {
+      console.warn(`⚠️ No customer email available for order ${orderId}`);
+    }
+
+    // Send admin notification
+    if (adminRecipients.length > 0) {
+      try {
+        const adminMailOptions = {
+          from: '"DoMeal Notifications" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
+          to: adminRecipients,
+          subject: 'New Order Received: ' + orderId,
+          html: htmlBodyAdmin,
+        };
+        await transporter.sendMail(adminMailOptions);
+        emailSentToAdmin = true;
+        console.log(`✅ Order notification sent to admin: [${adminRecipients.join(', ')}]`);
+      } catch (err) {
+        console.error('❌ Failed to send order notification to admin:', err);
+      }
+    }
+
+    // Mark order with confirmationEmailSent = true to avoid duplicate emails
+    if (emailSentToUser || emailSentToAdmin) {
+      try {
+        await snapshot.after.ref.update({
+          confirmationEmailSent: true,
+          confirmationEmailSentAt: new Date().toISOString(),
+          ...(customerEmail && !order.customerEmail ? { customerEmail } : {}),
+        });
+      } catch (updateErr) {
+        console.error('Error updating confirmationEmailSent flag on order:', updateErr);
+      }
     }
   }
 );

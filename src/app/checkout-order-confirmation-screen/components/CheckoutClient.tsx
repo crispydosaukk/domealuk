@@ -399,8 +399,14 @@ function CheckoutClientContent({
       // 1. If finalTotal is 0, process the order immediately without Stripe redirect
       if (finalTotal <= 0) {
         const orderRef = doc(db, 'orders', orderId);
+        const resolvedCustomerEmail =
+          user?.email ||
+          (finalAddress.phone ? finalAddress.phone.replace(/\s+/g, '') + '@domeal.co.uk' : '');
+
         await setDoc(orderRef, {
           userId: user?.uid || 'guest-user',
+          customerEmail: resolvedCustomerEmail,
+          email: resolvedCustomerEmail,
           items: checkoutItems,
           total: 0,
           subtotal: subtotal,
@@ -422,6 +428,7 @@ function CheckoutClientContent({
           deliveryFee: deliveryFee,
           dabbaFeeApplied: true,
           dabbaFee: 12.0,
+          confirmationEmailSent: false,
         });
 
         if (appliedWalletAmount > 0 && user) {

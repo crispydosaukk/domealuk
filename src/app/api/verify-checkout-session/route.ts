@@ -57,12 +57,26 @@ export async function POST(req: NextRequest) {
           return;
         }
 
-        transaction.update(orderRef, {
+        const resolvedCustomerEmail =
+          orderData.customerEmail ||
+          orderData.email ||
+          session.customer_details?.email ||
+          session.customer_email ||
+          null;
+
+        const updateData: any = {
           status: 'Order Received',
           subscriptionStatus: 'active',
           stripeSubscriptionId: session.subscription || null,
           updatedAt: AdminFieldValue.serverTimestamp(),
-        });
+        };
+
+        if (resolvedCustomerEmail && !orderData.customerEmail) {
+          updateData.customerEmail = resolvedCustomerEmail;
+          updateData.email = resolvedCustomerEmail;
+        }
+
+        transaction.update(orderRef, updateData);
 
         const walletApplied = Number(orderData.walletApplied) || 0;
         const userId = orderData.userId;
@@ -99,12 +113,26 @@ export async function POST(req: NextRequest) {
           return;
         }
 
-        transaction.update(orderRef, {
+        const resolvedCustomerEmail =
+          orderData.customerEmail ||
+          orderData.email ||
+          session.customer_details?.email ||
+          session.customer_email ||
+          null;
+
+        const updateData: any = {
           status: 'Order Received',
           subscriptionStatus: 'active',
           stripeSubscriptionId: session.subscription || null,
           updatedAt: serverTimestamp(),
-        });
+        };
+
+        if (resolvedCustomerEmail && !orderData.customerEmail) {
+          updateData.customerEmail = resolvedCustomerEmail;
+          updateData.email = resolvedCustomerEmail;
+        }
+
+        transaction.update(orderRef, updateData);
 
         const walletApplied = Number(orderData.walletApplied) || 0;
         const userId = orderData.userId;
