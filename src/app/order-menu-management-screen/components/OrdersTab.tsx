@@ -46,7 +46,7 @@ const statusColors: Record<string, string> = {
   Cancelled: 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100',
 };
 
-const slotNames: Record<string, string> = {
+const defaultSlotNames: Record<string, string> = {
   'slot-1': 'Morning',
   'slot-2': 'Afternoon',
   'slot-3': 'Evening',
@@ -58,12 +58,30 @@ export default function OrdersTab() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [slotNames, setSlotNames] = useState<Record<string, string>>(defaultSlotNames);
   const [page, setPage] = useState(1);
   const perPage = 8;
   const { user } = useAuth();
 
   useEffect(() => {
     if (!user || !isAdminEmail(user.email)) return;
+
+    // Fetch dynamic slot names from settings/global
+    const fetchSlots = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'global'));
+        if (snap.exists() && Array.isArray(snap.data()?.deliverySlots)) {
+          const map: Record<string, string> = {};
+          snap.data().deliverySlots.forEach((s: any) => {
+            map[s.id] = s.time ? `${s.label} (${s.time})` : s.label;
+          });
+          setSlotNames((prev) => ({ ...prev, ...map }));
+        }
+      } catch (err) {
+        console.error('Error fetching delivery slots in OrdersTab:', err);
+      }
+    };
+    fetchSlots();
 
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, (snap) => {

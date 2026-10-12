@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, CheckCircle, Package, FileText, Download } from 'lucide-react';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { isAdminEmail } from '@/lib/adminAuth';
@@ -13,7 +13,7 @@ import {
   DeliveryExportItem,
 } from '@/lib/exportUtils';
 
-const slotNames: Record<string, string> = {
+const defaultSlotNames: Record<string, string> = {
   'slot-1': 'Morning (7:30 AM – 8:30 AM)',
   'slot-2': 'Afternoon (12:00 PM – 1:00 PM)',
   'slot-3': 'Evening (7:30 PM – 8:30 PM)',
@@ -23,10 +23,28 @@ export default function AdminHistoryClient() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [slotNames, setSlotNames] = useState<Record<string, string>>(defaultSlotNames);
   const { user } = useAuth();
 
   useEffect(() => {
     if (!user || !isAdminEmail(user.email)) return;
+
+    // Fetch dynamic slots
+    const fetchSlots = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'global'));
+        if (snap.exists() && Array.isArray(snap.data()?.deliverySlots)) {
+          const map: Record<string, string> = {};
+          snap.data().deliverySlots.forEach((s: any) => {
+            map[s.id] = s.time ? `${s.label} (${s.time})` : s.label;
+          });
+          setSlotNames((prev) => ({ ...prev, ...map }));
+        }
+      } catch (err) {
+        console.error('Error fetching delivery slots in AdminHistoryClient:', err);
+      }
+    };
+    fetchSlots();
 
     // Only fetch Completed/Delivered orders for history
     const q = query(collection(db, 'orders'), where('status', '==', 'Delivered'));

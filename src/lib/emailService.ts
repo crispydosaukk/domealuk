@@ -138,6 +138,27 @@ export async function sendOrderConfirmationEmails(orderId: string, initialOrderD
     const totalAmount = Number(order.totalAmount || order.total || order.amount || 0).toFixed(2);
     const smtpFromUser = process.env.SMTP_USER || 'domealuk@gmail.com';
 
+    // Resolve dynamic delivery slot label & time
+    let formattedDeliverySlot = order.deliverySlot || '';
+    try {
+      let deliverySlots: any[] = [];
+      if (dbAdmin) {
+        const snap = await dbAdmin.collection('settings').doc('global').get();
+        if (snap.exists) deliverySlots = snap.data()?.deliverySlots || [];
+      } else {
+        const snap = await getDoc(doc(db, 'settings', 'global'));
+        if (snap.exists()) deliverySlots = snap.data()?.deliverySlots || [];
+      }
+      if (formattedDeliverySlot && Array.isArray(deliverySlots)) {
+        const matched = deliverySlots.find((s: any) => s.id === formattedDeliverySlot);
+        if (matched) {
+          formattedDeliverySlot = matched.time ? `${matched.label} (${matched.time})` : matched.label;
+        }
+      }
+    } catch (e) {
+      console.error('[emailService] Error fetching slot settings:', e);
+    }
+
     // Format items list
     let itemsHtml = '';
     if (Array.isArray(order.items) && order.items.length > 0) {
@@ -230,10 +251,10 @@ export async function sendOrderConfirmationEmails(orderId: string, initialOrderD
                   </tr>
                   ${deliveryDatesHtml}
                   ${addressHtml}
-                  ${order.deliverySlot ? `
+                  ${formattedDeliverySlot ? `
                   <tr>
                     <td style="padding: 8px 0; color: #64748b;">Delivery Slot:</td>
-                    <td style="padding: 8px 0; font-weight: 500; color: #111827;">${order.deliverySlot}</td>
+                    <td style="padding: 8px 0; font-weight: 500; color: #111827;">${formattedDeliverySlot}</td>
                   </tr>
                   ` : ''}
                   ${order.subscriptionFrequency ? `
@@ -322,10 +343,10 @@ export async function sendOrderConfirmationEmails(orderId: string, initialOrderD
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
                   ${addressHtml}
                   ${deliveryDatesHtml}
-                  ${order.deliverySlot ? `
+                  ${formattedDeliverySlot ? `
                   <tr>
                     <td style="padding: 4px 0; color: #64748b; font-weight: 600;">Delivery Slot:</td>
-                    <td style="padding: 4px 0; font-weight: 600; color: #111827;">${order.deliverySlot}</td>
+                    <td style="padding: 4px 0; font-weight: 600; color: #111827;">${formattedDeliverySlot}</td>
                   </tr>
                   ` : ''}
                   ${order.subscriptionFrequency ? `

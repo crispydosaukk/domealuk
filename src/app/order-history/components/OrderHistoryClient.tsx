@@ -20,9 +20,15 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
+
+const defaultSlotNames: Record<string, string> = {
+  'slot-1': 'Morning (7:30 AM - 8:30 AM)',
+  'slot-2': 'Afternoon (12:00 PM - 1:00 PM)',
+  'slot-3': 'Evening (7:30 PM - 8:30 PM)',
+};
 import { getApiUrl } from '@/lib/api';
 
 const statusConfig: Record<
@@ -105,7 +111,26 @@ export default function OrderHistoryClient() {
     }
   };
 
+  const [slotNames, setSlotNames] = useState<Record<string, string>>(defaultSlotNames);
+
   useEffect(() => {
+    // Fetch dynamic slots
+    const fetchSlots = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'global'));
+        if (snap.exists() && Array.isArray(snap.data()?.deliverySlots)) {
+          const map: Record<string, string> = {};
+          snap.data().deliverySlots.forEach((s: any) => {
+            map[s.id] = s.time ? `${s.label} (${s.time})` : s.label;
+          });
+          setSlotNames((prev) => ({ ...prev, ...map }));
+        }
+      } catch (err) {
+        console.error('Error fetching delivery slots in OrderHistoryClient:', err);
+      }
+    };
+    fetchSlots();
+
     if (!user) {
       setOrders([]);
       setLoading(false);
@@ -555,13 +580,7 @@ export default function OrderHistoryClient() {
                                   : 'Not selected'}
                                 <br />
                                 Slot:{' '}
-                                {order.deliverySlot === 'slot-1'
-                                  ? 'Morning (7:30 AM - 8:30 AM)'
-                                  : order.deliverySlot === 'slot-2'
-                                    ? 'Afternoon (12:00 PM - 1:00 PM)'
-                                    : order.deliverySlot === 'slot-3'
-                                      ? 'Evening (7:30 PM - 8:30 PM)'
-                                      : order.deliverySlot || 'Standard Delivery'}
+                                {slotNames[order.deliverySlot] || order.deliverySlot || 'Standard Delivery'}
                               </p>
                             </div>
                           </div>

@@ -13,7 +13,7 @@ import {
   X,
   Wallet,
 } from 'lucide-react';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { isAdminEmail } from '@/lib/adminAuth';
@@ -31,7 +31,7 @@ const statusColors: Record<string, string> = {
   Cancelled: 'bg-red-100 text-red-600',
 };
 
-const slotNames: Record<string, string> = {
+const defaultSlotNames: Record<string, string> = {
   'slot-1': 'Morning',
   'slot-2': 'Afternoon',
   'slot-3': 'Evening',
@@ -41,10 +41,28 @@ export default function AdminDashboardClient() {
   const [liveOrders, setLiveOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [slotNames, setSlotNames] = useState<Record<string, string>>(defaultSlotNames);
   const { user } = useAuth();
 
   useEffect(() => {
     if (!user || !isAdminEmail(user.email)) return;
+
+    // Fetch dynamic slot configuration
+    const fetchSlots = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'global'));
+        if (snap.exists() && Array.isArray(snap.data()?.deliverySlots)) {
+          const map: Record<string, string> = {};
+          snap.data().deliverySlots.forEach((s: any) => {
+            map[s.id] = s.time ? `${s.label} (${s.time})` : s.label;
+          });
+          setSlotNames((prev) => ({ ...prev, ...map }));
+        }
+      } catch (err) {
+        console.error('Error fetching delivery slots in AdminDashboardClient:', err);
+      }
+    };
+    fetchSlots();
 
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
     const unsub = onSnapshot(q, (snap) => {

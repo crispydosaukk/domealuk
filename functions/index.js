@@ -73,19 +73,24 @@ const replaceVars = (str, vars) => {
 };
 
 /**
- * Fetch dynamic email templates from Firestore settings/global
+ * Fetch dynamic global settings (email templates & delivery slots) from Firestore settings/global
  */
-const getEmailTemplates = async () => {
+const getGlobalSettings = async () => {
   try {
     const db = getFirestore();
     const globalDoc = await db.collection('settings').doc('global').get();
-    if (globalDoc.exists && globalDoc.data().emailTemplates) {
-      return globalDoc.data().emailTemplates;
+    if (globalDoc.exists) {
+      return globalDoc.data() || {};
     }
   } catch (err) {
-    console.error('Error fetching emailTemplates from settings:', err);
+    console.error('Error fetching global settings:', err);
   }
-  return null;
+  return {};
+};
+
+const getEmailTemplates = async () => {
+  const globalData = await getGlobalSettings();
+  return globalData.emailTemplates || null;
 };
 
 
@@ -571,10 +576,23 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
 
     const totalAmount = Number(order.totalAmount || order.total || order.amount || 0).toFixed(2);
 
-    // Fetch dynamic email templates
-    const templates = await getEmailTemplates();
+    // Fetch dynamic email templates & global settings
+    const globalSettings = await getGlobalSettings();
+    const templates = globalSettings.emailTemplates || {};
     const custOrderTpl = templates?.orderConfirmationCustomer || {};
     const adminOrderTpl = templates?.orderNotificationAdmin || {};
+
+    // Dynamically resolve delivery slot label & time
+    let formattedDeliverySlot = order.deliverySlot || '';
+    if (formattedDeliverySlot) {
+      const configuredSlots = globalSettings.deliverySlots || [];
+      const matchedSlot = configuredSlots.find((s) => s.id === formattedDeliverySlot);
+      if (matchedSlot) {
+        formattedDeliverySlot = matchedSlot.time
+          ? `${matchedSlot.label} (${matchedSlot.time})`
+          : matchedSlot.label;
+      }
+    }
 
     const vars = {
       orderId,
@@ -582,7 +600,7 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
       customerEmail: customerEmail || '',
       total: totalAmount,
       frequency: order.subscriptionFrequency || 'Delivery every 1 Week',
-      deliverySlot: order.deliverySlot || '',
+      deliverySlot: formattedDeliverySlot,
       status: order.status || 'Order Received',
     };
 
@@ -647,10 +665,10 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
                   </tr>
                   ` : ''}
                   ${deliveryDatesHtml}
-                  ${order.deliverySlot ? `
+                  ${formattedDeliverySlot ? `
                   <tr>
                     <td style="padding: 8px 0; color: #64748b;">Delivery Slot:</td>
-                    <td style="padding: 8px 0; font-weight: 500; color: #111827;">${order.deliverySlot}</td>
+                    <td style="padding: 8px 0; font-weight: 500; color: #111827;">${formattedDeliverySlot}</td>
                   </tr>
                   ` : ''}
                   ${addressHtml}
@@ -745,10 +763,10 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
                   ${addressHtml}
                   ${deliveryDatesHtml}
-                  ${order.deliverySlot ? `
+                  ${formattedDeliverySlot ? `
                   <tr>
                     <td style="padding: 4px 0; color: #64748b; font-weight: 600;">Delivery Slot:</td>
-                    <td style="padding: 4px 0; font-weight: 600; color: #111827;">${order.deliverySlot}</td>
+                    <td style="padding: 4px 0; font-weight: 600; color: #111827;">${formattedDeliverySlot}</td>
                   </tr>
                   ` : ''}
                   <tr>

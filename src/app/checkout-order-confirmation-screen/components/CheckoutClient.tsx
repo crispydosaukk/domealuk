@@ -408,6 +408,15 @@ function CheckoutClientContent({
         }
       }
 
+      const selectedSlotObj =
+        activeSlots.find((s) => s.id === selectedSlot) ||
+        dbSlots.find((s) => s.id === selectedSlot);
+      const formattedSlot = selectedSlotObj
+        ? selectedSlotObj.time
+          ? `${selectedSlotObj.label} (${selectedSlotObj.time})`
+          : selectedSlotObj.label
+        : selectedSlot;
+
       // 1. If finalTotal is 0, process the order immediately without Stripe redirect
       if (finalTotal <= 0) {
         const orderRef = doc(db, 'orders', orderId);
@@ -428,7 +437,8 @@ function CheckoutClientContent({
           studentDiscountPercent: isStudentVerified ? studentDiscountPercentage : 0,
           address: finalAddress,
           deliveryDates,
-          deliverySlot: selectedSlot,
+          deliverySlot: formattedSlot || selectedSlot,
+          deliverySlotId: selectedSlot,
           notes,
           paymentMethod: 'pay-online',
           subscriptionFrequency: checkoutData?.subscriptionFrequency || 'Delivery every 1 Week',
@@ -469,7 +479,8 @@ function CheckoutClientContent({
           dabbaFee: 12.0,
           subscriptionFrequency: checkoutData?.subscriptionFrequency || 'Delivery every 1 Week',
           deliveryDates,
-          deliverySlot: selectedSlot,
+          deliverySlot: formattedSlot || selectedSlot,
+          deliverySlotId: selectedSlot,
           address: finalAddress,
           customerEmail: user?.email || resolvedCustomerEmail,
           notes,
@@ -494,7 +505,8 @@ function CheckoutClientContent({
             orderId: orderId,
             address: finalAddress,
             deliveryDates,
-            deliverySlot: selectedSlot,
+            deliverySlot: formattedSlot || selectedSlot,
+            deliverySlotId: selectedSlot,
             notes,
             subtotal,
             deliveryFee,
@@ -548,7 +560,7 @@ function CheckoutClientContent({
       finalOrderSummary?.deliveryDates && finalOrderSummary.deliveryDates.length > 0
         ? finalOrderSummary.deliveryDates
         : deliveryDates;
-    const displaySlotId = finalOrderSummary?.deliverySlot || selectedSlot;
+    const displaySlotId = finalOrderSummary?.deliverySlotId || finalOrderSummary?.deliverySlot || selectedSlot;
     const displaySlotObj = dbSlots.find((s) => s.id === displaySlotId);
     const displayAddress = finalOrderSummary?.address || null;
 
@@ -796,7 +808,9 @@ function CheckoutClientContent({
                       Delivery Time Slot:
                     </span>
                     <span className="font-bold text-foreground">
-                      {displaySlotObj ? `${displaySlotObj.icon || '⏰'} ${displaySlotObj.label} (${displaySlotObj.time})` : 'Dinner (7:30 PM – 8:30 PM)'}
+                      {displaySlotObj
+                        ? `${displaySlotObj.icon || '⏰'} ${displaySlotObj.label} (${displaySlotObj.time})`
+                        : (finalOrderSummary?.deliverySlot || selectedSlot || 'Standard Delivery')}
                     </span>
                   </div>
                 </div>
@@ -1088,17 +1102,17 @@ function CheckoutClientContent({
                 <Clock size={18} className="text-primary" />
                 <h2 className="font-700 text-base text-foreground">Choose Delivery Slot</h2>
               </div>
-              <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className={`grid gap-2 mb-4 ${activeSlots.length === 1 ? 'grid-cols-1' : activeSlots.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                 {activeSlots.map((slot) => (
                   <button
                     key={slot.id}
                     type="button"
                     onClick={() => setSelectedSlot(slot.id)}
-                    className={`py-3 px-2 rounded-xl border-2 text-center transition-all duration-150 flex flex-col items-center justify-center gap-1 ${selectedSlot === slot.id ? 'border-primary bg-orange-50' : 'border-border hover:border-orange-200'}`}
+                    className={`py-3 px-3 rounded-xl border-2 text-center transition-all duration-150 flex flex-col items-center justify-center gap-1 ${selectedSlot === slot.id ? 'border-primary bg-orange-50' : 'border-border hover:border-orange-200'}`}
                   >
                     <span className="text-xl">{slot.icon}</span>
                     <p className="font-700 text-xs text-foreground">{slot.label}</p>
-                    <p className="text-[10px] text-muted-foreground hidden sm:block">{slot.time}</p>
+                    <p className="text-[11px] text-muted-foreground">{slot.time}</p>
                   </button>
                 ))}
               </div>
