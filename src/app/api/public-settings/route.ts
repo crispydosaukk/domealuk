@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbAdmin } from '@/lib/firebase-admin';
 
+export async function GET(req: NextRequest) {
+  return handlePublicSettings();
+}
+
 export async function POST(req: NextRequest) {
+  return handlePublicSettings();
+}
+
+async function handlePublicSettings() {
   try {
     const snap = await dbAdmin.collection('settings').doc('global').get();
     if (snap.exists) {

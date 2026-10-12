@@ -4,6 +4,7 @@ import { dbAdmin } from '@/lib/firebase-admin';
 import Stripe from 'stripe';
 import { FieldValue as AdminFieldValue } from 'firebase-admin/firestore';
 import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { sendOrderConfirmationEmails } from '@/lib/emailService';
 
 export async function POST(req: NextRequest) {
   try {

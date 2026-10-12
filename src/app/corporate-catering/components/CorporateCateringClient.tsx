@@ -222,17 +222,6 @@ export default function CorporateCateringClient() {
       console.warn('Firestore sync note:', err);
     }
 
-    // Direct email notification trigger
-    try {
-      await fetch(getApiUrl('/api/send-corporate-email'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inquiryPayload),
-      });
-    } catch (emailErr) {
-      console.warn('Direct email notification trigger note:', emailErr);
-    }
-
     setIsSubmitting(false);
     setBookingSuccess(true);
     toast.success('Corporate Catering Inquiry Received! Our corporate team will contact you shortly.');

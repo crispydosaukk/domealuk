@@ -14,6 +14,7 @@ import {
   FieldValue,
 } from 'firebase/firestore';
 import { FieldValue as AdminFieldValue } from 'firebase-admin/firestore';
+import { sendOrderConfirmationEmails } from '@/lib/emailService';
 
 // Helper function to resolve serverTimestamp or FieldValue.serverTimestamp
 const getServerTimestamp = () => {
@@ -179,6 +180,12 @@ export async function POST(req: NextRequest) {
           console.log(
             `Created subsequent recurring order ${newOrderId} for subscription ${subscriptionId}`
           );
+
+          try {
+            await sendOrderConfirmationEmails(newOrderId);
+          } catch (eErr) {
+            console.error('Error sending recurring order email:', eErr);
+          }
         }
         break;
       }
@@ -343,6 +350,12 @@ export async function POST(req: NextRequest) {
                 }
               }
             });
+
+            try {
+              await sendOrderConfirmationEmails(orderId);
+            } catch (eErr) {
+              console.error('Webhook subscription order confirmation email error:', eErr);
+            }
           }
         }
         break;

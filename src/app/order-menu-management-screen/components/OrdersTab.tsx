@@ -319,7 +319,7 @@ export default function OrdersTab() {
                 {[
                   'Order ID',
                   'Customer',
-                  'Items',
+                  'Subscription & Package',
                   'Slot',
                   'Date',
                   'Total',
@@ -362,8 +362,35 @@ export default function OrdersTab() {
                       </p>
                       <p className="text-xs text-muted-foreground">{order.address?.phone || ''}</p>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground max-w-[160px] truncate">
-                      {order.items?.map((i: any) => `${i.name} × ${i.qty}`).join(', ') || 'N/A'}
+                    <td className="px-4 py-3 min-w-[210px]">
+                      <div className="flex flex-col gap-1">
+                        {order.subscriptionFrequency && (
+                          <span className="inline-flex items-center gap-1 w-fit text-[11px] font-700 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
+                            <span>🔁</span> {order.subscriptionFrequency}
+                          </span>
+                        )}
+                        <div className="text-xs font-600 text-foreground space-y-1">
+                          {order.items && order.items.length > 0 ? (
+                            order.items.map((i: any, idx: number) => (
+                              <div key={idx} className="block">
+                                <div className="truncate">
+                                  <strong className="text-primary font-bold">{i.qty || 1}x</strong> {i.name}
+                                </div>
+                                {i.subItems && i.subItems.length > 0 && (
+                                  <div
+                                    className="text-[11px] text-muted-foreground font-normal pl-2 truncate"
+                                    title={i.subItems.map((s: any) => s.name).join(', ')}
+                                  >
+                                    ↳ {i.subItems.map((s: any) => s.name).join(', ')}
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-muted-foreground">N/A</span>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {slotNames[order.deliverySlot] || order.deliverySlot || 'N/A'}
@@ -491,6 +518,30 @@ export default function OrdersTab() {
             </div>
 
             <div className="overflow-y-auto p-6 space-y-6 flex-1">
+              {/* Package & Subscription Plan Highlight */}
+              <div className="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200/90 shadow-xs">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                  <h3 className="font-800 text-xs text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>📦</span> Package & Subscription Plan Chosen
+                  </h3>
+                  <span className="inline-flex items-center gap-1 text-xs font-800 bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                    <span>🔁</span> {selectedOrder.subscriptionFrequency || 'Standard One-Time Order'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-700 mt-2">
+                  <div>
+                    <span className="text-muted-foreground font-semibold">Plan Frequency:</span>{' '}
+                    <strong className="text-foreground">{selectedOrder.subscriptionFrequency || 'Delivery every 1 Week'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground font-semibold">Subscription Status:</span>{' '}
+                    <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${selectedOrder.subscriptionStatus === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {selectedOrder.subscriptionStatus || 'Active'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Customer Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 shadow-sm flex flex-col items-start">

@@ -1,23 +1,61 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
+import { getApiUrl } from '@/lib/api';
 
 export default function TermsOfService() {
+  const [dynamicSettings, setDynamicSettings] = useState<any>(null);
+
+  useEffect(() => {
+    fetch(getApiUrl('/api/public-settings'), { method: 'POST' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && (data.termsSections || data.termsTitle)) {
+          setDynamicSettings(data);
+        }
+      })
+      .catch((err) => console.warn('Public settings fetch note:', err));
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <UserNavbar />
 
       <main className="flex-grow pt-10 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">
-        <h1 className="text-4xl font-extrabold text-foreground mb-4">Website Terms of Service</h1>
-        <p className="text-sm text-muted-foreground mb-12">Last updated: 24 February 2026</p>
+        <h1 className="text-4xl font-extrabold text-foreground mb-4">
+          {dynamicSettings?.termsTitle || 'Website Terms of Service'}
+        </h1>
+        <p className="text-sm text-muted-foreground mb-8">
+          Last updated: {dynamicSettings?.termsLastUpdated || '24 February 2026'}
+        </p>
 
-        <div className="space-y-10 text-foreground leading-relaxed">
-          <section>
-            <h2 className="text-2xl font-bold mb-4 text-primary">OVERVIEW</h2>
-            <p className="mb-4">
-              This website is operated by DoMeal. Throughout the site, the terms “we”, “us” and
-              “our” refer to DoMeal.
-            </p>
+        {dynamicSettings?.termsIntro && (
+          <p className="text-base text-foreground mb-8 leading-relaxed font-medium bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl">
+            {dynamicSettings.termsIntro}
+          </p>
+        )}
+
+        {dynamicSettings?.termsSections && dynamicSettings.termsSections.length > 0 ? (
+          <div className="space-y-10 text-foreground leading-relaxed">
+            {dynamicSettings.termsSections.map((sec: any, idx: number) => (
+              <section key={idx} className="space-y-3">
+                <h2 className="text-2xl font-bold text-primary">{sec.title}</h2>
+                <div className="text-base whitespace-pre-line leading-relaxed text-slate-800">
+                  {sec.content}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-10 text-foreground leading-relaxed">
+            <section>
+              <h2 className="text-2xl font-bold mb-4 text-primary">OVERVIEW</h2>
+              <p className="mb-4">
+                This website is operated by DoMeal. Throughout the site, the terms “we”, “us” and
+                “our” refer to DoMeal.
+              </p>
             <p className="mb-4">
               DoMeal offers this website, including all information, tools and services available
               from this site to you, the user, subject to your acceptance of these Terms of Service
@@ -507,7 +545,8 @@ export default function TermsOfService() {
             </p>
           </section>
         </div>
-      </main>
+      )}
+    </main>
 
       <UserFooter />
     </div>

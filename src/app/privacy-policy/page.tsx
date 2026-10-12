@@ -1,23 +1,61 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
+import { getApiUrl } from '@/lib/api';
 
 export default function PrivacyPolicy() {
+  const [dynamicSettings, setDynamicSettings] = useState<any>(null);
+
+  useEffect(() => {
+    fetch(getApiUrl('/api/public-settings'), { method: 'POST' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && (data.privacySections || data.privacyTitle)) {
+          setDynamicSettings(data);
+        }
+      })
+      .catch((err) => console.warn('Public settings fetch note:', err));
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <UserNavbar />
 
       <main className="flex-grow pt-10 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">
-        <h1 className="text-4xl font-extrabold text-foreground mb-4">DoMeal Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground mb-12">Last updated: 24 February 2026</p>
+        <h1 className="text-4xl font-extrabold text-foreground mb-4">
+          {dynamicSettings?.privacyTitle || 'DoMeal Privacy Policy'}
+        </h1>
+        <p className="text-sm text-muted-foreground mb-8">
+          Last updated: {dynamicSettings?.privacyLastUpdated || '24 February 2026'}
+        </p>
 
-        <div className="space-y-10 text-foreground leading-relaxed">
-          <section>
-            <h2 className="text-2xl font-bold mb-4 text-primary">1. Who we are</h2>
-            <p className="mb-2">This website and our services are operated by DoMeal.</p>
-            <p className="mb-2">
-              <strong>Registered office:</strong> No 1 Sedgecombe Avenue, Kenton, HA3 0HW
-            </p>
+        {dynamicSettings?.privacyIntro && (
+          <p className="text-base text-foreground mb-8 leading-relaxed font-medium bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl">
+            {dynamicSettings.privacyIntro}
+          </p>
+        )}
+
+        {dynamicSettings?.privacySections && dynamicSettings.privacySections.length > 0 ? (
+          <div className="space-y-10 text-foreground leading-relaxed">
+            {dynamicSettings.privacySections.map((sec: any, idx: number) => (
+              <section key={idx} className="space-y-3">
+                <h2 className="text-2xl font-bold text-primary">{sec.title}</h2>
+                <div className="text-base whitespace-pre-line leading-relaxed text-slate-800">
+                  {sec.content}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-10 text-foreground leading-relaxed">
+            <section>
+              <h2 className="text-2xl font-bold mb-4 text-primary">1. Who we are</h2>
+              <p className="mb-2">This website and our services are operated by DoMeal.</p>
+              <p className="mb-2">
+                <strong>Registered office:</strong> No 1 Sedgecombe Avenue, Kenton, HA3 0HW
+              </p>
             <p className="mb-2">
               <strong>Email:</strong> orders@domeal.co.uk
             </p>
@@ -319,8 +357,9 @@ export default function PrivacyPolicy() {
               platforms, Google Tag Manager, Google Analytics, Meta Pixel, Hotjar, and accounting
               tools.
             </p>
-          </section>
-        </div>
+            </section>
+          </div>
+        )}
       </main>
 
       <UserFooter />

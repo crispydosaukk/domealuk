@@ -1,27 +1,63 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
+import { getApiUrl } from '@/lib/api';
 
 export default function TermsOfBusiness() {
+  const [dynamicSettings, setDynamicSettings] = useState<any>(null);
+
+  useEffect(() => {
+    fetch(getApiUrl('/api/public-settings'), { method: 'POST' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && (data.termsBusinessSections || data.termsBusinessTitle)) {
+          setDynamicSettings(data);
+        }
+      })
+      .catch((err) => console.warn('Public settings fetch note:', err));
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <UserNavbar />
 
       <main className="flex-grow pt-10 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">
         <h1 className="text-4xl font-extrabold text-foreground mb-4">
-          Terms of Business (Subscriptions)
+          {dynamicSettings?.termsBusinessTitle || 'Terms of Business (Subscriptions)'}
         </h1>
-        <p className="text-sm text-muted-foreground mb-12">Last updated: 24 February 2026</p>
+        <p className="text-sm text-muted-foreground mb-8">
+          Last updated: {dynamicSettings?.termsBusinessLastUpdated || '24 February 2026'}
+        </p>
 
-        <div className="space-y-10 text-foreground leading-relaxed">
-          <section>
-            <h2 className="text-2xl font-bold mb-4 text-primary">1. Introduction</h2>
-            <p className="mb-4">
-              Welcome to our website. To avoid misunderstandings, please read these Terms of
-              Business carefully. These Terms apply to DoMeal subscriptions supplied to you through
-              our website and should be read in conjunction with our Privacy Policy, which also
-              applies.
-            </p>
+        {dynamicSettings?.termsBusinessIntro && (
+          <p className="text-base text-foreground mb-8 leading-relaxed font-medium bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl">
+            {dynamicSettings.termsBusinessIntro}
+          </p>
+        )}
+
+        {dynamicSettings?.termsBusinessSections && dynamicSettings.termsBusinessSections.length > 0 ? (
+          <div className="space-y-10 text-foreground leading-relaxed">
+            {dynamicSettings.termsBusinessSections.map((sec: any, idx: number) => (
+              <section key={idx} className="space-y-3">
+                <h2 className="text-2xl font-bold text-primary">{sec.title}</h2>
+                <div className="text-base whitespace-pre-line leading-relaxed text-slate-800">
+                  {sec.content}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-10 text-foreground leading-relaxed">
+            <section>
+              <h2 className="text-2xl font-bold mb-4 text-primary">1. Introduction</h2>
+              <p className="mb-4">
+                Welcome to our website. To avoid misunderstandings, please read these Terms of
+                Business carefully. These Terms apply to DoMeal subscriptions supplied to you through
+                our website and should be read in conjunction with our Privacy Policy, which also
+                applies.
+              </p>
             <p>
               You will be asked to expressly agree to these Terms of Business before you subscribe
               to DoMeal from our website.
@@ -356,7 +392,8 @@ export default function TermsOfBusiness() {
             </p>
           </section>
         </div>
-      </main>
+      )}
+    </main>
 
       <UserFooter />
     </div>

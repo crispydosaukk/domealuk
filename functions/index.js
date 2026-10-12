@@ -51,7 +51,41 @@ const getAdminRecipients = async () => {
     console.error('Error fetching admin recipients:', error);
   }
   // Fallback
-  return ['Digitalbotsolutions@gmail.com', 'rahulbadugu22@gmail.com'];
+  return [
+    'orders@domeal.co.uk',
+    'admin@vegchennaisrilalitha.co.uk',
+    'Digitalbotsolutions@gmail.com',
+    'rahulbadugu22@gmail.com',
+  ];
+};
+
+/**
+ * Replace placeholders like {{orderId}} or {{customerName}} in templates
+ */
+const replaceVars = (str, vars) => {
+  if (!str || typeof str !== 'string') return '';
+  let res = str;
+  for (const [key, val] of Object.entries(vars)) {
+    const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
+    res = res.replace(regex, val !== undefined && val !== null ? String(val) : '');
+  }
+  return res;
+};
+
+/**
+ * Fetch dynamic email templates from Firestore settings/global
+ */
+const getEmailTemplates = async () => {
+  try {
+    const db = getFirestore();
+    const globalDoc = await db.collection('settings').doc('global').get();
+    if (globalDoc.exists && globalDoc.data().emailTemplates) {
+      return globalDoc.data().emailTemplates;
+    }
+  } catch (err) {
+    console.error('Error fetching emailTemplates from settings:', err);
+  }
+  return null;
 };
 
 
@@ -251,16 +285,64 @@ exports.sendCorporateInquiryNotification = onDocumentCreated(
 
     const transporter = getTransporter();
 
+    // Fetch dynamic email template
+    const templates = await getEmailTemplates();
+    const corpTemplates = templates?.corporateInquiry || {};
+    const templateVars = {
+      companyName,
+      contactName,
+      email,
+      phone,
+      paxCount,
+      eventDate,
+      eventTime,
+    };
+
+    const adminSubject = replaceVars(
+      corpTemplates.adminSubject || `🍱 New Corporate Catering Inquiry: {{companyName}} ({{paxCount}} Pax - {{eventDate}})`,
+      templateVars
+    );
+    const customerSubject = replaceVars(
+      corpTemplates.customerSubject || `We Received Your Corporate Catering Inquiry - {{companyName}}`,
+      templateVars
+    );
+    const customerMsg = replaceVars(
+      corpTemplates.customerMessage || `Thank you for inquiring about corporate catering for <strong>{{companyName}}</strong>. Our team has received your request for <strong>{{paxCount}} guests</strong> on <strong>{{eventDate}}</strong> and will contact you shortly.`,
+      templateVars
+    );
+
     const mailOptions = {
       from: `"DoMeal Corporate Inquiries" <${process.env.SMTP_USER || "domealuk@gmail.com"}>`,
       to: await getAdminRecipients(),
-      subject: `🍱 New Corporate Catering Inquiry: ${companyName} (${paxCount} Pax - ${eventDate})`,
+      subject: adminSubject,
       html: htmlBody,
     };
 
     try {
       const info = await transporter.sendMail(mailOptions);
       console.log(`✅ Email notification sent successfully to [${(await getAdminRecipients()).join(", ")}]. Message ID: ${info.messageId}`);
+
+      // Send customer acknowledgment email if email provided
+      if (email && email.includes('@')) {
+        try {
+          await transporter.sendMail({
+            from: `"DoMeal Corporate Catering" <${process.env.SMTP_USER || "domealuk@gmail.com"}>`,
+            to: email.trim(),
+            subject: customerSubject,
+            html: `
+              <div style="font-family: Arial, sans-serif; padding: 20px; color: #1f2937;">
+                <h2 style="color: #1E3B2B;">Inquiry Received! 🍱</h2>
+                <p>Hi ${contactName},</p>
+                <p>${customerMsg}</p>
+                <p>Warm regards,<br><strong>The DoMeal Team</strong></p>
+              </div>
+            `,
+          });
+          console.log(`✅ Customer inquiry confirmation sent to ${email}`);
+        } catch (cErr) {
+          console.error(`Failed sending customer acknowledgment email:`, cErr);
+        }
+      }
     } catch (error) {
       console.error(`❌ Failed to send email for corporate inquiry ${inquiryId}:`, error);
       throw error;
@@ -285,29 +367,44 @@ exports.sendUserRegistrationEmail = onDocumentCreated(
 
     const transporter = getTransporter();
     
+    // Fetch dynamic welcome email template
+    const templates = await getEmailTemplates();
+    const welcomeTemplates = templates?.welcomeEmail || {};
+    const welcomeVars = {
+      userName: user.name || 'Foodie',
+      email: user.email,
+    };
+
+    const welcomeSubject = replaceVars(welcomeTemplates.subject || 'Welcome to DoMeal! 🎉', welcomeVars);
+    const welcomeHeading = replaceVars(welcomeTemplates.heading || 'Welcome to DoMeal!', welcomeVars);
+    const welcomeBody = replaceVars(
+      welcomeTemplates.bodyMessage || 'Thank you for joining DoMeal! We are thrilled to have you with us.\n\nYour journey to enjoying fresh, authentic, and delicious home-cooked Indian meals starts right here. Explore our menu and find your new favorite dish.',
+      welcomeVars
+    );
+    const welcomeBtn = replaceVars(welcomeTemplates.buttonText || 'Order Now', welcomeVars);
+
     // Email to User
     const htmlBodyUser = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Welcome to DoMeal!</title>
+        <title>${welcomeSubject}</title>
       </head>
       <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f5; margin: 0; padding: 40px 20px; color: #1f2937;">
         <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
           <tr>
             <td style="padding: 30px; text-align: center; border-bottom: 2px solid #C39B54;">
               <img src="https://domeal.co.uk/DOMEAL_Logo.png" alt="DoMeal Logo" style="height: 65px; margin-bottom: 15px;" />
-              <h1 style="color: #1E3B2B; margin: 0; font-size: 24px; font-weight: 700;">Welcome to DoMeal!</h1>
+              <h1 style="color: #1E3B2B; margin: 0; font-size: 24px; font-weight: 700;">${welcomeHeading}</h1>
             </td>
           </tr>
           <tr>
             <td style="padding: 35px 30px;">
               <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi ${user.name || 'Foodie'},</p>
-              <p style="font-size: 16px; line-height: 1.6;">Thank you for joining DoMeal! We are thrilled to have you with us.</p>
-              <p style="font-size: 16px; line-height: 1.6;">Your journey to enjoying fresh, authentic, and delicious home-cooked Indian meals starts right here. Explore our menu and find your new favorite dish.</p>
+              <div style="font-size: 16px; line-height: 1.6; color: #334155; white-space: pre-line;">${welcomeBody}</div>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="https://domeal.co.uk" style="background-color: #1E3B2B; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">Order Now</a>
+                <a href="https://domeal.co.uk" style="background-color: #1E3B2B; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">${welcomeBtn}</a>
               </div>
               <p style="font-size: 16px; line-height: 1.6; margin-bottom: 0;">Warmly,<br><strong style="color: #1E3B2B;">The DoMeal Team</strong></p>
             </td>
@@ -325,7 +422,7 @@ exports.sendUserRegistrationEmail = onDocumentCreated(
     const userMailOptions = {
       from: '"DoMeal" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
       to: user.email,
-      subject: 'Welcome to DoMeal!',
+      subject: welcomeSubject,
       html: htmlBodyUser,
     };
 
@@ -409,19 +506,34 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
 
     const transporter = getTransporter();
 
-    // Format items list if available
+    // Format items list with package choices / sub-items
     let itemsHtml = '';
     if (Array.isArray(order.items) && order.items.length > 0) {
       itemsHtml = `
         <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-          <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #1E3B2B; font-weight: 700;">Ordered Items:</h3>
+          <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #1E3B2B; font-weight: 700;">Ordered Package & Items:</h3>
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-            ${order.items.map((item) => `
-              <tr>
-                <td style="padding: 4px 0; color: #334155;">${item.quantity || 1}x ${item.name || item.title || 'Meal'}</td>
-                <td style="padding: 4px 0; text-align: right; color: #64748b; font-weight: 600;">£${Number(item.price || 0).toFixed(2)}</td>
-              </tr>
-            `).join('')}
+            ${order.items
+              .map((item) => {
+                const subItemsList =
+                  Array.isArray(item.subItems) && item.subItems.length > 0
+                    ? `<div style="font-size: 11px; color: #64748b; margin-top: 3px; padding-left: 8px; border-left: 2px solid #C39B54;">
+                        ${item.subItems.map((s) => s.name).join(', ')}
+                      </div>`
+                    : '';
+                return `
+                  <tr>
+                    <td style="padding: 6px 0; color: #334155; border-bottom: 1px solid #f1f5f9;">
+                      <strong>${item.quantity || item.qty || 1}x</strong> ${item.name || item.title || 'Meal'}
+                      ${subItemsList}
+                    </td>
+                    <td style="padding: 6px 0; text-align: right; color: #64748b; font-weight: 600; border-bottom: 1px solid #f1f5f9; vertical-align: top;">
+                      £${Number(item.price || 0).toFixed(2)}
+                    </td>
+                  </tr>
+                `;
+              })
+              .join('')}
           </table>
         </div>
       `;
@@ -433,7 +545,7 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
       const addr = order.address;
       addressHtml = `
         <tr>
-          <td style="padding: 8px 0; color: #64748b; vertical-align: top;">Delivery Address:</td>
+          <td style="padding: 8px 0; color: #64748b; vertical-align: top; width: 140px;">Delivery Address:</td>
           <td style="padding: 8px 0; font-weight: 500; color: #111827;">
             ${addr.fullName ? `<strong>${addr.fullName}</strong><br/>` : ''}
             ${addr.addressLine1 || ''}${addr.addressLine2 ? `, ${addr.addressLine2}` : ''}<br/>
@@ -444,49 +556,119 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
       `;
     }
 
+    // Format delivery dates
+    let deliveryDatesHtml = '';
+    if (Array.isArray(order.deliveryDates) && order.deliveryDates.length > 0) {
+      deliveryDatesHtml = `
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; width: 140px;">Delivery Dates:</td>
+          <td style="padding: 8px 0; font-weight: 600; color: #1E3B2B;">
+            ${order.deliveryDates.join(', ')}
+          </td>
+        </tr>
+      `;
+    }
+
     const totalAmount = Number(order.totalAmount || order.total || order.amount || 0).toFixed(2);
 
-    // Email to User
+    // Fetch dynamic email templates
+    const templates = await getEmailTemplates();
+    const custOrderTpl = templates?.orderConfirmationCustomer || {};
+    const adminOrderTpl = templates?.orderNotificationAdmin || {};
+
+    const vars = {
+      orderId,
+      customerName: order.address?.fullName || 'Valued Customer',
+      customerEmail: customerEmail || '',
+      total: totalAmount,
+      frequency: order.subscriptionFrequency || 'Delivery every 1 Week',
+      deliverySlot: order.deliverySlot || '',
+      status: order.status || 'Order Received',
+    };
+
+    const custSubject = replaceVars(custOrderTpl.subject || 'Your DoMeal Order Confirmation - #{{orderId}}', vars);
+    const custHeading = replaceVars(custOrderTpl.heading || 'Order Confirmed! 🎉', vars);
+    const custSubheading = replaceVars(custOrderTpl.subheading || 'Thank you for ordering with DoMeal', vars);
+    const custIntro = replaceVars(
+      custOrderTpl.introMessage || 'Thank you for your order! We have received your subscription and our kitchen team is preparing your fresh, authentic home-cooked meals.',
+      vars
+    );
+    const custFooter = replaceVars(
+      custOrderTpl.footerMessage || 'If you have any questions, feel free to reply directly to this email or contact us at orders@domeal.co.uk.',
+      vars
+    );
+
+    const adminSubject = replaceVars(adminOrderTpl.subject || '📦 New Order Alert: #{{orderId}} - £{{total}}', vars);
+    const adminHeading = replaceVars(adminOrderTpl.heading || '📦 New Order Alert: #{{orderId}}', vars);
+    const adminSubheading = replaceVars(adminOrderTpl.subheading || 'DoMeal Admin Notification • Total: £{{total}}', vars);
+    const adminNotes = replaceVars(
+      adminOrderTpl.adminNotes || 'Automated alert dispatched by Cloud Functions. Please ensure timely kitchen preparation and packaging.',
+      vars
+    );
+
+    // Customer Email Template
     const htmlBodyUser = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Your DoMeal Order</title>
+        <title>${custSubject}</title>
       </head>
       <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f5; margin: 0; padding: 40px 20px; color: #1f2937;">
         <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
           <tr>
-            <td style="padding: 30px; text-align: center; border-bottom: 2px solid #C39B54;">
-              <img src="https://domeal.co.uk/DOMEAL_Logo.png" alt="DoMeal Logo" style="height: 65px; margin-bottom: 15px;" />
-              <h1 style="color: #1E3B2B; margin: 0; font-size: 24px; font-weight: 700;">Order Confirmed!</h1>
+            <td style="padding: 30px; text-align: center; border-bottom: 2px solid #C39B54; background-color: #1E3B2B;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 700;">${custHeading}</h1>
+              <p style="color: #C39B54; margin: 6px 0 0 0; font-size: 14px; font-weight: 600;">${custSubheading}</p>
             </td>
           </tr>
           <tr>
             <td style="padding: 35px 30px;">
-              <p style="font-size: 16px; line-height: 1.6; margin-top: 0; text-align: center;">Thank you for your order. We are preparing your delicious meals and they will be delivered at your scheduled time.</p>
+              <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi ${order.address?.fullName || 'Valued Customer'},</p>
+              <div style="font-size: 16px; line-height: 1.6; color: #334155; white-space: pre-line;">${custIntro}</div>
               
               <div style="background-color: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 25px 0;">
                 <h2 style="margin-top: 0; color: #1E3B2B; font-size: 16px; border-bottom: 2px solid #C39B54; padding-bottom: 10px; margin-bottom: 15px;">
-                  Order Details
+                  Order Summary
                 </h2>
-                <table style="width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.6;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
                   <tr>
                     <td style="padding: 8px 0; color: #64748b; width: 140px;">Order ID:</td>
-                    <td style="padding: 8px 0; font-weight: 600; color: #111827;">${orderId}</td>
+                    <td style="padding: 8px 0; font-weight: 700; color: #111827;">${orderId}</td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #64748b;">Status:</td>
-                    <td style="padding: 8px 0; font-weight: 600; color: #C39B54;">${order.status}</td>
+                    <td style="padding: 8px 0; font-weight: 700; color: #1E3B2B;">${order.status || 'Order Received'}</td>
                   </tr>
+                  ${order.subscriptionFrequency ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #64748b;">Plan Frequency:</td>
+                    <td style="padding: 8px 0; font-weight: 700; color: #1E3B2B;">${order.subscriptionFrequency}</td>
+                  </tr>
+                  ` : ''}
+                  ${deliveryDatesHtml}
+                  ${order.deliverySlot ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #64748b;">Delivery Slot:</td>
+                    <td style="padding: 8px 0; font-weight: 500; color: #111827;">${order.deliverySlot}</td>
+                  </tr>
+                  ` : ''}
                   ${addressHtml}
                   <tr>
-                    <td style="padding: 8px 0; color: #64748b; border-top: 1px solid #e2e8f0;">Total Amount:</td>
-                    <td style="padding: 8px 0; font-weight: 700; color: #1E3B2B; border-top: 1px solid #e2e8f0; font-size: 18px;">£${totalAmount}</td>
+                    <td style="padding: 10px 0; color: #64748b; border-top: 2px solid #e2e8f0;">Total Paid:</td>
+                    <td style="padding: 10px 0; font-weight: 800; color: #1E3B2B; border-top: 2px solid #e2e8f0; font-size: 20px;">£${totalAmount}</td>
                   </tr>
                 </table>
                 ${itemsHtml}
               </div>
+
+              ${order.notes ? `
+              <div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+                <p style="margin: 0; font-size: 13px; color: #92400e;"><strong>Special Instructions:</strong> ${order.notes}</p>
+              </div>
+              ` : ''}
+
+              <div style="font-size: 15px; line-height: 1.6; color: #475569; white-space: pre-line;">${custFooter}</div>
 
               <p style="font-size: 16px; line-height: 1.6; margin-bottom: 0;">Warmly,<br><strong style="color: #1E3B2B;">The DoMeal Team</strong></p>
             </td>
@@ -501,18 +683,108 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
       </html>
     `;
 
-    // Email to Admin
+    // Admin Email Template
     const adminRecipients = await getAdminRecipients();
     const htmlBodyAdmin = `
       <!DOCTYPE html>
       <html>
-      <body style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2>New Order Received: ${orderId}</h2>
-        <p><strong>Customer Email:</strong> ${customerEmail || 'Not specified'}</p>
-        <p><strong>Customer Name:</strong> ${order.address?.fullName || 'Not specified'}</p>
-        <p><strong>Total Amount:</strong> £${totalAmount}</p>
-        <p><strong>Status:</strong> ${order.status}</p>
-        ${itemsHtml}
+      <head>
+        <meta charset="utf-8">
+        <title>${adminSubject}</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f5; margin: 0; padding: 20px; color: #1f2937;">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;">
+          <tr>
+            <td style="background-color: #1E3B2B; padding: 24px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">${adminHeading}</h1>
+              <p style="color: #C39B54; margin: 6px 0 0 0; font-size: 14px; font-weight: 600;">${adminSubheading}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px;">
+              <!-- Package & Subscription Plan Highlight -->
+              <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px;">
+                <p style="margin: 0; font-size: 13px; color: #065f46; font-weight: 700;">
+                  🔁 Package & Subscription Plan: 
+                  <span style="background-color: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 4px; font-weight: 800; margin-left: 4px;">
+                    ${order.subscriptionFrequency || 'Delivery every 1 Week'}
+                  </span>
+                </p>
+              </div>
+
+              <!-- Customer Details -->
+              <div style="background-color: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+                <h2 style="margin-top: 0; color: #1E3B2B; font-size: 15px; border-bottom: 2px solid #C39B54; padding-bottom: 8px; margin-bottom: 12px;">
+                  👤 Customer Details
+                </h2>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
+                  <tr>
+                    <td style="padding: 4px 0; color: #64748b; width: 140px; font-weight: 600;">Customer Name:</td>
+                    <td style="padding: 4px 0; font-weight: 700; color: #111827;">${order.address?.fullName || 'Not specified'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; color: #64748b; font-weight: 600;">Email:</td>
+                    <td style="padding: 4px 0;">
+                      <a href="mailto:${customerEmail}" style="color: #1E3B2B; font-weight: 600;">${customerEmail || 'Not specified'}</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; color: #64748b; font-weight: 600;">Phone:</td>
+                    <td style="padding: 4px 0;">
+                      <a href="tel:${order.address?.phone}" style="color: #1E3B2B; font-weight: 600;">${order.address?.phone || 'Not specified'}</a>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Delivery & Schedule Info -->
+              <div style="background-color: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin-bottom: 20px;">
+                <h2 style="margin-top: 0; color: #1E3B2B; font-size: 15px; border-bottom: 2px solid #C39B54; padding-bottom: 8px; margin-bottom: 12px;">
+                  🚚 Delivery & Schedule
+                </h2>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
+                  ${addressHtml}
+                  ${deliveryDatesHtml}
+                  ${order.deliverySlot ? `
+                  <tr>
+                    <td style="padding: 4px 0; color: #64748b; font-weight: 600;">Delivery Slot:</td>
+                    <td style="padding: 4px 0; font-weight: 600; color: #111827;">${order.deliverySlot}</td>
+                  </tr>
+                  ` : ''}
+                  <tr>
+                    <td style="padding: 4px 0; color: #64748b; font-weight: 600;">Status:</td>
+                    <td style="padding: 4px 0; font-weight: 700; color: #1E3B2B;">${order.status || 'Order Received'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #64748b; font-weight: 700; border-top: 1px solid #e2e8f0;">Total Order Amount:</td>
+                    <td style="padding: 8px 0; font-weight: 800; color: #1E3B2B; border-top: 1px solid #e2e8f0; font-size: 18px;">£${totalAmount}</td>
+                  </tr>
+                </table>
+                ${itemsHtml}
+              </div>
+
+              ${order.notes ? `
+              <div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 14px; margin-bottom: 20px;">
+                <strong style="color: #92400e; font-size: 13px;">📝 Special Instructions:</strong>
+                <p style="margin: 4px 0 0 0; font-size: 14px; color: #78350f;">${order.notes}</p>
+              </div>
+              ` : ''}
+
+              <div style="background-color: #f1f5f9; border-left: 3px solid #1E3B2B; padding: 12px 14px; margin-bottom: 20px; font-size: 13px; color: #475569;">
+                ${adminNotes}
+              </div>
+
+              <p style="font-size: 12px; color: #9ca3af; text-align: center; margin-top: 20px; margin-bottom: 0;">
+                Automated alert dispatched by Cloud Functions to: <code>${adminRecipients.join(', ')}</code>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f1f5f9; padding: 16px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+              DoMeal Admin Management System &copy; ${new Date().getFullYear()}
+            </td>
+          </tr>
+        </table>
       </body>
       </html>
     `;
@@ -521,12 +793,12 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
     let emailSentToAdmin = false;
 
     // Send customer email if email is present
-    if (customerEmail) {
+    if (customerEmail && !customerEmail.includes('@domeal.co.uk')) {
       try {
         const userMailOptions = {
-          from: '"DoMeal" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
+          from: `"DoMeal" <${process.env.SMTP_USER || 'domealuk@gmail.com'}>`,
           to: customerEmail,
-          subject: 'Your DoMeal Order Confirmation - ' + orderId,
+          subject: custSubject,
           html: htmlBodyUser,
         };
         await transporter.sendMail(userMailOptions);
@@ -543,9 +815,9 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
     if (adminRecipients.length > 0) {
       try {
         const adminMailOptions = {
-          from: '"DoMeal Notifications" <' + (process.env.SMTP_USER || 'domealuk@gmail.com') + '>',
+          from: `"DoMeal Notifications" <${process.env.SMTP_USER || 'domealuk@gmail.com'}>`,
           to: adminRecipients,
-          subject: 'New Order Received: ' + orderId,
+          subject: adminSubject,
           html: htmlBodyAdmin,
         };
         await transporter.sendMail(adminMailOptions);

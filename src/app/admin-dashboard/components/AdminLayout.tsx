@@ -19,6 +19,7 @@ import {
   CreditCard,
   GraduationCap,
   Building,
+  FileText,
   X,
 } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -47,6 +48,7 @@ const baseNavItems = [
   },
   { id: 'nav-analytics', label: 'Analytics', href: '/admin-analytics', icon: TrendingUp },
   { id: 'nav-menu', label: 'Menu Management', href: '/admin-menu', icon: UtensilsCrossed },
+  { id: 'nav-cms', label: 'CMS & Page Content', href: '/admin-cms', icon: FileText },
   { id: 'nav-settings', label: 'Settings', href: '/admin-settings', icon: Settings },
 ];
 
