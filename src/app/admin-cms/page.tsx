@@ -24,7 +24,15 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
+  ArrowUp,
+  ArrowDown,
+  RotateCcw,
 } from 'lucide-react';
+import {
+  DEFAULT_TERMS_BUSINESS,
+  DEFAULT_TERMS_SERVICE,
+  DEFAULT_PRIVACY_POLICY,
+} from '@/lib/cms-legal-defaults';
 
 export default function AdminCmsPage() {
   const { user } = useAuth();
@@ -156,61 +164,22 @@ export default function AdminCmsPage() {
     ],
 
     // 6. Privacy Policy
-    privacyTitle: 'DoMeal Privacy Policy',
-    privacyLastUpdated: '24 February 2026',
-    privacyIntro: 'This Privacy Policy explains how DoMeal collects, uses, shares, and protects your personal data when you visit our website, place orders, or subscribe.',
-    privacySections: [
-      {
-        title: '1. Who we are',
-        content: 'This website and our services are operated by DoMeal. Registered office: No 1 Sedgecombe Avenue, Kenton, HA3 0HW. Email: orders@domeal.co.uk. For data protection purposes, we are the data controller for personal data.',
-      },
-      {
-        title: '2. The personal data we collect',
-        content: 'We collect your name, email address, phone number, delivery address, postcode, order history, subscription preferences, and payment verification details.',
-      },
-      {
-        title: '3. Why we use your data and our lawful bases',
-        content: 'We process your data to fulfill food orders, deliver freshly cooked meals, manage your tiffins, process payments securely, and send order tracking updates.',
-      },
-      {
-        title: '4. Contact and Complaints',
-        content: 'If you have any questions or wish to exercise your data rights, contact us at orders@domeal.co.uk or admin@vegchennaisrilalitha.co.uk.',
-      },
-    ],
+    privacyTitle: DEFAULT_PRIVACY_POLICY.title,
+    privacyLastUpdated: DEFAULT_PRIVACY_POLICY.lastUpdated,
+    privacyIntro: DEFAULT_PRIVACY_POLICY.intro,
+    privacySections: DEFAULT_PRIVACY_POLICY.sections,
 
     // 7. Terms of Service
-    termsTitle: 'Website Terms of Service',
-    termsLastUpdated: '24 February 2026',
-    termsIntro: 'Please read these Terms carefully before accessing or using our website. By using our services, you agree to be bound by these terms.',
-    termsSections: [
-      {
-        title: '1. Online Store Terms',
-        content: 'By agreeing to these Terms, you confirm that you are at least 18 years old and legally capable of entering into a binding contract.',
-      },
-      {
-        title: '2. Products, Subscriptions & Pricing',
-        content: 'Prices for our meals are subject to change without notice. We reserve the right at any time to modify or discontinue any meal package.',
-      },
-      {
-        title: '3. Accuracy of Billing and Account Information',
-        content: 'You agree to provide current, complete and accurate purchase and account information for all purchases made at our store.',
-      },
-    ],
+    termsTitle: DEFAULT_TERMS_SERVICE.title,
+    termsLastUpdated: DEFAULT_TERMS_SERVICE.lastUpdated,
+    termsIntro: DEFAULT_TERMS_SERVICE.intro,
+    termsSections: DEFAULT_TERMS_SERVICE.sections,
 
     // 8. Terms of Business (Subscriptions)
-    termsBusinessTitle: 'Terms of Business (Subscriptions)',
-    termsBusinessLastUpdated: '24 February 2026',
-    termsBusinessIntro: 'These Terms apply specifically to DoMeal recurring subscriptions, meal delivery cycles, and tiffin deposits.',
-    termsBusinessSections: [
-      {
-        title: '1. Subscription Cycles & Deliveries',
-        content: 'Subscriptions renew weekly or fortnightly depending on your chosen plan. You can pause or skip upcoming deliveries via your customer dashboard.',
-      },
-      {
-        title: '2. Eco Dabba Tiffin Deposit',
-        content: 'We provide meals in authentic stainless-steel reusable eco dabbas. A refundable deposit of £12 applies. Deposits are refunded upon safe return of the dabba containers.',
-      },
-    ],
+    termsBusinessTitle: DEFAULT_TERMS_BUSINESS.title,
+    termsBusinessLastUpdated: DEFAULT_TERMS_BUSINESS.lastUpdated,
+    termsBusinessIntro: DEFAULT_TERMS_BUSINESS.intro,
+    termsBusinessSections: DEFAULT_TERMS_BUSINESS.sections,
 
     // 9. Other Pages (How to Heat, Student, Referral)
     heatTitle: 'Heating Instructions',
@@ -262,14 +231,34 @@ export default function AdminCmsPage() {
         const snap = await getDoc(doc(db, 'settings', 'global'));
         if (snap.exists()) {
           const data = snap.data();
-          setContent((prev: any) => ({
-            ...prev,
-            ...data,
-            emailTemplates: {
-              ...prev.emailTemplates,
-              ...(data.emailTemplates || {}),
-            },
-          }));
+          setContent((prev: any) => {
+            const privacySections =
+              data.privacySections && data.privacySections.length >= 10
+                ? data.privacySections
+                : DEFAULT_PRIVACY_POLICY.sections;
+
+            const termsSections =
+              data.termsSections && data.termsSections.length >= 15
+                ? data.termsSections
+                : DEFAULT_TERMS_SERVICE.sections;
+
+            const termsBusinessSections =
+              data.termsBusinessSections && data.termsBusinessSections.length >= 10
+                ? data.termsBusinessSections
+                : DEFAULT_TERMS_BUSINESS.sections;
+
+            return {
+              ...prev,
+              ...data,
+              privacySections,
+              termsSections,
+              termsBusinessSections,
+              emailTemplates: {
+                ...prev.emailTemplates,
+                ...(data.emailTemplates || {}),
+              },
+            };
+          });
         }
       } catch (err) {
         console.error('Error fetching CMS settings:', err);
@@ -284,6 +273,59 @@ export default function AdminCmsPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setContent((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  // Reorder clauses up or down
+  const moveSection = (
+    key: 'privacySections' | 'termsSections' | 'termsBusinessSections',
+    fromIndex: number,
+    toIndex: number
+  ) => {
+    const list = [...(content[key] || [])];
+    if (toIndex < 0 || toIndex >= list.length) return;
+    const [moved] = list.splice(fromIndex, 1);
+    list.splice(toIndex, 0, moved);
+    setContent({ ...content, [key]: list });
+  };
+
+  // Reset policies to 100% full official templates
+  const resetPrivacyPolicy = () => {
+    if (confirm('Reset Privacy Policy to the complete official template (all 15 clauses)?')) {
+      setContent({
+        ...content,
+        privacyTitle: DEFAULT_PRIVACY_POLICY.title,
+        privacyLastUpdated: DEFAULT_PRIVACY_POLICY.lastUpdated,
+        privacyIntro: DEFAULT_PRIVACY_POLICY.intro,
+        privacySections: DEFAULT_PRIVACY_POLICY.sections,
+      });
+      toast.info('Privacy Policy restored to full official template');
+    }
+  };
+
+  const resetTermsService = () => {
+    if (confirm('Reset Website Terms of Service to the complete official template (all 22 clauses)?')) {
+      setContent({
+        ...content,
+        termsTitle: DEFAULT_TERMS_SERVICE.title,
+        termsLastUpdated: DEFAULT_TERMS_SERVICE.lastUpdated,
+        termsIntro: DEFAULT_TERMS_SERVICE.intro,
+        termsSections: DEFAULT_TERMS_SERVICE.sections,
+      });
+      toast.info('Terms of Service restored to full official template');
+    }
+  };
+
+  const resetTermsBusiness = () => {
+    if (confirm('Reset Subscription Terms of Business to the complete official template (all 14 clauses)?')) {
+      setContent({
+        ...content,
+        termsBusinessTitle: DEFAULT_TERMS_BUSINESS.title,
+        termsBusinessLastUpdated: DEFAULT_TERMS_BUSINESS.lastUpdated,
+        termsBusinessIntro: DEFAULT_TERMS_BUSINESS.intro,
+        termsBusinessSections: DEFAULT_TERMS_BUSINESS.sections,
+      });
+      toast.info('Terms of Business restored to full official template');
+    }
   };
 
   // Handle Email Template Nested Changes
@@ -909,24 +951,34 @@ export default function AdminCmsPage() {
             {/* TAB 3: PRIVACY POLICY */}
             {activeTab === 'privacy' && (
               <div className="space-y-6 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between pb-4 border-b border-border">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border gap-3">
                   <div>
                     <h2 className="text-lg font-bold text-foreground">Privacy Policy Content</h2>
                     <p className="text-xs text-muted-foreground">Manage the public privacy policy, GDPR statements, and registered office details.</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setContent({
-                      ...content,
-                      privacySections: [
-                        ...(content.privacySections || []),
-                        { title: 'New Section Title', content: 'Section contents here...' },
-                      ],
-                    })}
-                    className="bg-primary text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 hover:bg-[#1E3B2B] transition-colors"
-                  >
-                    <Plus size={14} /> Add Policy Section
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={resetPrivacyPolicy}
+                      className="border border-border text-foreground font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 hover:bg-muted transition-colors"
+                      title="Reset to official 15-clause policy"
+                    >
+                      <RotateCcw size={14} /> Reset to Official Policy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setContent({
+                        ...content,
+                        privacySections: [
+                          ...(content.privacySections || []),
+                          { title: 'New Section Title', content: 'Section contents here...' },
+                        ],
+                      })}
+                      className="bg-primary text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 hover:bg-[#1E3B2B] transition-colors"
+                    >
+                      <Plus size={14} /> Add Policy Section
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -954,62 +1006,97 @@ export default function AdminCmsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-foreground mb-1.5">Introduction Statement</label>
+                  <label className="block text-xs font-bold text-foreground mb-1.5">Introduction Statement (Optional)</label>
                   <textarea
                     name="privacyIntro"
                     rows={2}
                     value={content.privacyIntro || ''}
                     onChange={handleChange}
+                    placeholder="Leave blank or enter introduction banner..."
                     className="w-full border border-border rounded-xl p-3 text-sm"
                   />
                 </div>
 
                 {/* Sections */}
-                <div className="space-y-3 pt-2">
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
-                    Policy Clauses &amp; Sections ({content.privacySections?.length || 0})
-                  </span>
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                      Policy Clauses &amp; Sections ({content.privacySections?.length || 0})
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Formatting supported: <code className="bg-muted px-1 rounded">### Subheading</code>, <code className="bg-muted px-1 rounded">- bullet points</code>, <code className="bg-muted px-1 rounded">**bold**</code>
+                    </span>
+                  </div>
 
                   {(content.privacySections || []).map((sec: any, idx: number) => (
-                    <div key={idx} className="border border-border rounded-xl p-4 bg-gray-50/40 space-y-2 relative shadow-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-primary">Section {idx + 1}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const arr = [...content.privacySections];
-                            arr.splice(idx, 1);
-                            setContent({ ...content, privacySections: arr });
-                          }}
-                          className="text-red-500 hover:bg-red-50 p-1 rounded-lg text-xs flex items-center gap-1"
-                        >
-                          <Trash2 size={14} /> Remove
-                        </button>
+                    <div key={idx} className="border border-border rounded-xl p-4 bg-gray-50/40 space-y-3 relative shadow-xs">
+                      <div className="flex justify-between items-center pb-2 border-b border-border/60">
+                        <span className="text-xs font-bold text-primary">
+                          Section {idx + 1} of {content.privacySections?.length || 0}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => moveSection('privacySections', idx, idx - 1)}
+                            className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-1 rounded hover:bg-muted"
+                            title="Move Up"
+                          >
+                            <ArrowUp size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === (content.privacySections?.length || 0) - 1}
+                            onClick={() => moveSection('privacySections', idx, idx + 1)}
+                            className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-1 rounded hover:bg-muted"
+                            title="Move Down"
+                          >
+                            <ArrowDown size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const arr = [...content.privacySections];
+                              arr.splice(idx, 1);
+                              setContent({ ...content, privacySections: arr });
+                            }}
+                            className="text-red-500 hover:bg-red-50 p-1 rounded-lg text-xs flex items-center gap-1 ml-2"
+                            title="Delete Section"
+                          >
+                            <Trash2 size={14} /> Remove
+                          </button>
+                        </div>
                       </div>
 
-                      <input
-                        type="text"
-                        value={sec.title || ''}
-                        onChange={(e) => {
-                          const arr = [...content.privacySections];
-                          arr[idx].title = e.target.value;
-                          setContent({ ...content, privacySections: arr });
-                        }}
-                        placeholder="Section Heading"
-                        className="w-full border border-border rounded-xl p-2.5 text-sm font-bold bg-white"
-                      />
+                      <div>
+                        <label className="block text-[11px] font-bold text-muted-foreground mb-1">Clause Title</label>
+                        <input
+                          type="text"
+                          value={sec.title || ''}
+                          onChange={(e) => {
+                            const arr = [...content.privacySections];
+                            arr[idx].title = e.target.value;
+                            setContent({ ...content, privacySections: arr });
+                          }}
+                          placeholder="e.g. 1. Who we are"
+                          className="w-full border border-border rounded-xl p-2.5 text-sm font-bold bg-white"
+                        />
+                      </div>
 
-                      <textarea
-                        rows={4}
-                        value={sec.content || ''}
-                        onChange={(e) => {
-                          const arr = [...content.privacySections];
-                          arr[idx].content = e.target.value;
-                          setContent({ ...content, privacySections: arr });
-                        }}
-                        placeholder="Section content / paragraphs..."
-                        className="w-full border border-border rounded-xl p-2.5 text-xs bg-white leading-relaxed"
-                      />
+                      <div>
+                        <label className="block text-[11px] font-bold text-muted-foreground mb-1">Clause Content</label>
+                        <textarea
+                          rows={6}
+                          value={sec.content || ''}
+                          onChange={(e) => {
+                            const arr = [...content.privacySections];
+                            arr[idx].content = e.target.value;
+                            setContent({ ...content, privacySections: arr });
+                          }}
+                          placeholder="Enter clause text, paragraphs, or bullets..."
+                          className="w-full border border-border rounded-xl p-3 text-xs bg-white leading-relaxed font-mono"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1019,7 +1106,7 @@ export default function AdminCmsPage() {
             {/* TAB 4: TERMS & CONDITIONS */}
             {activeTab === 'terms' && (
               <div className="space-y-6 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between pb-4 border-b border-border">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border gap-3">
                   <div>
                     <h2 className="text-lg font-bold text-foreground">Terms &amp; Conditions</h2>
                     <p className="text-xs text-muted-foreground">Manage Website Terms of Service and Subscription Terms of Business.</p>
@@ -1034,7 +1121,7 @@ export default function AdminCmsPage() {
                         termsSubTab === 'service' ? 'bg-white text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      Terms of Service
+                      Website Terms ({content.termsSections?.length || 0})
                     </button>
                     <button
                       type="button"
@@ -1043,13 +1130,41 @@ export default function AdminCmsPage() {
                         termsSubTab === 'business' ? 'bg-white text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      Subscription Terms
+                      Subscription Terms ({content.termsBusinessSections?.length || 0})
                     </button>
                   </div>
                 </div>
 
                 {termsSubTab === 'service' ? (
                   <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                        Website Terms of Service ({content.termsSections?.length || 0} Clauses)
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={resetTermsService}
+                          className="border border-border text-foreground font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 hover:bg-muted transition-colors"
+                        >
+                          <RotateCcw size={14} /> Reset to Official Terms
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setContent({
+                            ...content,
+                            termsSections: [
+                              ...(content.termsSections || []),
+                              { title: 'New Clause', content: 'Clause content...' },
+                            ],
+                          })}
+                          className="bg-primary text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 hover:bg-[#1E3B2B] transition-colors"
+                        >
+                          <Plus size={14} /> Add Clause
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-foreground mb-1.5">Page Title</label>
@@ -1074,73 +1189,121 @@ export default function AdminCmsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-foreground mb-1.5">Introduction</label>
+                      <label className="block text-xs font-bold text-foreground mb-1.5">Introduction (Optional)</label>
                       <textarea
                         name="termsIntro"
                         rows={2}
                         value={content.termsIntro || ''}
                         onChange={handleChange}
+                        placeholder="Leave blank or enter introduction banner..."
                         className="w-full border border-border rounded-xl p-2.5 text-sm"
                       />
                     </div>
 
-                    <div className="space-y-3 pt-2">
-                      <div className="flex justify-between items-center">
-                        <label className="text-xs font-bold text-foreground">Terms Clauses</label>
-                        <button
-                          type="button"
-                          onClick={() => setContent({
-                            ...content,
-                            termsSections: [
-                              ...(content.termsSections || []),
-                              { title: 'New Clause', content: 'Clause content...' },
-                            ],
-                          })}
-                          className="text-xs text-primary font-bold flex items-center gap-1 hover:underline"
-                        >
-                          <Plus size={14} /> Add Clause
-                        </button>
-                      </div>
-
+                    <div className="space-y-4 pt-2">
                       {(content.termsSections || []).map((sec: any, idx: number) => (
-                        <div key={idx} className="p-3.5 rounded-xl border border-border bg-gray-50/50 space-y-2 relative">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const arr = [...content.termsSections];
-                              arr.splice(idx, 1);
-                              setContent({ ...content, termsSections: arr });
-                            }}
-                            className="absolute top-2 right-2 text-red-500 hover:bg-red-50 p-1.5 rounded-lg"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                          <input
-                            type="text"
-                            value={sec.title || ''}
-                            onChange={(e) => {
-                              const arr = [...content.termsSections];
-                              arr[idx].title = e.target.value;
-                              setContent({ ...content, termsSections: arr });
-                            }}
-                            className="w-11/12 border border-border rounded-xl p-2 text-xs font-bold"
-                          />
-                          <textarea
-                            rows={3}
-                            value={sec.content || ''}
-                            onChange={(e) => {
-                              const arr = [...content.termsSections];
-                              arr[idx].content = e.target.value;
-                              setContent({ ...content, termsSections: arr });
-                            }}
-                            className="w-full border border-border rounded-xl p-2 text-xs"
-                          />
+                        <div key={idx} className="p-4 rounded-xl border border-border bg-gray-50/50 space-y-3 relative shadow-xs">
+                          <div className="flex justify-between items-center pb-2 border-b border-border/60">
+                            <span className="text-xs font-bold text-primary">
+                              Clause {idx + 1} of {content.termsSections?.length || 0}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={idx === 0}
+                                onClick={() => moveSection('termsSections', idx, idx - 1)}
+                                className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-1 rounded hover:bg-muted"
+                                title="Move Up"
+                              >
+                                <ArrowUp size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={idx === (content.termsSections?.length || 0) - 1}
+                                onClick={() => moveSection('termsSections', idx, idx + 1)}
+                                className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-1 rounded hover:bg-muted"
+                                title="Move Down"
+                              >
+                                <ArrowDown size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const arr = [...content.termsSections];
+                                  arr.splice(idx, 1);
+                                  setContent({ ...content, termsSections: arr });
+                                }}
+                                className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg ml-2"
+                                title="Delete Clause"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-muted-foreground mb-1">Clause Title</label>
+                            <input
+                              type="text"
+                              value={sec.title || ''}
+                              onChange={(e) => {
+                                const arr = [...content.termsSections];
+                                arr[idx].title = e.target.value;
+                                setContent({ ...content, termsSections: arr });
+                              }}
+                              placeholder="e.g. SECTION 1. ONLINE STORE TERMS"
+                              className="w-full border border-border rounded-xl p-2.5 text-xs font-bold bg-white"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-muted-foreground mb-1">Clause Content</label>
+                            <textarea
+                              rows={6}
+                              value={sec.content || ''}
+                              onChange={(e) => {
+                                const arr = [...content.termsSections];
+                                arr[idx].content = e.target.value;
+                                setContent({ ...content, termsSections: arr });
+                              }}
+                              placeholder="Clause content paragraphs..."
+                              className="w-full border border-border rounded-xl p-3 text-xs bg-white leading-relaxed font-mono"
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2">
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                        Subscription Terms of Business ({content.termsBusinessSections?.length || 0} Clauses)
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={resetTermsBusiness}
+                          className="border border-border text-foreground font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 hover:bg-muted transition-colors"
+                        >
+                          <RotateCcw size={14} /> Reset to Official Terms
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setContent({
+                            ...content,
+                            termsBusinessSections: [
+                              ...(content.termsBusinessSections || []),
+                              { title: 'New Business Clause', content: 'Clause content...' },
+                            ],
+                          })}
+                          className="bg-primary text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 hover:bg-[#1E3B2B] transition-colors"
+                        >
+                          <Plus size={14} /> Add Clause
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-foreground mb-1.5">Page Title</label>
@@ -1165,67 +1328,87 @@ export default function AdminCmsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-foreground mb-1.5">Introduction</label>
+                      <label className="block text-xs font-bold text-foreground mb-1.5">Introduction (Optional)</label>
                       <textarea
                         name="termsBusinessIntro"
                         rows={2}
                         value={content.termsBusinessIntro || ''}
                         onChange={handleChange}
+                        placeholder="Leave blank or enter introduction banner..."
                         className="w-full border border-border rounded-xl p-2.5 text-sm"
                       />
                     </div>
 
-                    <div className="space-y-3 pt-2">
-                      <div className="flex justify-between items-center">
-                        <label className="text-xs font-bold text-foreground">Subscription Business Clauses</label>
-                        <button
-                          type="button"
-                          onClick={() => setContent({
-                            ...content,
-                            termsBusinessSections: [
-                              ...(content.termsBusinessSections || []),
-                              { title: 'New Business Clause', content: 'Clause content...' },
-                            ],
-                          })}
-                          className="text-xs text-primary font-bold flex items-center gap-1 hover:underline"
-                        >
-                          <Plus size={14} /> Add Clause
-                        </button>
-                      </div>
-
+                    <div className="space-y-4 pt-2">
                       {(content.termsBusinessSections || []).map((sec: any, idx: number) => (
-                        <div key={idx} className="p-3.5 rounded-xl border border-border bg-gray-50/50 space-y-2 relative">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const arr = [...content.termsBusinessSections];
-                              arr.splice(idx, 1);
-                              setContent({ ...content, termsBusinessSections: arr });
-                            }}
-                            className="absolute top-2 right-2 text-red-500 hover:bg-red-50 p-1.5 rounded-lg"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                          <input
-                            type="text"
-                            value={sec.title || ''}
-                            onChange={(e) => {
-                              const arr = [...content.termsBusinessSections];
-                              arr[idx].title = e.target.value;
-                              setContent({ ...content, termsBusinessSections: arr });
-                            }}
-                            className="w-11/12 border border-border rounded-xl p-2 text-xs font-bold"
-                          />
-                          <textarea
-                            rows={3}
-                            value={sec.content || ''}
-                            onChange={(e) => {
-                              const arr = [...content.termsBusinessSections];
-                              arr[idx].content = e.target.value;
-                              setContent({ ...content, termsBusinessSections: arr });
-                            }}
-                            className="w-full border border-border rounded-xl p-2 text-xs"
-                          />
+                        <div key={idx} className="p-4 rounded-xl border border-border bg-gray-50/50 space-y-3 relative shadow-xs">
+                          <div className="flex justify-between items-center pb-2 border-b border-border/60">
+                            <span className="text-xs font-bold text-primary">
+                              Clause {idx + 1} of {content.termsBusinessSections?.length || 0}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={idx === 0}
+                                onClick={() => moveSection('termsBusinessSections', idx, idx - 1)}
+                                className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-1 rounded hover:bg-muted"
+                                title="Move Up"
+                              >
+                                <ArrowUp size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={idx === (content.termsBusinessSections?.length || 0) - 1}
+                                onClick={() => moveSection('termsBusinessSections', idx, idx + 1)}
+                                className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-1 rounded hover:bg-muted"
+                                title="Move Down"
+                              >
+                                <ArrowDown size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const arr = [...content.termsBusinessSections];
+                                  arr.splice(idx, 1);
+                                  setContent({ ...content, termsBusinessSections: arr });
+                                }}
+                                className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg ml-2"
+                                title="Delete Clause"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-muted-foreground mb-1">Clause Title</label>
+                            <input
+                              type="text"
+                              value={sec.title || ''}
+                              onChange={(e) => {
+                                const arr = [...content.termsBusinessSections];
+                                arr[idx].title = e.target.value;
+                                setContent({ ...content, termsBusinessSections: arr });
+                              }}
+                              placeholder="e.g. 1. Introduction"
+                              className="w-full border border-border rounded-xl p-2.5 text-xs font-bold bg-white"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-muted-foreground mb-1">Clause Content</label>
+                            <textarea
+                              rows={6}
+                              value={sec.content || ''}
+                              onChange={(e) => {
+                                const arr = [...content.termsBusinessSections];
+                                arr[idx].content = e.target.value;
+                                setContent({ ...content, termsBusinessSections: arr });
+                              }}
+                              placeholder="Clause content paragraphs..."
+                              className="w-full border border-border rounded-xl p-3 text-xs bg-white leading-relaxed font-mono"
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>

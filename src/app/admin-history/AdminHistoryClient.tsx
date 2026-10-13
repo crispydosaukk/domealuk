@@ -233,6 +233,15 @@ export default function AdminHistoryClient() {
                         {order.address?.fullName || 'Unknown'}
                       </p>
                       <p className="text-xs text-muted-foreground">{order.address?.phone}</p>
+                      {order.stripeInvoiceId ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded mt-1">
+                          🔁 Auto-Renewal
+                        </span>
+                      ) : order.subscriptionFrequency ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded mt-1">
+                          🔁 {order.subscriptionFrequency}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-5 py-4 text-muted-foreground text-xs max-w-[200px] truncate">
                       {order.items?.map((i: any) => `${i.qty}x ${i.name}`).join(', ')}

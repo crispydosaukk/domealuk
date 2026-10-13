@@ -198,9 +198,6 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-extrabold text-foreground">Today&apos;s Menu</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Fresh, home-cooked vegetarian meals — order by 10 PM for next day delivery
-          </p>
         </div>
       </div>
 

@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ChevronDown, Eye, X, Wallet, FileText, Download } from 'lucide-react';
+import { Search, Filter, ChevronDown, Eye, X, Wallet, FileText, Download, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { getApiUrl } from '@/lib/api';
 import {
   exportDeliveriesToPdf,
   exportDeliveriesToExcel,
@@ -57,6 +58,7 @@ export default function OrdersTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'subscription' | 'renewal' | 'cancelled' | 'onetime'>('all');
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [slotNames, setSlotNames] = useState<Record<string, string>>(defaultSlotNames);
   const [page, setPage] = useState(1);
@@ -177,7 +179,18 @@ export default function OrdersTab() {
       name.toLowerCase().includes(search.toLowerCase()) ||
       o.id.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || o.status === statusFilter;
-    return matchSearch && matchStatus;
+
+    const isRenewal = Boolean(o.stripeInvoiceId);
+    const isSub = Boolean(o.stripeSubscriptionId || o.subscriptionFrequency);
+    const isCancelled = o.subscriptionStatus === 'cancelled' || o.status === 'Cancelled';
+
+    let matchType = true;
+    if (typeFilter === 'subscription') matchType = isSub;
+    else if (typeFilter === 'renewal') matchType = isRenewal;
+    else if (typeFilter === 'cancelled') matchType = isCancelled;
+    else if (typeFilter === 'onetime') matchType = !isSub && !isRenewal;
+
+    return matchSearch && matchStatus && matchType;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
@@ -264,6 +277,32 @@ export default function OrdersTab() {
     toast.success(`Downloaded Excel (.xlsx) (${exportItems.length} order records)`);
   };
 
+  const [isSyncingSubs, setIsSyncingSubs] = useState(false);
+
+  const handleSyncSubscriptions = async () => {
+    setIsSyncingSubs(true);
+    try {
+      const res = await fetch(getApiUrl('/api/sync-stripe-subscriptions'), {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const createdCount = data.results?.ordersCreated?.length || 0;
+        if (createdCount > 0) {
+          toast.success(`Synced! Generated ${createdCount} new renewal order(s). 🎉`);
+        } else {
+          toast.success('All subscription orders are up to date! ✅');
+        }
+      } else {
+        toast.error(data.error || 'Failed to sync subscriptions.');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Error syncing subscriptions');
+    } finally {
+      setIsSyncingSubs(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters & Export Actions */}
@@ -304,6 +343,17 @@ export default function OrdersTab() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Sync Subscriptions Button */}
+          <button
+            onClick={handleSyncSubscriptions}
+            disabled={isSyncingSubs}
+            className="px-3 py-2 rounded-xl bg-white hover:bg-indigo-50 text-indigo-700 font-700 text-xs border border-indigo-200 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Sync Stripe Subscriptions and generate missing renewal orders"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${isSyncingSubs ? 'animate-spin' : ''}`} />
+            <span>{isSyncingSubs ? 'Syncing...' : 'Sync Subscriptions'}</span>
+          </button>
+
           {/* Download PDF Button */}
           <button
             onClick={handleDownloadPdf}
@@ -326,6 +376,75 @@ export default function OrdersTab() {
 
           <p className="text-xs text-muted-foreground ml-2">{filtered.length} orders found</p>
         </div>
+      </div>
+
+      {/* Order Type Filter Pills */}
+      <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-bold py-1">
+        <button
+          onClick={() => {
+            setTypeFilter('all');
+            setPage(1);
+          }}
+          className={`px-3 py-1.5 rounded-lg transition-all ${
+            typeFilter === 'all'
+              ? 'bg-[#1E3B2B] text-white shadow-xs'
+              : 'bg-white text-muted-foreground border border-border hover:text-foreground'
+          }`}
+        >
+          All Orders ({orders.length})
+        </button>
+        <button
+          onClick={() => {
+            setTypeFilter('subscription');
+            setPage(1);
+          }}
+          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+            typeFilter === 'subscription'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-50'
+          }`}
+        >
+          <span>🔁 Subscriptions ({orders.filter((o) => o.stripeSubscriptionId || o.subscriptionFrequency).length})</span>
+        </button>
+        <button
+          onClick={() => {
+            setTypeFilter('renewal');
+            setPage(1);
+          }}
+          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+            typeFilter === 'renewal'
+              ? 'bg-purple-700 text-white shadow-xs'
+              : 'bg-white text-purple-800 border border-purple-200 hover:bg-purple-50'
+          }`}
+        >
+          <span>🔁 Auto-Renewals ({orders.filter((o) => o.stripeInvoiceId).length})</span>
+        </button>
+        <button
+          onClick={() => {
+            setTypeFilter('cancelled');
+            setPage(1);
+          }}
+          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+            typeFilter === 'cancelled'
+              ? 'bg-rose-700 text-white shadow-xs'
+              : 'bg-white text-rose-800 border border-rose-200 hover:bg-rose-50'
+          }`}
+        >
+          <span>❌ Cancelled Plans ({orders.filter((o) => o.subscriptionStatus === 'cancelled').length})</span>
+        </button>
+        <button
+          onClick={() => {
+            setTypeFilter('onetime');
+            setPage(1);
+          }}
+          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+            typeFilter === 'onetime'
+              ? 'bg-amber-700 text-white shadow-xs'
+              : 'bg-white text-amber-800 border border-amber-200 hover:bg-amber-50'
+          }`}
+        >
+          <span>📦 One-Time ({orders.filter((o) => !o.stripeSubscriptionId && !o.subscriptionFrequency).length})</span>
+        </button>
       </div>
 
       {/* Table */}
@@ -382,9 +501,22 @@ export default function OrdersTab() {
                     </td>
                     <td className="px-4 py-3 min-w-[210px]">
                       <div className="flex flex-col gap-1">
-                        {order.subscriptionFrequency && (
-                          <span className="inline-flex items-center gap-1 w-fit text-[11px] font-700 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
+                        {order.stripeInvoiceId ? (
+                          <span className="inline-flex items-center gap-1 w-fit text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200 px-2 py-0.5 rounded-md">
+                            <span>🔁</span> Auto-Renewal Cycle
+                          </span>
+                        ) : order.subscriptionFrequency ? (
+                          <span className="inline-flex items-center gap-1 w-fit text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
                             <span>🔁</span> {order.subscriptionFrequency}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 w-fit text-[10px] font-medium bg-gray-50 text-gray-600 border border-gray-200 px-1.5 py-0.2 rounded">
+                            One-Time Order
+                          </span>
+                        )}
+                        {order.subscriptionStatus === 'cancelled' && (
+                          <span className="inline-flex items-center gap-1 w-fit text-[10px] font-extrabold bg-rose-50 text-rose-800 border border-rose-200 px-1.5 py-0.2 rounded">
+                            ❌ Plan Cancelled
                           </span>
                         )}
                         <div className="text-xs font-600 text-foreground space-y-1">
@@ -542,9 +674,16 @@ export default function OrdersTab() {
                   <h3 className="font-800 text-xs text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
                     <span>📦</span> Package & Subscription Plan Chosen
                   </h3>
-                  <span className="inline-flex items-center gap-1 text-xs font-800 bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full">
-                    <span>🔁</span> {selectedOrder.subscriptionFrequency || 'Standard One-Time Order'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {selectedOrder.stripeInvoiceId && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-800 bg-purple-100 text-purple-800 border border-purple-300 px-2.5 py-0.5 rounded-full">
+                        <span>🔁</span> Auto-Renewal Cycle
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1 text-xs font-800 bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                      <span>🔁</span> {selectedOrder.subscriptionFrequency || 'Standard One-Time Order'}
+                    </span>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-700 mt-2">
                   <div>
@@ -553,11 +692,32 @@ export default function OrdersTab() {
                   </div>
                   <div>
                     <span className="text-muted-foreground font-semibold">Subscription Status:</span>{' '}
-                    <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${selectedOrder.subscriptionStatus === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                    <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${selectedOrder.subscriptionStatus === 'active' ? 'bg-green-100 text-green-800' : selectedOrder.subscriptionStatus === 'cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}>
                       {selectedOrder.subscriptionStatus || 'Active'}
                     </span>
                   </div>
                 </div>
+
+                {/* Customer Lifetime Orders Summary */}
+                {(() => {
+                  const customerOrders = orders.filter(
+                    (o) =>
+                      (selectedOrder.userId && o.userId === selectedOrder.userId) ||
+                      (selectedOrder.address?.phone && o.address?.phone === selectedOrder.address.phone) ||
+                      (selectedOrder.customerEmail && (o.customerEmail === selectedOrder.customerEmail || o.email === selectedOrder.customerEmail))
+                  );
+                  const subCount = customerOrders.filter((o) => o.stripeSubscriptionId || o.subscriptionFrequency).length;
+                  const renewalCount = customerOrders.filter((o) => o.stripeInvoiceId).length;
+
+                  return (
+                    <div className="mt-3 pt-3 border-t border-emerald-200/80 flex items-center justify-between text-xs">
+                      <span className="text-emerald-900 font-bold">Customer Order History:</span>
+                      <span className="text-emerald-800 font-extrabold bg-emerald-100/90 px-2.5 py-0.5 rounded-md">
+                        {customerOrders.length} total orders ({subCount} plan orders, {renewalCount} renewals)
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Customer Details */}

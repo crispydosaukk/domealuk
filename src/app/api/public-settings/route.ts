@@ -11,10 +11,22 @@ export async function POST(req: NextRequest) {
 
 async function handlePublicSettings() {
   try {
-    const snap = await dbAdmin.collection('settings').doc('global').get();
-    if (snap.exists) {
-      const data = snap.data() || {};
+    let data: any = null;
+    if (dbAdmin) {
+      const snap = await dbAdmin.collection('settings').doc('global').get();
+      if (snap.exists) {
+        data = snap.data();
+      }
+    } else {
+      const { getDoc, doc } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+      const snap = await getDoc(doc(db, 'settings', 'global'));
+      if (snap.exists()) {
+        data = snap.data();
+      }
+    }
 
+    if (data) {
       // Exclude sensitive credentials before serving to the client
       const { stripeSecretKey, ...publicSettings } = data;
 
