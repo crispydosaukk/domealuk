@@ -12,6 +12,7 @@ import {
   Eye,
   X,
   Wallet,
+  Repeat,
 } from 'lucide-react';
 import { collection, query, orderBy, limit, onSnapshot, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -86,6 +87,17 @@ export default function AdminDashboardClient() {
   );
   const uniqueCustomers = new Set(liveOrders.map((o) => o.userId)).size;
 
+  const activeSubsCount = new Set(
+    liveOrders
+      .filter((o) => (o.stripeSubscriptionId || o.subscriptionFrequency) && o.subscriptionStatus === 'active')
+      .map((o) => o.userId || o.customerEmail || o.email)
+  ).size;
+  const cancelledSubsCount = new Set(
+    liveOrders
+      .filter((o) => o.subscriptionStatus === 'cancelled' || o.status === 'Cancelled')
+      .map((o) => o.userId || o.customerEmail || o.email)
+  ).size;
+
   const kpiCards = [
     {
       id: 'kpi-orders-today',
@@ -109,6 +121,16 @@ export default function AdminDashboardClient() {
     },
     {
       id: 'kpi-subscriptions',
+      label: 'Active Plans',
+      value: activeSubsCount.toString(),
+      change: `${cancelledSubsCount} Cancelled`,
+      trend: cancelledSubsCount > 0 ? 'warn' : 'up',
+      icon: Repeat,
+      color: 'bg-emerald-50 text-emerald-700',
+      borderColor: 'border-emerald-200',
+    },
+    {
+      id: 'kpi-customers',
       label: 'Total Customers',
       value: uniqueCustomers.toString(),
       change: 'Recent unique',

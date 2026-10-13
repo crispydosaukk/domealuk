@@ -242,6 +242,11 @@ export default function AdminHistoryClient() {
                           🔁 {order.subscriptionFrequency}
                         </span>
                       ) : null}
+                      {order.subscriptionStatus === 'cancelled' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded mt-1">
+                          ❌ Plan Cancelled
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-muted-foreground text-xs max-w-[200px] truncate">
                       {order.items?.map((i: any) => `${i.qty}x ${i.name}`).join(', ')}

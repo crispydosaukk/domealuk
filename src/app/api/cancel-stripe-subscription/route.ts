@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/lib/firebase';
 import { dbAdmin } from '@/lib/firebase-admin';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,23 +42,48 @@ export async function POST(req: NextRequest) {
     // Cancel subscription on Stripe
     const cancelledSubscription = await stripe.subscriptions.cancel(subscriptionId);
 
-    // Update Firestore order if orderId is provided
-    if (orderId) {
-      if (dbAdmin) {
+    // Update all Firestore orders associated with this subscriptionId
+    if (dbAdmin) {
+      const snap = await dbAdmin
+        .collection('orders')
+        .where('stripeSubscriptionId', '==', subscriptionId)
+        .get();
+
+      for (const d of snap.docs) {
+        await dbAdmin.collection('orders').doc(d.id).update({
+          subscriptionStatus: 'cancelled',
+          status: 'Cancelled',
+        });
+      }
+
+      if (orderId) {
         await dbAdmin.collection('orders').doc(orderId).update({
           subscriptionStatus: 'cancelled',
           status: 'Cancelled',
         });
-      } else {
-        try {
+      }
+    } else {
+      try {
+        const ordersRef = collection(db, 'orders');
+        const q = query(ordersRef, where('stripeSubscriptionId', '==', subscriptionId));
+        const querySnapshot = await getDocs(q);
+
+        for (const docSnap of querySnapshot.docs) {
+          await updateDoc(doc(db, 'orders', docSnap.id), {
+            subscriptionStatus: 'cancelled',
+            status: 'Cancelled',
+          });
+        }
+
+        if (orderId) {
           const orderRef = doc(db, 'orders', orderId);
           await updateDoc(orderRef, {
             subscriptionStatus: 'cancelled',
             status: 'Cancelled',
           });
-        } catch (e) {
-          console.warn('Failed to update order status on server using client SDK fallback:', e);
         }
+      } catch (e) {
+        console.warn('Failed to update orders on server using client SDK fallback:', e);
       }
     }
 
