@@ -15,7 +15,7 @@ import {
   FieldValue,
 } from 'firebase/firestore';
 import { FieldValue as AdminFieldValue } from 'firebase-admin/firestore';
-import { sendOrderConfirmationEmails } from '@/lib/emailService';
+import { sendOrderConfirmationEmails, sendPaymentDebitedEmail } from '@/lib/emailService';
 
 // Helper function to safely extract epoch milliseconds from any timestamp format
 const getEpochTime = (val: any): number => {
@@ -248,9 +248,23 @@ export async function POST(req: NextRequest) {
           );
 
           try {
-            await sendOrderConfirmationEmails(newOrderId);
+            await sendPaymentDebitedEmail(
+              newOrderId,
+              {
+                amount: renewalAmount,
+                deliveryDates: newDeliveryDates,
+                invoiceId: invoiceId || undefined,
+                frequency,
+              },
+              newOrderPayload
+            );
           } catch (eErr) {
-            console.error('Error sending recurring order email:', eErr);
+            console.error('Error sending payment debited email, falling back to confirmation email:', eErr);
+            try {
+              await sendOrderConfirmationEmails(newOrderId, newOrderPayload);
+            } catch (fallbackErr) {
+              console.error('Fallback confirmation email also failed:', fallbackErr);
+            }
           }
         }
         break;
@@ -296,6 +310,13 @@ export async function POST(req: NextRequest) {
         const subscriptionId = session.id as string;
         if (!subscriptionId) break;
 
+        // This webhook fires when the billing period truly ends (cancel_at_period_end reached).
+        // At this point:
+        //   - Mark subscriptionStatus = 'cancelled' on ALL orders for this subscription
+        //   - Only set status = 'Cancelled' on orders still in 'Pending Payment'
+        //     (orders already received/preparing/delivered are real fulfilled orders — don't touch them)
+        const FULFILLED_STATUSES = ['Order Received', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered'];
+
         if (dbAdmin) {
           const querySnapshot = await dbAdmin
             .collection('orders')
@@ -303,9 +324,14 @@ export async function POST(req: NextRequest) {
             .get();
 
           for (const d of querySnapshot.docs) {
+            const orderData = d.data();
+            const currentStatus = orderData.status || '';
+            const isFulfilled = FULFILLED_STATUSES.includes(currentStatus);
+
             await dbAdmin.collection('orders').doc(d.id).update({
               subscriptionStatus: 'cancelled',
-              status: 'Cancelled',
+              // Only cancel orders not yet in progress — don't overwrite fulfilled delivery orders
+              ...(isFulfilled ? {} : { status: 'Cancelled' }),
             });
           }
         } else {
@@ -315,16 +341,21 @@ export async function POST(req: NextRequest) {
             const querySnapshot = await getDocs(q);
 
             for (const docSnap of querySnapshot.docs) {
+              const orderData = docSnap.data();
+              const currentStatus = orderData.status || '';
+              const isFulfilled = FULFILLED_STATUSES.includes(currentStatus);
+
               await updateDoc(doc(db, 'orders', docSnap.id), {
                 subscriptionStatus: 'cancelled',
-                status: 'Cancelled',
+                // Only cancel orders not yet in progress — don't overwrite fulfilled delivery orders
+                ...(isFulfilled ? {} : { status: 'Cancelled' }),
               });
             }
           } catch (e) {
             console.error('Client SDK Webhook fallback failed to delete/cancel order:', e);
           }
         }
-        console.log(`Subscription ${subscriptionId} deleted. Updated orders to cancelled.`);
+        console.log(`Subscription ${subscriptionId} period ended. Updated orders to cancelled (preserved fulfilled order statuses).`);
         break;
       }
 

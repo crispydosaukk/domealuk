@@ -160,6 +160,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Trigger confirmation email (idempotent, checks confirmationEmailSent inside emailService)
+    try {
+      await sendOrderConfirmationEmails(orderId, orderData);
+    } catch (emailErr) {
+      console.error('Error sending confirmation email in verify-checkout-session:', emailErr);
+    }
+
     return NextResponse.json({ success: true, order: orderData });
   } catch (err: any) {
     console.error('Error verifying checkout session:', err);

@@ -487,6 +487,17 @@ function CheckoutClientContent({
           orderId,
         });
 
+        // Trigger order placed confirmation email for wallet-paid orders
+        try {
+          fetch(getApiUrl('/api/send-order-email'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId }),
+          }).catch((mailErr) => console.error('Failed to trigger wallet order email:', mailErr));
+        } catch (e) {
+          console.error('Wallet order email trigger error:', e);
+        }
+
         clearCart();
         setStep('confirmed');
         toast.success('Order placed successfully! 🎉');

@@ -162,7 +162,54 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. Create Order document in Firestore with 'Pending Payment'
+    // 4. Calculate Saturday midnight cutoff billing anchor
+    // First delivery week is charged immediately at checkout.
+    // The next debit will occur on the Saturday midnight (start of Saturday) preceding the second cycle.
+    let saturdayAnchor: number | undefined;
+    try {
+      const isBiweekly = frequency?.toLowerCase().includes('2 week');
+      const daysToAdd = isBiweekly ? 14 : 7;
+
+      if (deliveryDates && Array.isArray(deliveryDates) && deliveryDates.length > 0) {
+        const sortedDates = [...deliveryDates].sort();
+        const firstDelivery = new Date(sortedDates[0]);
+
+        if (!isNaN(firstDelivery.getTime())) {
+          const nextCycleStart = new Date(firstDelivery);
+          nextCycleStart.setDate(nextCycleStart.getDate() + daysToAdd);
+
+          // Find preceding Saturday 00:00:00 UTC
+          // getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
+          const day = nextCycleStart.getDay();
+          const daysBackToSaturday = day === 6 ? 7 : day + 1;
+
+          const satDate = new Date(nextCycleStart);
+          satDate.setDate(satDate.getDate() - daysBackToSaturday);
+          satDate.setUTCHours(0, 0, 0, 0);
+
+          const now = new Date();
+          // Ensure anchor is at least 48 hours in future
+          if (satDate.getTime() > now.getTime() + 48 * 3600 * 1000) {
+            saturdayAnchor = Math.floor(satDate.getTime() / 1000);
+          }
+        }
+      }
+
+      if (!saturdayAnchor) {
+        // Fallback: nearest Saturday at least 5 days away
+        const fallback = new Date();
+        fallback.setDate(fallback.getDate() + (isBiweekly ? 11 : 5));
+        while (fallback.getDay() !== 6) {
+          fallback.setDate(fallback.getDate() + 1);
+        }
+        fallback.setUTCHours(0, 0, 0, 0);
+        saturdayAnchor = Math.floor(fallback.getTime() / 1000);
+      }
+    } catch (calcErr) {
+      console.warn('Error calculating Saturday anchor:', calcErr);
+    }
+
+    // 5. Create Order document in Firestore with 'Pending Payment'
     const orderPayload = {
       userId,
       customerEmail: email,
@@ -198,13 +245,23 @@ export async function POST(req: NextRequest) {
       await setDoc(doc(db, 'orders', orderId), orderPayload);
     }
 
-    // 5. Create Stripe Checkout Session
+    // 6. Create Stripe Checkout Session
     const origin = req.headers.get('origin') || 'http://localhost:4028';
-    const session = await stripe.checkout.sessions.create({
+    const sessionPayload: Stripe.Checkout.SessionCreateParams = {
       customer: stripeCustomerId,
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'subscription',
+      subscription_data: {
+        ...(saturdayAnchor ? { billing_cycle_anchor: saturdayAnchor } : {}),
+        proration_behavior: 'none',
+        metadata: {
+          type: 'subscription_order',
+          userId,
+          orderId,
+          customerEmail: email,
+        },
+      },
       success_url: `${origin}/checkout-order-confirmation-screen?status=success&session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
       cancel_url: `${origin}/checkout-order-confirmation-screen?status=cancel&order_id=${orderId}`,
       metadata: {
@@ -213,7 +270,9 @@ export async function POST(req: NextRequest) {
         orderId,
         customerEmail: email,
       },
-    });
+    };
+
+    const session = await stripe.checkout.sessions.create(sessionPayload);
 
     return NextResponse.json({ url: session.url });
   } catch (err: any) {

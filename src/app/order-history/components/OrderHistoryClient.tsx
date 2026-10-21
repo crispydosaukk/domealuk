@@ -91,13 +91,13 @@ export default function OrderHistoryClient() {
       if (data.success) {
         try {
           await updateDoc(doc(db, 'orders', orderId), {
-            subscriptionStatus: 'cancelled',
-            status: 'Cancelled',
+            subscriptionStatus: 'cancelling',
+            // Do NOT set status: 'Cancelled' — current week's delivery must still proceed
           });
         } catch (e) {
           console.error('Failed to update order status client-side:', e);
         }
-        toast.success('Subscription cancelled successfully. 🎉');
+        toast.success('Cancellation scheduled. Your current week\'s delivery will still arrive, and no further payments will be taken after this cycle. 🎉');
         setShowCancelModal(false);
         setPendingCancelData(null);
       } else {
@@ -641,12 +641,19 @@ export default function OrderHistoryClient() {
                           {cancellingId === order.stripeSubscriptionId ? (
                             <>
                               <span className="w-3.5 h-3.5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                              Cancelling...
+                              Scheduling...
                             </>
                           ) : (
                             <>Cancel Subscription</>
                           )}
                         </button>
+                      )}
+
+                      {order.stripeSubscriptionId && order.subscriptionStatus === 'cancelling' && (
+                        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-700 px-5 py-2.5 rounded-xl">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                          Cancellation Scheduled
+                        </div>
                       )}
 
                       <Link
@@ -677,8 +684,9 @@ export default function OrderHistoryClient() {
 
             <h3 className="text-lg font-800 text-foreground mb-2">Cancel Tiffin Subscription</h3>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              Are you sure you want to cancel your tiffin subscription? This will stop all upcoming
-              scheduled tiffin deliveries for this order.
+              Your cancellation will take effect at the end of the current billing period. If payment
+              has already been taken for this week, your delivery will still arrive as normal.
+              No further payments will be charged after the current cycle ends.
             </p>
 
             <div className="flex gap-3">

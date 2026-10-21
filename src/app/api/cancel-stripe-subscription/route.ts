@@ -39,10 +39,20 @@ export async function POST(req: NextRequest) {
       apiVersion: '2022-11-15' as any,
     });
 
-    // Cancel subscription on Stripe
-    const cancelledSubscription = await stripe.subscriptions.cancel(subscriptionId);
+    // Schedule cancellation at end of current billing period (NOT immediate).
+    // This means:
+    //   - If payment was already taken for this week (Saturday midnight cutoff),
+    //     the current week's delivery continues as normal.
+    //   - Stripe will stop charging after the current period ends.
+    //   - Stripe will fire `customer.subscription.deleted` at period end, which
+    //     is where we finalize the cancellation in Firestore.
+    const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
+      cancel_at_period_end: true,
+    });
 
-    // Update all Firestore orders associated with this subscriptionId
+    // Mark all Firestore orders for this subscription as 'cancelling'.
+    // We do NOT change `status` (Order Received / Delivered / etc.) so the
+    // current week's order is still fulfilled normally by the kitchen.
     if (dbAdmin) {
       const snap = await dbAdmin
         .collection('orders')
@@ -51,15 +61,16 @@ export async function POST(req: NextRequest) {
 
       for (const d of snap.docs) {
         await dbAdmin.collection('orders').doc(d.id).update({
-          subscriptionStatus: 'cancelled',
-          status: 'Cancelled',
+          subscriptionStatus: 'cancelling',
+          // Do NOT update `status` — current week's delivery must proceed
         });
       }
 
+      // Also ensure the specific orderId passed is updated (in case it's a
+      // guest-order that doesn't have stripeSubscriptionId set yet)
       if (orderId) {
         await dbAdmin.collection('orders').doc(orderId).update({
-          subscriptionStatus: 'cancelled',
-          status: 'Cancelled',
+          subscriptionStatus: 'cancelling',
         });
       }
     } else {
@@ -70,16 +81,15 @@ export async function POST(req: NextRequest) {
 
         for (const docSnap of querySnapshot.docs) {
           await updateDoc(doc(db, 'orders', docSnap.id), {
-            subscriptionStatus: 'cancelled',
-            status: 'Cancelled',
+            subscriptionStatus: 'cancelling',
+            // Do NOT update `status` — current week's delivery must proceed
           });
         }
 
         if (orderId) {
           const orderRef = doc(db, 'orders', orderId);
           await updateDoc(orderRef, {
-            subscriptionStatus: 'cancelled',
-            status: 'Cancelled',
+            subscriptionStatus: 'cancelling',
           });
         }
       } catch (e) {
@@ -89,10 +99,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      status: cancelledSubscription.status,
+      status: updatedSubscription.status,
+      cancel_at_period_end: updatedSubscription.cancel_at_period_end,
     });
   } catch (err: any) {
-    console.error('Error cancelling Stripe subscription:', err);
+    console.error('Error scheduling subscription cancellation:', err);
     return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
   }
 }

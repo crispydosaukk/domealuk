@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ChevronDown, Eye, X, Wallet, FileText, Download, RefreshCw } from 'lucide-react';
+import { Search, Filter, ChevronDown, Eye, X, Wallet, FileText, Download, RefreshCw, Sun } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/lib/api';
 import {
@@ -166,6 +166,15 @@ export default function OrdersTab() {
         }
       }
 
+      // Trigger delivery notification email if status is Out for Delivery or Delivered
+      if (newStatus === 'Out for Delivery' || newStatus === 'Delivered') {
+        fetch(getApiUrl('/api/send-delivery-status-email'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, status: newStatus }),
+        }).catch((e) => console.error('Failed to trigger delivery status email:', e));
+      }
+
       toast.success(`Order ${orderId} → ${newStatus}`);
     } catch (err) {
       console.error(err);
@@ -303,6 +312,33 @@ export default function OrdersTab() {
     }
   };
 
+  const [isSendingMorningEmails, setIsSendingMorningEmails] = useState(false);
+
+  const handleSendMorningEmails = async () => {
+    setIsSendingMorningEmails(true);
+    try {
+      const res = await fetch(getApiUrl('/api/cron/delivery-morning-email'), {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.sentCount > 0) {
+          toast.success(`Sent morning delivery emails to ${data.sentCount} customer(s) for today! ☀️`);
+        } else if (data.alreadySentCount > 0) {
+          toast.info(`Morning delivery emails were already sent for all ${data.alreadySentCount} order(s) today.`);
+        } else {
+          toast.info('No scheduled deliveries found for today.');
+        }
+      } else {
+        toast.error(data.error || 'Failed to dispatch morning delivery emails.');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Error triggering morning delivery emails.');
+    } finally {
+      setIsSendingMorningEmails(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters & Export Actions */}
@@ -343,6 +379,17 @@ export default function OrdersTab() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Send Morning Delivery Emails Button */}
+          <button
+            onClick={handleSendMorningEmails}
+            disabled={isSendingMorningEmails}
+            className="px-3 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-700 font-700 text-xs border border-amber-200 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Dispatch morning delivery email alerts for today's deliveries"
+          >
+            <Sun className={`w-3.5 h-3.5 text-amber-600 ${isSendingMorningEmails ? 'animate-spin' : ''}`} />
+            <span>{isSendingMorningEmails ? 'Sending...' : 'Morning Alerts'}</span>
+          </button>
+
           {/* Sync Subscriptions Button */}
           <button
             onClick={handleSyncSubscriptions}
