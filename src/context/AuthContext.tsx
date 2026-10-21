@@ -120,7 +120,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email.trim());
+    const cleanEmail = email.trim();
+    try {
+      const continueUrl =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/reset-password`
+          : 'https://domeal.co.uk/reset-password';
+      await sendPasswordResetEmail(auth, cleanEmail, {
+        url: continueUrl,
+        handleCodeInApp: false,
+      });
+    } catch (err: any) {
+      // If continue URL domain isn't authorized in Firebase yet, fall back to standard Firebase reset email
+      if (
+        err?.code === 'auth/unauthorized-continue-uri' ||
+        err?.code === 'auth/invalid-continue-uri'
+      ) {
+        await sendPasswordResetEmail(auth, cleanEmail);
+      } else {
+        throw err;
+      }
+    }
   };
 
   const logout = async () => {
