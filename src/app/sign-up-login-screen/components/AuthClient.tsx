@@ -49,9 +49,43 @@ export default function AuthClient() {
   const [studentEmail, setStudentEmail] = useState('');
   const [studentIdCard, setStudentIdCard] = useState<File | null>(null);
   const [studentIdCardPreview, setStudentIdCardPreview] = useState<string | null>(null);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetError, setResetError] = useState('');
 
-  const { login, signup } = useAuth();
+  const { login, signup, resetPassword } = useAuth();
   const router = useRouter();
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetEmail = resetEmail.trim();
+    if (!targetEmail || !targetEmail.includes('@')) {
+      setResetError('Please enter a valid email address.');
+      return;
+    }
+    setResetLoading(true);
+    setResetError('');
+    try {
+      await resetPassword(targetEmail);
+      setResetSuccess(true);
+      toast.success('Password reset email sent! Check your inbox.');
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code === 'auth/user-not-found') {
+        setResetError('No account found with this email address.');
+      } else if (code === 'auth/invalid-email') {
+        setResetError('Please enter a valid email address.');
+      } else if (code === 'auth/too-many-requests') {
+        setResetError('Too many requests. Please wait a moment before trying again.');
+      } else {
+        setResetError(err.message || 'Failed to send password reset email. Please try again.');
+      }
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const loginForm = useForm<LoginForm>({
     defaultValues: { email: '', password: '', remember: false },
@@ -291,118 +325,239 @@ export default function AuthClient() {
             <span className="font-extrabold text-xl text-primary">DoMeal</span>
           </div>
 
-          {/* Tabs */}
-          <div className="flex bg-muted rounded-xl p-1 mb-8">
-            <button
-              onClick={() => setTab('login')}
-              className={`flex-1 py-2.5 text-sm font-700 rounded-lg transition-all duration-150 ${tab === 'login' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => setTab('signup')}
-              className={`flex-1 py-2.5 text-sm font-700 rounded-lg transition-all duration-150 ${tab === 'signup' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              Create Account
-            </button>
-          </div>
+          {isForgotPassword ? (
+            <div className="space-y-5 animate-in fade-in duration-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setResetSuccess(false);
+                  setResetError('');
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-700 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft size={14} /> Back to Sign In
+              </button>
 
-          {tab === 'login' && (
-            <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
               <div>
-                <h1 className="text-2xl font-extrabold text-foreground mb-1">Welcome back!</h1>
+                <h1 className="text-2xl font-extrabold text-foreground mb-1">Reset your password</h1>
                 <p className="text-sm text-muted-foreground">
-                  Sign in to manage your tiffin orders
+                  Enter your registered email and we&apos;ll send you a link to reset your password.
                 </p>
               </div>
 
-              {loginForm.formState.errors.root && (
+              {resetError && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                  <p className="text-sm text-red-600">{loginForm.formState.errors.root.message}</p>
+                  <p className="text-sm text-red-600">{resetError}</p>
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-600 text-foreground mb-1.5">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  />
-                  <input
-                    {...loginForm.register('email', {
-                      required: 'Email is required',
-                      pattern: { value: /^\S+@\S+$/i, message: 'Invalid email address' },
-                    })}
-                    type="email"
-                    placeholder="you@example.com"
-                    className="w-full pl-9 pr-4 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                  />
-                </div>
-                {loginForm.formState.errors.email && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {loginForm.formState.errors.email.message}
+              {resetSuccess ? (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center space-y-3">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+                    <CheckCircle size={24} />
+                  </div>
+                  <h3 className="font-extrabold text-foreground text-lg">Check your inbox</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    We&apos;ve sent a password reset link to <strong className="text-foreground font-700">{resetEmail}</strong>. Follow the instructions in the email to set a new password.
                   </p>
-                )}
-              </div>
+                  <p className="text-xs text-muted-foreground">
+                    Don&apos;t see it? Check your spam folder or wait a minute before requesting another link.
+                  </p>
+                  <div className="pt-2 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotPassword(false);
+                        setResetSuccess(false);
+                      }}
+                      className="w-full bg-primary text-white font-700 py-2.5 rounded-xl hover:bg-[#142249] transition-all"
+                    >
+                      Return to Sign In
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetPassword}
+                      disabled={resetLoading}
+                      className="text-xs text-primary font-600 hover:underline py-1 disabled:opacity-50"
+                    >
+                      {resetLoading ? 'Sending...' : 'Resend reset email'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      />
+                      <input
+                        type="email"
+                        required
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full pl-9 pr-4 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                      />
+                    </div>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-600 text-foreground mb-1.5">Password</label>
-                <div className="relative">
-                  <Lock
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  />
-                  <input
-                    {...loginForm.register('password', { required: 'Password is required' })}
-                    type={showPass ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    className="w-full pl-9 pr-10 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                  />
                   <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    type="submit"
+                    disabled={resetLoading}
+                    className="w-full bg-primary text-white font-700 py-3 rounded-xl hover:bg-[#142249] transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {resetLoading ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      'Send Password Reset Link'
+                    )}
                   </button>
-                </div>
-                {loginForm.formState.errors.password && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {loginForm.formState.errors.password.message}
-                  </p>
-                )}
-              </div>
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    {...loginForm.register('remember')}
-                    type="checkbox"
-                    className="w-4 h-4 accent-primary"
-                  />
-                  <span className="text-sm text-foreground">Remember me</span>
-                </label>
-                <button type="button" className="text-sm text-primary font-600 hover:underline">
-                  Forgot password?
+                  <p className="text-center text-xs text-muted-foreground">
+                    Remember your password?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotPassword(false);
+                        setResetError('');
+                      }}
+                      className="text-primary font-700 hover:underline"
+                    >
+                      Sign In
+                    </button>
+                  </p>
+                </form>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Tabs */}
+              <div className="flex bg-muted rounded-xl p-1 mb-8">
+                <button
+                  onClick={() => setTab('login')}
+                  className={`flex-1 py-2.5 text-sm font-700 rounded-lg transition-all duration-150 ${tab === 'login' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => setTab('signup')}
+                  className={`flex-1 py-2.5 text-sm font-700 rounded-lg transition-all duration-150 ${tab === 'signup' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  Create Account
                 </button>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-primary text-white font-700 py-3 rounded-xl hover:bg-[#142249] transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  'Sign In'
-                )}
-              </button>
-            </form>
-          )}
+              {tab === 'login' && (
+                <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
+                  <div>
+                    <h1 className="text-2xl font-extrabold text-foreground mb-1">Welcome back!</h1>
+                    <p className="text-sm text-muted-foreground">
+                      Sign in to manage your tiffin orders
+                    </p>
+                  </div>
+
+                  {loginForm.formState.errors.root && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                      <p className="text-sm text-red-600">{loginForm.formState.errors.root.message}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-600 text-foreground mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      />
+                      <input
+                        {...loginForm.register('email', {
+                          required: 'Email is required',
+                          pattern: { value: /^\S+@\S+$/i, message: 'Invalid email address' },
+                        })}
+                        type="email"
+                        placeholder="you@example.com"
+                        className="w-full pl-9 pr-4 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                      />
+                    </div>
+                    {loginForm.formState.errors.email && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {loginForm.formState.errors.email.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-600 text-foreground mb-1.5">Password</label>
+                    <div className="relative">
+                      <Lock
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      />
+                      <input
+                        {...loginForm.register('password', { required: 'Password is required' })}
+                        type={showPass ? 'text' : 'password'}
+                        placeholder="Enter your password"
+                        className="w-full pl-9 pr-10 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {loginForm.formState.errors.password && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {loginForm.formState.errors.password.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        {...loginForm.register('remember')}
+                        type="checkbox"
+                        className="w-4 h-4 accent-primary"
+                      />
+                      <span className="text-sm text-foreground">Remember me</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResetEmail(loginForm.getValues('email') || '');
+                        setResetError('');
+                        setResetSuccess(false);
+                        setIsForgotPassword(true);
+                      }}
+                      className="text-sm text-primary font-600 hover:underline transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-primary text-white font-700 py-3 rounded-xl hover:bg-[#142249] transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      'Sign In'
+                    )}
+                  </button>
+                </form>
+              )}
 
           {tab === 'signup' && (
             <>
@@ -793,6 +948,8 @@ export default function AuthClient() {
               )}
             </>
           )}
+        </>
+      )}
 
           <p className="text-center text-xs text-muted-foreground mt-6">
             <Link href="/" className="hover:text-primary transition-colors">
