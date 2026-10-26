@@ -130,7 +130,11 @@ const defaultSettings = {
     'Sign up today and get {percentage}% off your first {count} orders with DoMeal.',
   popupBtnText: 'Claim Offer Now',
 
-  // Stripe Config
+  // Payment Gateway (Worldpay)
+  worldpayUsername: '',
+  worldpayPassword: '',
+  worldpayEntityId: '',
+  worldpayEnv: 'live',
   stripePublishableKey: '',
   stripeSecretKey: '',
 
@@ -673,8 +677,8 @@ export default function AdminSettingsPage() {
       bg: 'bg-amber-50',
     },
     {
-      id: 'stripe',
-      label: 'Stripe Config',
+      id: 'worldpay',
+      label: 'Worldpay Config',
       icon: CreditCard,
       color: 'text-rose-600',
       bg: 'bg-rose-50',
@@ -2436,43 +2440,66 @@ export default function AdminSettingsPage() {
             </div>
           )}
 
-          {activeTab === 'stripe' && (
+          {activeTab === 'worldpay' && (
             <div className="animate-in fade-in duration-200">
-              <div className="bg-rose-50 border-b border-border p-4 px-6">
-                <h2 className="font-800 text-foreground text-lg">Stripe Configuration</h2>
+              <div className="bg-rose-50 border-b border-border p-4 px-6 flex items-center justify-between">
+                <div>
+                  <h2 className="font-800 text-foreground text-lg">Worldpay (Global Payments) Configuration</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Connect your live Worldpay Access API account to process payments.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-gray-500">Mode:</span>
+                  <select
+                    name="worldpayEnv"
+                    value={settings.worldpayEnv || 'live'}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, worldpayEnv: e.target.value }))}
+                    className="border border-border rounded-lg px-2.5 py-1 text-xs font-bold bg-white text-gray-800 focus:outline-none focus:border-primary"
+                  >
+                    <option value="live">Live / Production</option>
+                    <option value="test">Test / Sandbox</option>
+                  </select>
+                </div>
               </div>
               <div className="p-6 space-y-6">
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl p-4 text-sm leading-relaxed">
-                  <strong>⚠️ Security Note:</strong> Please ensure your Stripe keys are kept secure.
-                  You can update these keys to dynamically switch between <strong>Test Mode</strong>{' '}
-                  (for test card transactions) and <strong>Live Mode</strong> (for real customer
-                  billing).
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 text-sm leading-relaxed">
+                  <strong>✅ Active Gateway: Worldpay Access</strong><br />
+                  Obtain your Live API Username, Password, and Entity ID from your{' '}
+                  <a
+                    href="https://developer.worldpay.com/access/apis"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline font-bold"
+                  >
+                    Worldpay Developer Hub
+                  </a>.
                 </div>
                 <div className="space-y-4 max-w-2xl">
                   <div>
                     <label className="block text-xs font-800 text-muted-foreground mb-1.5">
-                      Stripe Publishable Key
+                      Worldpay API Username
                     </label>
                     <input
                       type="text"
-                      name="stripePublishableKey"
-                      value={settings.stripePublishableKey || ''}
+                      name="worldpayUsername"
+                      value={settings.worldpayUsername || ''}
                       onChange={handleChange}
-                      placeholder="pk_test_... or pk_live_..."
+                      placeholder="e.g. your_worldpay_username"
                       className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-800 text-muted-foreground mb-1.5">
-                      Stripe Secret Key
+                      Worldpay API Password / Secret
                     </label>
                     <div className="relative">
                       <input
                         type={showSecretKey ? 'text' : 'password'}
-                        name="stripeSecretKey"
-                        value={settings.stripeSecretKey || ''}
+                        name="worldpayPassword"
+                        value={settings.worldpayPassword || ''}
                         onChange={handleChange}
-                        placeholder="sk_test_... or sk_live_..."
+                        placeholder="••••••••••••••••••••"
                         className="w-full border border-border rounded-xl pl-4 pr-12 py-2 text-sm font-700 focus:outline-none focus:border-primary"
                       />
                       <button
@@ -2483,6 +2510,19 @@ export default function AdminSettingsPage() {
                         {showSecretKey ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-800 text-muted-foreground mb-1.5">
+                      Merchant Entity ID
+                    </label>
+                    <input
+                      type="text"
+                      name="worldpayEntityId"
+                      value={settings.worldpayEntityId || ''}
+                      onChange={handleChange}
+                      placeholder="e.g. PO4000123456 or your Merchant ID"
+                      className="w-full border border-border rounded-xl px-4 py-2 text-sm font-700 focus:outline-none focus:border-primary"
+                    />
                   </div>
                 </div>
               </div>

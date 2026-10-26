@@ -107,7 +107,7 @@ function GiftClient() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(getApiUrl('/api/create-stripe-gift-checkout'), {
+      const response = await fetch(getApiUrl('/api/create-worldpay-gift-checkout'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -125,7 +125,7 @@ function GiftClient() {
 
       const data = await response.json();
       if (response.ok && data.url) {
-        // Redirect to Stripe Checkout Page
+        // Redirect to Worldpay Checkout Page
         window.location.href = data.url;
       } else {
         toast.error(data.error || 'Failed to initialize payment.');

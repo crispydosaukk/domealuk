@@ -28,7 +28,7 @@ async function handlePublicSettings() {
 
     if (data) {
       // Exclude sensitive credentials before serving to the client
-      const { stripeSecretKey, ...publicSettings } = data;
+      const { stripeSecretKey, worldpayPassword, ...publicSettings } = data;
 
       // Set a fallback for publishable key if not in firestore
       publicSettings.stripePublishableKey =

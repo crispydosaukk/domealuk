@@ -30,6 +30,7 @@ import { db, storage } from '@/lib/firebase';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { isAdminEmail } from '@/lib/adminAuth';
+import TestMenuToggleCard from '@/components/admin/TestMenuToggleCard';
 
 export interface SubMenuItem {
   id: string;
@@ -478,6 +479,9 @@ export default function MenuTab() {
 
   return (
     <div className="space-y-4">
+      {/* £1 Test Menu Toggle Banner */}
+      <TestMenuToggleCard />
+
       {/* Controls */}
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div className="flex flex-wrap gap-3 items-center">

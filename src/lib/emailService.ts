@@ -364,6 +364,7 @@ export async function sendOrderConfirmationEmails(orderId: string, initialOrderD
           ${addressHtml}
           ${deliveryDatesHtml}
           <tr><td style="padding: 4px 0; color: #64748b; font-weight: 600;">Delivery Slot:</td><td style="padding: 4px 0; font-weight: 600;">${formattedDeliverySlot}</td></tr>
+          ${order.subscriptionFrequency ? `<tr><td style="padding: 4px 0; color: #64748b; font-weight: 600;">Subscription:</td><td style="padding: 4px 0; font-weight: 700; color: #1E3B2B;">🔁 Active (${order.subscriptionFrequency})</td></tr>` : ''}
           <tr><td style="padding: 4px 0; color: #64748b; font-weight: 600;">Total:</td><td style="padding: 4px 0; font-weight: 800; color: #1E3B2B; font-size: 16px;">£${totalAmount}</td></tr>
         </table>
         ${itemsHtml}

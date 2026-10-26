@@ -395,7 +395,7 @@ export default function OrdersTab() {
             onClick={handleSyncSubscriptions}
             disabled={isSyncingSubs}
             className="px-3 py-2 rounded-xl bg-white hover:bg-indigo-50 text-indigo-700 font-700 text-xs border border-indigo-200 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
-            title="Sync Stripe Subscriptions and generate missing renewal orders"
+            title="Sync Subscriptions and generate missing renewal orders"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${isSyncingSubs ? 'animate-spin' : ''}`} />
             <span>{isSyncingSubs ? 'Syncing...' : 'Sync Subscriptions'}</span>
@@ -834,7 +834,7 @@ export default function OrdersTab() {
                     <p className="font-700 text-foreground mt-0.5">
                       {selectedOrder.paymentMethod === 'pay-cod'
                         ? '💵 Cash on Delivery (COD)'
-                        : '💳 Online Payment (Stripe Card)'}
+                        : '💳 Online Payment (Worldpay Card)'}
                     </p>
                   </div>
                   <div>
@@ -877,7 +877,7 @@ export default function OrdersTab() {
                 {selectedOrder.stripeSubscriptionId && (
                   <div className="mt-3 pt-3 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground font-600">
-                      Stripe Subscription ID:
+                      Subscription ID:
                     </span>
                     <span className="font-mono text-xs bg-white px-2.5 py-1 rounded border border-border/40 text-foreground select-all">
                       {selectedOrder.stripeSubscriptionId}

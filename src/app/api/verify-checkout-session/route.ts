@@ -3,7 +3,7 @@ import { db } from '@/lib/firebase';
 import { dbAdmin } from '@/lib/firebase-admin';
 import Stripe from 'stripe';
 import { FieldValue as AdminFieldValue } from 'firebase-admin/firestore';
-import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { sendOrderConfirmationEmails } from '@/lib/emailService';
 
 export async function POST(req: NextRequest) {
@@ -14,7 +14,87 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing sessionId or orderId' }, { status: 400 });
     }
 
-    // 1. Initialize Stripe: Prioritize .env first, fall back to Firestore settings
+    let orderData: any = null;
+
+    // Check if this is a Worldpay order
+    if (orderId) {
+      let existingOrder: any = null;
+      if (dbAdmin) {
+        const snap = await dbAdmin.collection('orders').doc(orderId).get();
+        if (snap.exists) existingOrder = snap.data();
+      } else {
+        const snap = await getDoc(doc(db, 'orders', orderId));
+        if (snap.exists()) existingOrder = snap.data();
+      }
+
+      if (existingOrder && (existingOrder.paymentMethod === 'worldpay' || !sessionId.startsWith('cs_'))) {
+        // Worldpay payment verification
+        if (dbAdmin) {
+          const orderRef = dbAdmin.collection('orders').doc(orderId);
+          await dbAdmin.runTransaction(async (transaction: any) => {
+            const orderSnap = await transaction.get(orderRef);
+            if (!orderSnap.exists) return;
+            orderData = orderSnap.data();
+
+            if (orderData.status === 'Pending Payment') {
+              transaction.update(orderRef, {
+                status: 'Order Received',
+                subscriptionStatus: 'active',
+                paymentStatus: 'paid',
+                paymentMethod: 'worldpay',
+                updatedAt: AdminFieldValue.serverTimestamp(),
+              });
+
+              const walletApplied = Number(orderData.walletApplied) || 0;
+              const userId = orderData.userId;
+              if (walletApplied > 0 && userId && userId !== 'guest-user') {
+                const userRef = dbAdmin.collection('users').doc(userId);
+                const userSnap = await transaction.get(userRef);
+                if (userSnap.exists) {
+                  const currentBalance = userSnap.data().walletBalance || 0;
+                  const newBalance = Math.max(0, currentBalance - walletApplied);
+                  transaction.update(userRef, { walletBalance: newBalance });
+                }
+              }
+            }
+          });
+        } else {
+          const orderRef = doc(db, 'orders', orderId);
+          await runTransaction(db, async (transaction) => {
+            const orderSnap = await transaction.get(orderRef);
+            if (!orderSnap.exists()) return;
+            orderData = orderSnap.data();
+
+            if (orderData.status === 'Pending Payment') {
+              transaction.update(orderRef, {
+                status: 'Order Received',
+                subscriptionStatus: 'active',
+                paymentStatus: 'paid',
+                paymentMethod: 'worldpay',
+                updatedAt: serverTimestamp(),
+              });
+            }
+          });
+        }
+
+        if (orderData && !orderData.confirmationEmailSent) {
+          try {
+            await sendOrderConfirmationEmails(orderId, orderData);
+            if (dbAdmin) {
+              await dbAdmin.collection('orders').doc(orderId).update({ confirmationEmailSent: true });
+            } else {
+              await updateDoc(doc(db, 'orders', orderId), { confirmationEmailSent: true });
+            }
+          } catch (mErr) {
+            console.error('Worldpay order email send failed:', mErr);
+          }
+        }
+
+        return NextResponse.json({ success: true, order: { ...orderData, orderId } });
+      }
+    }
+
+    // Otherwise, check Stripe (legacy fallback)
     let secretKey = process.env.STRIPE_SECRET_KEY || '';
     if (!secretKey) {
       if (dbAdmin) {
@@ -32,20 +112,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (!secretKey) {
-      return NextResponse.json({ error: 'Stripe Secret Key not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'Payment gateway not configured' }, { status: 500 });
     }
 
     const stripe = new Stripe(secretKey, {
       apiVersion: '2022-11-15' as any,
     });
 
-    // 2. Retrieve checkout session
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     if (!session || session.payment_status !== 'paid') {
       return NextResponse.json({ error: 'Session not paid or invalid' }, { status: 400 });
     }
-
-    let orderData: any = null;
 
     if (dbAdmin) {
       const orderRef = dbAdmin.collection('orders').doc(orderId);

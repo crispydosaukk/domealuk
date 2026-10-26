@@ -708,7 +708,7 @@ export default function AdminCustomersClient() {
                           {u.stripeSubscriptionId && (
                             <div className="pt-2 border-t border-dashed border-slate-200 flex flex-col gap-1.5">
                               <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                                Stripe Subscription ID:
+                                Subscription ID:
                               </span>
                               <div className="flex items-center gap-1.5">
                                 <span className="font-mono text-[11px] bg-slate-100 px-2 py-1 rounded-md text-slate-800 select-all truncate flex-1 border border-slate-200/80">

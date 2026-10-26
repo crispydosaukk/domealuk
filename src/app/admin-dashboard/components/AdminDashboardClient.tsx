@@ -18,6 +18,7 @@ import { collection, query, orderBy, limit, onSnapshot, getDoc, doc } from 'fire
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { isAdminEmail } from '@/lib/adminAuth';
+import TestMenuToggleCard from '@/components/admin/TestMenuToggleCard';
 
 const OrderVolumeChart = dynamic(() => import('./OrderVolumeChart'), { ssr: false });
 const RevenueChart = dynamic(() => import('./RevenueChart'), { ssr: false });
@@ -229,6 +230,9 @@ export default function AdminDashboardClient() {
           Live data
         </div>
       </div>
+
+      {/* £1 Test Subscription Menu Toggle Banner */}
+      <TestMenuToggleCard />
 
       {/* KPI Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
@@ -465,7 +469,7 @@ export default function AdminDashboardClient() {
                     <p className="font-700 text-foreground mt-0.5">
                       {selectedOrder.paymentMethod === 'pay-cod'
                         ? '💵 Cash on Delivery (COD)'
-                        : '💳 Online Payment (Stripe Card)'}
+                        : '💳 Online Payment (Worldpay Card)'}
                     </p>
                   </div>
                   <div>
@@ -508,7 +512,7 @@ export default function AdminDashboardClient() {
                 {selectedOrder.stripeSubscriptionId && (
                   <div className="mt-3 pt-3 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs text-muted-foreground font-600">
-                      Stripe Subscription ID:
+                      Subscription ID:
                     </span>
                     <span className="font-mono text-xs bg-white px-2.5 py-1 rounded border border-border/40 text-foreground select-all">
                       {selectedOrder.stripeSubscriptionId}

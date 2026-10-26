@@ -227,7 +227,22 @@ export default function BasketClient() {
     router.push('/checkout-order-confirmation-screen');
   };
 
-  const isFormValid = postcodeValid && deliveryDates.length > 0 && termsAccepted && cart.length > 0;
+  const isCartEmpty = cart.length === 0;
+  const isTestCart =
+    !isCartEmpty &&
+    cart.some(
+      (item: any) =>
+        item.id === 'test-menu-1pound' ||
+        item.tag === 'TEST_MENU' ||
+        item.name?.includes('£1 Test')
+    );
+
+  const dabbaFee = isCartEmpty ? 0 : isTestCart ? 0 : 12.0;
+  const deliveryFee = isCartEmpty ? 0 : isTestCart ? 0 : (globalSettings.deliveryFee ?? 5.0);
+  const calculatedTotal = isCartEmpty ? 0 : cartTotal + dabbaFee + deliveryFee;
+
+  const isFormValid =
+    postcodeValid && deliveryDates.length > 0 && termsAccepted && !isCartEmpty;
 
   return (
     <div className="max-w-screen-xl mx-auto px-4 py-8 lg:py-12">
@@ -253,9 +268,15 @@ export default function BasketClient() {
         <div className="lg:col-span-2 space-y-6">
           {/* Cart Items */}
           <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-            {cart.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-muted-foreground">Your basket is empty.</p>
+            {isCartEmpty ? (
+              <div className="text-center py-12 space-y-4">
+                <p className="text-muted-foreground text-base">Your basket is empty.</p>
+                <Link
+                  href="/menu"
+                  className="inline-flex items-center gap-2 bg-primary text-white font-700 px-5 py-2.5 rounded-xl hover:bg-orange-700 transition-colors shadow-sm text-sm"
+                >
+                  Browse Menu & Add Items →
+                </Link>
               </div>
             ) : (
               <div className="space-y-6">
@@ -449,17 +470,44 @@ export default function BasketClient() {
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Reusable Dabba Deposit</span>
-                <span>£12.00</span>
+                <span>
+                  {isCartEmpty ? (
+                    '£0.00'
+                  ) : isTestCart ? (
+                    <span className="text-emerald-600 font-700">£0.00 (Test Waived)</span>
+                  ) : (
+                    '£12.00'
+                  )}
+                </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Delivery Charge</span>
-                <span>£{(globalSettings.deliveryFee ?? 5).toFixed(2)}</span>
+                <span>
+                  {isCartEmpty ? (
+                    '£0.00'
+                  ) : isTestCart ? (
+                    <span className="text-emerald-600 font-700">£0.00 (Test Waived)</span>
+                  ) : (
+                    `£${deliveryFee.toFixed(2)}`
+                  )}
+                </span>
               </div>
               <div className="flex justify-between font-800 text-lg border-t border-dashed border-border/80 pt-2 mt-1">
                 <span>Total</span>
-                <span>£{(cartTotal + 12.0 + (globalSettings.deliveryFee ?? 5)).toFixed(2)}</span>
+                <span className={isCartEmpty ? 'text-muted-foreground' : 'text-[#11261a]'}>
+                  £{calculatedTotal.toFixed(2)}
+                </span>
               </div>
             </div>
+
+            {isCartEmpty && (
+              <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center justify-between">
+                <span>Your basket is empty.</span>
+                <Link href="/menu" className="font-700 text-primary hover:underline">
+                  Add items →
+                </Link>
+              </div>
+            )}
 
             <div className="space-y-6">
               {/* Postcode */}
@@ -578,10 +626,10 @@ export default function BasketClient() {
               <div>
                 <button
                   onClick={handleCheckout}
-                  disabled={!isFormValid}
+                  disabled={!isFormValid || isCartEmpty}
                   className="w-full bg-[#11261a] hover:bg-primary text-white font-800 py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                 >
-                  Checkout
+                  {isCartEmpty ? 'Basket is Empty' : 'Checkout'}
                 </button>
                 <p className="text-center text-[11px] text-muted-foreground mt-3 leading-relaxed">
                   Discount codes applied at next step.

@@ -252,14 +252,14 @@ function CheckoutClientContent({
   }, [activeSlots, selectedSlot]);
 
   useEffect(() => {
-    if (urlStatus === 'success' && sessionId && urlOrderId) {
+    if (urlStatus === 'success' && urlOrderId) {
       const verifyOrderPayment = async () => {
         setIsLoading(true);
         try {
           const res = await fetch(getApiUrl('/api/verify-checkout-session'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId, orderId: urlOrderId }),
+            body: JSON.stringify({ sessionId: sessionId || urlOrderId, orderId: urlOrderId }),
           });
           const data = await res.json();
           if (data.success && data.order) {
@@ -386,11 +386,15 @@ function CheckoutClientContent({
       let finalTotal = discountApplied ? Math.max(0, subtotal - discountAmount) : subtotal;
       finalTotal = Math.max(0, finalTotal - studentDiscountAmt);
 
-      const deliveryFee = globalSettings.deliveryFee ?? 5.0;
+      const isTestOrder = checkoutItems.some(
+        (i: any) => i.id === 'test-menu-1pound' || i.tag === 'TEST_MENU' || i.name?.includes('£1 Test')
+      );
+
+      const deliveryFee = isTestOrder ? 0 : (globalSettings.deliveryFee ?? 5.0);
       finalTotal = finalTotal + deliveryFee;
 
-      // Reusable Dabba Deposit Fee (£12.00)
-      const dabbaFee = 12.0;
+      // Reusable Dabba Deposit Fee (£12.00) - waived for £1 live test orders
+      const dabbaFee = isTestOrder ? 0 : 12.0;
       finalTotal = finalTotal + dabbaFee;
 
       const appliedWalletAmount = useWallet ? Math.min(walletBalance, finalTotal) : 0;
@@ -502,8 +506,8 @@ function CheckoutClientContent({
         setStep('confirmed');
         toast.success('Order placed successfully! 🎉');
       } else {
-        // 2. Redirect to Stripe Checkout Session
-        const res = await fetch(getApiUrl('/api/create-stripe-subscription-checkout'), {
+        // 2. Redirect to Worldpay Checkout Session
+        const res = await fetch(getApiUrl('/api/create-worldpay-checkout'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -527,7 +531,7 @@ function CheckoutClientContent({
             studentDiscountPercent: isStudentVerified ? studentDiscountPercentage : 0,
             allergiesInfo: checkoutData?.allergiesInfo || '',
             items: checkoutItems,
-            dabbaFeeApplied: true,
+            dabbaFeeApplied: !isTestOrder,
           }),
         });
 
@@ -910,11 +914,14 @@ function CheckoutClientContent({
     : currentSubtotal;
   finalDisplayTotal = Math.max(0, finalDisplayTotal - studentDiscountAmtDisplay);
 
-  const deliveryFee = globalSettings.deliveryFee ?? 5.0;
+  const isTestCart = cart.some(
+    (i: any) => i.id === 'test-menu-1pound' || i.tag === 'TEST_MENU' || i.name?.includes('£1 Test')
+  );
+  const deliveryFee = isTestCart ? 0 : (globalSettings.deliveryFee ?? 5.0);
   finalDisplayTotal = finalDisplayTotal + deliveryFee;
 
-  // Reusable Dabba Fee (£12.00)
-  const dabbaFee = 12.0;
+  // Reusable Dabba Fee (£12.00) - waived for test orders
+  const dabbaFee = isTestCart ? 0 : 12.0;
   finalDisplayTotal = finalDisplayTotal + dabbaFee;
 
   const appliedWalletDisplay = useWallet ? Math.min(walletBalance, finalDisplayTotal) : 0;
@@ -1162,7 +1169,7 @@ function CheckoutClientContent({
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/80">
-                  Clicking "Place Order" will redirect you to Stripe to complete your transaction
+                  Clicking &quot;Place Order&quot; will redirect you to Worldpay to complete your transaction
                   securely.
                 </p>
               </div>
@@ -1291,7 +1298,13 @@ function CheckoutClientContent({
                   {/* Reusable Dabba Deposit Fee (£12) */}
                   <div className="flex justify-between text-[15px] font-500 mb-3 text-gray-800">
                     <span>Reusable Dabba Deposit</span>
-                    <span className="tabular-nums">£12.00</span>
+                    <span className="tabular-nums">
+                      {isTestCart ? (
+                        <span className="text-emerald-600 font-700">£0.00 (Test Waived)</span>
+                      ) : (
+                        '£12.00'
+                      )}
+                    </span>
                   </div>
                   {useWallet && appliedWalletDisplay > 0 && (
                     <div className="flex justify-between text-[15px] font-700 text-green-700 mb-3">
@@ -1307,7 +1320,11 @@ function CheckoutClientContent({
                       </span>
                     </span>
                     <span className="text-gray-900 font-600 text-sm tabular-nums">
-                      £{deliveryFee.toFixed(2)}
+                      {isTestCart ? (
+                        <span className="text-emerald-600 font-700">£0.00 (Test Waived)</span>
+                      ) : (
+                        `£${deliveryFee.toFixed(2)}`
+                      )}
                     </span>
                   </div>
 
