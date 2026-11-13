@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ChevronDown, Eye, X, Wallet, FileText, Download, RefreshCw, Sun } from 'lucide-react';
+import { Search, Filter, ChevronDown, Eye, X, Wallet, FileText, Download, RefreshCw, Sun, Zap, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/lib/api';
 import {
@@ -339,6 +339,56 @@ export default function OrdersTab() {
     }
   };
 
+  const [isProcessingDebits, setIsProcessingDebits] = useState(false);
+  const handleProcessAutoDebits = async () => {
+    setIsProcessingDebits(true);
+    try {
+      const res = await fetch(getApiUrl('/api/cron/process-recurring-subscriptions'), {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const count = data.results?.processed?.length || 0;
+        if (count > 0) {
+          toast.success(`Processed weekly subscriptions! Generated ${count} renewal order(s). 🎉`);
+        } else {
+          toast.info('No active subscriptions due for auto-debit right now. Everything is up to date! ✅');
+        }
+      } else {
+        toast.error(data.error || 'Failed to process recurring auto-debits.');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Error processing recurring auto-debits.');
+    } finally {
+      setIsProcessingDebits(false);
+    }
+  };
+
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
+  const handleSendPreDebitReminders = async () => {
+    setIsSendingReminders(true);
+    try {
+      const res = await fetch(getApiUrl('/api/cron/send-pre-debit-reminders'), {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const count = data.results?.remindersSent?.length || 0;
+        if (count > 0) {
+          toast.success(`Sent pre-debit reminder emails to ${count} active subscriber(s)! ⏰`);
+        } else {
+          toast.info('No subscriptions currently in the 48-hour reminder window or reminders already sent.');
+        }
+      } else {
+        toast.error(data.error || 'Failed to dispatch pre-debit reminders.');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Error dispatching pre-debit reminders.');
+    } finally {
+      setIsSendingReminders(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters & Export Actions */}
@@ -378,7 +428,29 @@ export default function OrdersTab() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Run Auto-Debits Button */}
+          <button
+            onClick={handleProcessAutoDebits}
+            disabled={isProcessingDebits}
+            className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 font-700 text-xs border border-emerald-300 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Process weekly recurring auto-debits for due subscriptions"
+          >
+            <Zap className={`w-3.5 h-3.5 text-emerald-600 ${isProcessingDebits ? 'animate-bounce' : ''}`} />
+            <span>{isProcessingDebits ? 'Processing...' : 'Run Auto-Debits'}</span>
+          </button>
+
+          {/* Send Pre-Debit Reminders Button */}
+          <button
+            onClick={handleSendPreDebitReminders}
+            disabled={isSendingReminders}
+            className="px-3 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-800 font-700 text-xs border border-amber-300 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Send pre-debit reminder emails to customers renewing in the next 48 hours"
+          >
+            <Bell className={`w-3.5 h-3.5 text-amber-600 ${isSendingReminders ? 'animate-spin' : ''}`} />
+            <span>{isSendingReminders ? 'Sending...' : 'Pre-Debit Reminders'}</span>
+          </button>
+
           {/* Send Morning Delivery Emails Button */}
           <button
             onClick={handleSendMorningEmails}

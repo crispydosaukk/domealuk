@@ -4,6 +4,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { FieldValue as AdminFieldValue } from 'firebase-admin/firestore';
 import { sendOrderConfirmationEmails } from '@/lib/emailService';
+import { getNextSaturdayMidnight } from '@/lib/subscriptionScheduler';
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,11 +43,15 @@ export async function POST(req: NextRequest) {
         if (snap.exists) {
           orderData = snap.data();
           if (orderData.status === 'Pending Payment') {
+            const nextBillingDateIso = getNextSaturdayMidnight().toISOString();
             await orderRef.update({
               status: 'Order Received',
               subscriptionStatus: 'active',
               paymentStatus: 'paid',
               paymentMethod: 'worldpay',
+              billingCycle: 1,
+              nextBillingDate: nextBillingDateIso,
+              lastBilledAt: AdminFieldValue.serverTimestamp(),
               updatedAt: AdminFieldValue.serverTimestamp(),
             });
           }
@@ -57,11 +62,15 @@ export async function POST(req: NextRequest) {
         if (snap.exists()) {
           orderData = snap.data();
           if (orderData.status === 'Pending Payment') {
+            const nextBillingDateIso = getNextSaturdayMidnight().toISOString();
             await updateDoc(orderRef, {
               status: 'Order Received',
               subscriptionStatus: 'active',
               paymentStatus: 'paid',
               paymentMethod: 'worldpay',
+              billingCycle: 1,
+              nextBillingDate: nextBillingDateIso,
+              lastBilledAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
             });
           }

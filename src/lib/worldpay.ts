@@ -172,3 +172,109 @@ export async function createWorldpayPaymentPage(params: {
 
   return { redirectUrl };
 }
+
+/**
+ * Initiates a subsequent recurring debit for an active subscription with Worldpay.
+ * Uses Worldpay Access API payments endpoint for merchant-initiated recurring charges.
+ */
+export async function chargeWorldpayRecurringPayment(params: {
+  transactionReference: string;
+  amount: number; // in GBP
+  currencyCode?: string;
+  customerEmail: string;
+  description: string;
+}): Promise<{ success: boolean; transactionReference: string; status: string; rawResponse?: any; error?: string }> {
+  const config = await getWorldpayConfig();
+
+  if (!config.username || !config.entityId) {
+    throw new Error('Worldpay credentials (Username and Merchant Entity ID) are not configured.');
+  }
+
+  const endpoint = config.isLive
+    ? 'https://access.worldpay.com/payments'
+    : 'https://try.access.worldpay.com/payments';
+
+  const authString = config.password ? `${config.username}:${config.password}` : config.username;
+  const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
+  const amountInMinorUnits = Math.round(params.amount * 100);
+
+  const requestBody: any = {
+    transactionReference: params.transactionReference,
+    merchant: {
+      entity: config.entityId,
+    },
+    instruction: {
+      narrative: {
+        line1: (params.description || 'DoMeal Renewal').substring(0, 24),
+      },
+      value: {
+        amount: amountInMinorUnits,
+        currency: params.currencyCode || 'GBP',
+      },
+      customerAgreement: {
+        type: 'subscription',
+        storedCardUsage: 'subsequent',
+      },
+      paymentInstrument: {
+        type: 'card/token',
+      },
+    },
+  };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/vnd.worldpay.payments-v6+json',
+        'Accept': 'application/vnd.worldpay.payments-v6+json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const resText = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(resText);
+    } catch {
+      data = { rawText: resText };
+    }
+
+    if (res.ok || res.status === 200 || res.status === 201 || res.status === 202) {
+      return {
+        success: true,
+        transactionReference: params.transactionReference,
+        status: data?.outcome || 'authorized',
+        rawResponse: data,
+      };
+    }
+
+    if (data?.outcome === 'authorized' || data?.outcome === 'settled') {
+      return {
+        success: true,
+        transactionReference: params.transactionReference,
+        status: data.outcome,
+        rawResponse: data,
+      };
+    }
+
+    const errorMessage = data?.message || data?.description || resText || `HTTP ${res.status}`;
+    console.warn(`[Worldpay Recurring] Charge response for ${params.transactionReference}:`, errorMessage);
+
+    return {
+      success: false,
+      transactionReference: params.transactionReference,
+      status: data?.outcome || 'failed',
+      rawResponse: data,
+      error: errorMessage,
+    };
+  } catch (err: any) {
+    console.error(`[Worldpay Recurring] Exception on charge ${params.transactionReference}:`, err);
+    return {
+      success: false,
+      transactionReference: params.transactionReference,
+      status: 'error',
+      error: err.message || 'Unknown network error',
+    };
+  }
+}

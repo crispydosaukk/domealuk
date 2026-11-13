@@ -622,6 +622,121 @@ export async function sendPaymentDebitedEmail(
 }
 
 /**
+ * Send Pre-Debit Reminder Email (Sent 24-48 hours before Saturday Midnight Auto-Debit)
+ */
+export async function sendPreDebitReminderEmail(
+  orderId: string,
+  renewalInfo?: {
+    amount?: number;
+    renewalDateStr?: string;
+    deliveryDates?: string[];
+    frequency?: string;
+  },
+  initialOrderData?: any
+) {
+  try {
+    const order = await fetchOrderData(orderId, initialOrderData);
+    if (!order) {
+      console.warn(`[emailService] Order ${orderId} not found for pre-debit reminder.`);
+      return { success: false, error: 'Order not found' };
+    }
+
+    const validCustomerEmail = await resolveCustomerEmail(order);
+    const transporter = getTransporter();
+    const totalAmount = Number(renewalInfo?.amount || order.total || order.amount || 0).toFixed(2);
+    const smtpFromUser = process.env.SMTP_USER || 'domealuk@gmail.com';
+    const formattedDeliverySlot = await resolveDeliverySlot(order.deliverySlot || order.deliverySlotId);
+
+    const deliveryDates = renewalInfo?.deliveryDates || order.deliveryDates || [];
+    const itemsHtml = formatItemsHtml(order.items);
+    const addressHtml = formatAddressHtml(order.address);
+
+    let deliveryDatesHtml = '';
+    if (Array.isArray(deliveryDates) && deliveryDates.length > 0) {
+      deliveryDatesHtml = `
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; width: 140px;">Estimated Delivery Dates:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #1E3B2B; font-size: 15px;">
+            ${deliveryDates.join(', ')}
+          </td>
+        </tr>
+      `;
+    }
+
+    const renewalDateStr = renewalInfo?.renewalDateStr || 'this Saturday at 11:59 PM';
+
+    const userContent = `
+      <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi ${order.address?.fullName || 'Valued Subscriber'},</p>
+      <p style="font-size: 15px; line-height: 1.6;">
+        This is a friendly reminder that your upcoming DoMeal meal plan is scheduled to automatically renew on <strong>${renewalDateStr}</strong> for <strong style="color: #1E3B2B; font-size: 17px;">£${totalAmount}</strong>.
+      </p>
+
+      <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 14px 16px; margin: 20px 0;">
+        <h4 style="margin: 0 0 6px 0; color: #92400e; font-size: 14px; font-weight: 700;">⏰ Upcoming Billing & Cut-Off Notice</h4>
+        <p style="margin: 0; font-size: 13px; color: #78350f; line-height: 1.5;">
+          Our kitchen prepares fresh, authentic meals to order. If you need to <strong>change your meal selections, skip this week, or pause your subscription</strong>, please make updates in your account dashboard before <strong>${renewalDateStr}</strong>.
+        </p>
+      </div>
+
+      <div style="background-color: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
+        <h2 style="margin-top: 0; color: #1E3B2B; font-size: 15px; border-bottom: 2px solid #C39B54; padding-bottom: 8px; margin-bottom: 12px;">
+          Upcoming Subscription Summary
+        </h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748b; width: 140px;">Subscription Plan:</td>
+            <td style="padding: 6px 0; font-weight: 700; color: #111827;">${order.subscriptionFrequency || 'Weekly Meal Plan'}</td>
+          </tr>
+          ${deliveryDatesHtml}
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Delivery Slot:</td>
+            <td style="padding: 6px 0; font-weight: 500; color: #111827;">${formattedDeliverySlot}</td>
+          </tr>
+          ${addressHtml}
+          <tr>
+            <td style="padding: 10px 0; color: #64748b; border-top: 2px solid #e2e8f0;">Renewal Amount:</td>
+            <td style="padding: 10px 0; font-weight: 800; color: #1E3B2B; border-top: 2px solid #e2e8f0; font-size: 18px;">£${totalAmount}</td>
+          </tr>
+        </table>
+        ${itemsHtml}
+      </div>
+
+      <div style="text-align: center; margin: 28px 0 20px 0;">
+        <a href="https://domeal.co.uk/order-history" style="background-color: #1E3B2B; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">
+          Manage Your Subscription
+        </a>
+      </div>
+
+      <p style="font-size: 15px; line-height: 1.6; color: #475569;">Have any questions or need dietary adjustments? Reply directly to this email or reach us at <a href="mailto:admin@vegchennaisrilalitha.co.uk" style="color: #1E3B2B; font-weight: 600;">admin@vegchennaisrilalitha.co.uk</a>.</p>
+      <p style="font-size: 15px; line-height: 1.6; margin-bottom: 0;">Warm regards,<br><strong style="color: #1E3B2B;">The DoMeal Team</strong></p>
+    `;
+
+    const htmlBodyUser = wrapEmailHtml({
+      previewTitle: `Upcoming Subscription Renewal - £${totalAmount} on ${renewalDateStr}`,
+      heading: 'Upcoming Renewal Reminder ⏰',
+      subheading: `Your next meal plan delivery debits ${renewalDateStr}`,
+      bodyContent: userContent,
+    });
+
+    if (validCustomerEmail && transporter) {
+      await transporter.sendMail({
+        from: `"DoMeal Subscriptions" <${smtpFromUser}>`,
+        to: validCustomerEmail,
+        subject: `⏰ Reminder: Your DoMeal Weekly Renewal is Scheduled for ${renewalDateStr} (£${totalAmount})`,
+        html: htmlBodyUser,
+      });
+      console.log(`[emailService] Pre-debit reminder email sent to ${validCustomerEmail} for order ${orderId}`);
+      return { success: true, email: validCustomerEmail };
+    }
+
+    return { success: false, error: 'Could not send email' };
+  } catch (err: any) {
+    console.error(`[emailService] Error sending pre-debit reminder for ${orderId}:`, err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * 3. Send Delivery Day Morning Email
  * Sent to customer in the morning on the scheduled delivery date.
  */
