@@ -10,39 +10,61 @@ export interface WorldpayConfig {
 }
 
 /**
- * Retrieves Worldpay credentials from environment variables first,
- * then falls back to Firestore global settings (`settings/global`).
+ * Retrieves Worldpay credentials from Firestore global settings (`settings/global`) first
+ * so that settings configured dynamically in the Admin Dashboard take precedence,
+ * then falls back to environment variables (.env).
  */
 export async function getWorldpayConfig(): Promise<WorldpayConfig> {
-  let username = process.env.WORLDPAY_USERNAME || '';
-  let password = process.env.WORLDPAY_PASSWORD || '';
-  let entityId = process.env.WORLDPAY_ENTITY_ID || '';
-  let isLive: boolean = process.env.WORLDPAY_ENV ? process.env.WORLDPAY_ENV === 'live' : true;
+  let username = '';
+  let password = '';
+  let entityId = '';
+  let isLive = true;
+  let hasFirestoreConfig = false;
 
-  if (!username || !entityId) {
-    if (dbAdmin) {
+  if (dbAdmin) {
+    try {
       const snap = await dbAdmin.collection('settings').doc('global').get();
       if (snap.exists) {
         const d = snap.data() || {};
-        if (!username && d.worldpayUsername) username = d.worldpayUsername;
-        if (!password && d.worldpayPassword) password = d.worldpayPassword;
-        if (!entityId && d.worldpayEntityId) entityId = d.worldpayEntityId;
-        if (d.worldpayEnv !== undefined) isLive = d.worldpayEnv === 'live';
-      }
-    } else {
-      try {
-        const snap = await getDoc(doc(db, 'settings', 'global'));
-        if (snap.exists()) {
-          const d = snap.data() || {};
-          if (!username && d.worldpayUsername) username = d.worldpayUsername;
-          if (!password && d.worldpayPassword) password = d.worldpayPassword;
-          if (!entityId && d.worldpayEntityId) entityId = d.worldpayEntityId;
-          if (d.worldpayEnv !== undefined) isLive = d.worldpayEnv === 'live';
+        if (d.worldpayUsername?.trim()) username = d.worldpayUsername.trim();
+        if (d.worldpayPassword?.trim()) password = d.worldpayPassword.trim();
+        if (d.worldpayEntityId?.trim()) entityId = d.worldpayEntityId.trim();
+        if (d.worldpayEnv !== undefined && d.worldpayEnv !== '') {
+          isLive = d.worldpayEnv === 'live';
         }
-      } catch (err) {
-        console.warn('Could not read Worldpay settings from Firestore client SDK:', err);
+        if (username || entityId) {
+          hasFirestoreConfig = true;
+        }
       }
+    } catch (err) {
+      console.warn('Could not read Worldpay settings from dbAdmin:', err);
     }
+  } else {
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'global'));
+      if (snap.exists()) {
+        const d = snap.data() || {};
+        if (d.worldpayUsername?.trim()) username = d.worldpayUsername.trim();
+        if (d.worldpayPassword?.trim()) password = d.worldpayPassword.trim();
+        if (d.worldpayEntityId?.trim()) entityId = d.worldpayEntityId.trim();
+        if (d.worldpayEnv !== undefined && d.worldpayEnv !== '') {
+          isLive = d.worldpayEnv === 'live';
+        }
+        if (username || entityId) {
+          hasFirestoreConfig = true;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not read Worldpay settings from Firestore client SDK:', err);
+    }
+  }
+
+  // Fall back to environment variables (.env) if not configured in dashboard
+  if (!username) username = process.env.WORLDPAY_USERNAME || '';
+  if (!password) password = process.env.WORLDPAY_PASSWORD || '';
+  if (!entityId) entityId = process.env.WORLDPAY_ENTITY_ID || '';
+  if (!hasFirestoreConfig && process.env.WORLDPAY_ENV !== undefined) {
+    isLive = process.env.WORLDPAY_ENV === 'live';
   }
 
   return { username, password, entityId, isLive };
