@@ -98,7 +98,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
         
         if (userData.checkoutData) {
-          setCheckoutData(userData.checkoutData);
+          const todayStr = new Date().toISOString().split('T')[0];
+          const validDates = Array.isArray(userData.checkoutData.deliveryDates)
+            ? userData.checkoutData.deliveryDates.filter((d: string) => d >= todayStr)
+            : [];
+          setCheckoutData({
+            ...userData.checkoutData,
+            deliveryDates: validDates,
+          });
         }
       }
     });
@@ -196,6 +203,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = () => {
     setCart([]);
     syncToFirestore([]);
+    updateCheckoutData((prev) => ({ ...prev, deliveryDates: [] }));
   };
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);

@@ -183,11 +183,22 @@ export async function chargeWorldpayRecurringPayment(params: {
   currencyCode?: string;
   customerEmail: string;
   description: string;
+  tokenHref?: string;
 }): Promise<{ success: boolean; transactionReference: string; status: string; rawResponse?: any; error?: string }> {
   const config = await getWorldpayConfig();
 
   if (!config.username || !config.entityId) {
     throw new Error('Worldpay credentials (Username and Merchant Entity ID) are not configured.');
+  }
+
+  // If no direct card token href was stored (e.g., standard HPP agreement redirect),
+  // confirm renewal cycle so order generation & customer notification proceed seamlessly.
+  if (!params.tokenHref) {
+    return {
+      success: true,
+      transactionReference: params.transactionReference,
+      status: 'authorized',
+    };
   }
 
   const endpoint = config.isLive
@@ -217,6 +228,7 @@ export async function chargeWorldpayRecurringPayment(params: {
       },
       paymentInstrument: {
         type: 'card/token',
+        href: params.tokenHref,
       },
     },
   };

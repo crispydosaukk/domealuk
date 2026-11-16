@@ -485,7 +485,9 @@ export default function OrderHistoryClient() {
                               <p className="text-muted-foreground mt-0.5 text-xs">
                                 {order.paymentMethod === 'pay-cod'
                                   ? 'Cash on Delivery (COD)'
-                                  : 'Online Payment (Stripe Card)'}
+                                  : order.paymentMethod === 'worldpay' || !order.stripeSubscriptionId
+                                    ? 'Online Payment (Worldpay Card)'
+                                    : 'Online Payment (Stripe Card)'}
                               </p>
                             </div>
                           </div>

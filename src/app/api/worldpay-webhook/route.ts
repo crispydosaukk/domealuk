@@ -20,11 +20,31 @@ export async function POST(req: NextRequest) {
 
     // Worldpay event format
     // In Worldpay Access: transactionReference, eventType or eventDetails
-    const orderId = body.transactionReference || body.cartId || body.orderCode || body.customOrderId;
-    const paymentStatus = body.status || body.eventType || body.transStatus;
+    const orderId =
+      body.transactionReference ||
+      body.eventDetails?.transactionReference ||
+      body.cartId ||
+      body.orderCode ||
+      body.customOrderId;
+    const paymentStatus = body.status || body.eventType || body.eventDetails?.type || body.transStatus;
+    const tokenHref =
+      body.token?.href ||
+      body.eventDetails?.token?.href ||
+      body._links?.['tokens:token']?.href ||
+      body.tokenHref ||
+      null;
 
     if (!orderId) {
       return NextResponse.json({ received: true, note: 'No transactionReference found' });
+    }
+
+    // If Worldpay sent a token creation event or tokenHref, save it on the order
+    if (tokenHref && dbAdmin) {
+      await dbAdmin
+        .collection('orders')
+        .doc(orderId)
+        .set({ worldpayTokenHref: tokenHref }, { merge: true })
+        .catch(() => {});
     }
 
     const isSuccess =

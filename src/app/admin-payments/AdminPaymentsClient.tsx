@@ -80,7 +80,7 @@ export default function AdminPaymentsClient() {
     let activeSubscriptions = 0;
 
     orders.forEach((o) => {
-      if (o.status === 'Cancelled') return;
+      if (o.status === 'Cancelled' || o.status === 'Pending Payment') return;
       const orderTotal = o.total || 0;
       const orderWallet = o.walletApplied || 0;
 
@@ -93,7 +93,7 @@ export default function AdminPaymentsClient() {
         cardRevenue += orderTotal;
       }
 
-      if (o.stripeSubscriptionId && o.subscriptionStatus === 'active') {
+      if (o.subscriptionStatus === 'active') {
         activeSubscriptions++;
       }
     });
@@ -128,10 +128,17 @@ export default function AdminPaymentsClient() {
         (paymentFilter === 'Card' && o.paymentMethod !== 'pay-cod') ||
         (paymentFilter === 'COD' && o.paymentMethod === 'pay-cod');
 
+      const isSub = Boolean(
+        o.stripeSubscriptionId ||
+          o.subscriptionFrequency ||
+          o.isSubscription ||
+          o.subscriptionStatus === 'active'
+      );
+
       const matchType =
         typeFilter === 'All' ||
-        (typeFilter === 'Subscription' && !!o.stripeSubscriptionId) ||
-        (typeFilter === 'One-time' && !o.stripeSubscriptionId);
+        (typeFilter === 'Subscription' && isSub) ||
+        (typeFilter === 'One-time' && !isSub);
 
       return matchSearch && matchPayment && matchType;
     });
@@ -177,12 +184,12 @@ export default function AdminPaymentsClient() {
           </div>
         </div>
 
-        {/* Card 2: Stripe Online Card */}
+        {/* Card 2: Online Card Revenue */}
         <div className="bg-white p-5 rounded-2xl border border-border shadow-md flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-[10px] font-800 uppercase tracking-widest text-muted-foreground">
-                Stripe Card Revenue
+                Online Card Revenue
               </p>
               <p className="text-2xl font-900 mt-2 text-foreground tabular-nums">
                 £{stats.cardRevenue.toFixed(2)}
@@ -193,7 +200,7 @@ export default function AdminPaymentsClient() {
             </div>
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            Processed online via Stripe Card Element
+            Processed online via Worldpay Card
           </div>
         </div>
 
@@ -273,7 +280,7 @@ export default function AdminPaymentsClient() {
             className="px-3.5 py-2 border border-border rounded-xl bg-white text-sm font-600 text-foreground focus:outline-none"
           >
             <option value="All">All Payment Methods</option>
-            <option value="Card">Stripe Card</option>
+            <option value="Card">Worldpay / Online Card</option>
             <option value="COD">Cash on Delivery (COD)</option>
           </select>
 
@@ -333,9 +340,17 @@ export default function AdminPaymentsClient() {
                 </tr>
               ) : (
                 filteredOrders.map((o) => {
-                  const hasSub = !!o.stripeSubscriptionId;
+                  const hasSub = Boolean(
+                    o.stripeSubscriptionId ||
+                      o.subscriptionFrequency ||
+                      o.isSubscription ||
+                      o.subscriptionStatus === 'active'
+                  );
                   const isCard = o.paymentMethod !== 'pay-cod';
+                  const isWorldpay = o.paymentMethod === 'worldpay' || !o.stripeSubscriptionId;
                   const isCancelled = o.status === 'Cancelled';
+                  const isPendingPayment =
+                    o.status === 'Pending Payment' && o.paymentStatus !== 'paid';
 
                   return (
                     <tr key={o.id} className="hover:bg-muted/40 transition-colors">
@@ -355,7 +370,7 @@ export default function AdminPaymentsClient() {
                           {o.address?.fullName || 'Unknown'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {o.address?.email || o.userId}
+                          {o.address?.email || o.customerEmail || o.email || o.userId}
                         </p>
                         <p className="text-xs text-muted-foreground font-550">
                           {o.address?.phone || ''}
@@ -366,11 +381,15 @@ export default function AdminPaymentsClient() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex flex-col gap-0.5">
                           <span className={`inline-flex items-center text-xs font-700`}>
-                            {isCard ? '💳 Stripe Card' : '💵 Cash on Delivery'}
+                            {!isCard
+                              ? '💵 Cash on Delivery'
+                              : isWorldpay
+                                ? '💳 Worldpay Card'
+                                : '💳 Stripe Card'}
                           </span>
                           {hasSub ? (
                             <span className="text-[10px] font-800 text-primary uppercase tracking-wide">
-                              🔁 Subscription
+                              🔁 {o.subscriptionFrequency || 'Subscription'}
                             </span>
                           ) : (
                             <span className="text-[10px] font-600 text-muted-foreground uppercase tracking-wide">
@@ -385,6 +404,10 @@ export default function AdminPaymentsClient() {
                         {isCancelled ? (
                           <span className="inline-flex items-center text-[10px] font-800 bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
                             Cancelled (Refunded/Stopped)
+                          </span>
+                        ) : isPendingPayment ? (
+                          <span className="inline-flex items-center text-[10px] font-800 bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full">
+                            Pending Payment
                           </span>
                         ) : isCard ? (
                           <span className="inline-flex items-center text-[10px] font-800 bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full">
@@ -522,7 +545,9 @@ export default function AdminPaymentsClient() {
                     <p className="font-700 text-foreground mt-0.5">
                       {selectedOrder.paymentMethod === 'pay-cod'
                         ? '💵 Cash on Delivery (COD)'
-                        : '💳 Online Payment (Stripe Card)'}
+                        : selectedOrder.paymentMethod === 'worldpay' || !selectedOrder.stripeSubscriptionId
+                          ? '💳 Online Payment (Worldpay Card)'
+                          : '💳 Online Payment (Stripe Card)'}
                     </p>
                   </div>
                   <div>

@@ -76,6 +76,13 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
   React.useEffect(() => {
     if (!user || !isAdminEmail(user.email)) return;
 
+    // Background check for due recurring subscriptions & pre-debit reminders once per session
+    if (typeof window !== 'undefined' && !sessionStorage.getItem('sub_cron_checked')) {
+      sessionStorage.setItem('sub_cron_checked', '1');
+      fetch('/api/cron/process-recurring-subscriptions', { method: 'POST' }).catch(() => {});
+      fetch('/api/cron/send-pre-debit-reminders', { method: 'POST' }).catch(() => {});
+    }
+
     // Only count orders that are explicitly 'Order Received' or 'Pending' or 'Preparing' or 'Confirmed'
     // Alternatively, just count everything that isn't 'Delivered' or 'Cancelled'
     const q = query(collection(db, 'orders'));

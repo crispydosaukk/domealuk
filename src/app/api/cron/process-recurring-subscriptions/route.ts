@@ -112,6 +112,7 @@ async function handleProcessSubscriptions(req: NextRequest) {
             currencyCode: 'GBP',
             customerEmail,
             description: `DoMeal Subscription ${newOrderId}`,
+            tokenHref: baseOrder.worldpayTokenHref,
           });
 
           if (debitRes.success) {

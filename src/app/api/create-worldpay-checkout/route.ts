@@ -37,6 +37,22 @@ export async function POST(req: NextRequest) {
 
     const customerEmail = email || 'customer@domeal.co.uk';
 
+    // Ensure deliveryDates never contain stale/past dates
+    const todayStr = new Date().toISOString().split('T')[0];
+    let validDeliveryDates: string[] = Array.isArray(deliveryDates)
+      ? deliveryDates.filter((d: string) => d >= todayStr)
+      : [];
+
+    if (validDeliveryDates.length === 0) {
+      // Default to next upcoming Monday or Thursday
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      while (d.getDay() !== 1 && d.getDay() !== 4) {
+        d.setDate(d.getDate() + 1);
+      }
+      validDeliveryDates = [d.toISOString().split('T')[0]];
+    }
+
     // 1. Create order in Firestore as 'Pending Payment'
     const orderPayload = {
       userId: userId || 'guest-user',
@@ -50,7 +66,7 @@ export async function POST(req: NextRequest) {
       studentDiscountApplied: studentDiscountApplied || 0,
       studentDiscountPercent: studentDiscountPercent || 0,
       address: address || null,
-      deliveryDates: deliveryDates || [],
+      deliveryDates: validDeliveryDates,
       deliverySlot: deliverySlot || 'Standard Delivery',
       deliverySlotId: deliverySlotId || null,
       notes: notes || '',
