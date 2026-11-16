@@ -3,93 +3,98 @@ import Stripe from 'stripe';
 import { db } from '@/lib/firebase';
 import { dbAdmin } from '@/lib/firebase-admin';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { sendSubscriptionCancelledEmail } from '@/lib/emailService';
 
 export async function POST(req: NextRequest) {
   try {
     const { subscriptionId, orderId } = await req.json();
 
-    if (!subscriptionId) {
-      return NextResponse.json({ error: 'Missing subscriptionId' }, { status: 400 });
+    if (!subscriptionId && !orderId) {
+      return NextResponse.json({ error: 'Missing subscriptionId or orderId' }, { status: 400 });
     }
 
-    // Load Stripe Key: Prioritize .env first, fall back to Firestore settings
-    let secretKey = process.env.STRIPE_SECRET_KEY || '';
+    let orderData: any = null;
+    let targetOrderId = orderId;
 
-    if (!secretKey) {
+    if (targetOrderId) {
       if (dbAdmin) {
-        const globalSnap = await dbAdmin.collection('settings').doc('global').get();
-        if (globalSnap.exists) {
-          const data = globalSnap.data();
-          if (data.stripeSecretKey) secretKey = data.stripeSecretKey;
-        }
+        const snap = await dbAdmin.collection('orders').doc(targetOrderId).get();
+        if (snap.exists) orderData = snap.data();
       } else {
-        const globalSnap = await getDoc(doc(db, 'settings', 'global'));
-        if (globalSnap.exists()) {
-          const data = globalSnap.data();
-          if (data.stripeSecretKey) secretKey = data.stripeSecretKey;
+        const snap = await getDoc(doc(db, 'orders', targetOrderId));
+        if (snap.exists()) orderData = snap.data();
+      }
+    }
+
+    if (subscriptionId && subscriptionId.startsWith('sub_')) {
+      let secretKey = process.env.STRIPE_SECRET_KEY || '';
+      if (!secretKey) {
+        if (dbAdmin) {
+          const globalSnap = await dbAdmin.collection('settings').doc('global').get();
+          if (globalSnap.exists) secretKey = globalSnap.data()?.stripeSecretKey || '';
+        } else {
+          const globalSnap = await getDoc(doc(db, 'settings', 'global'));
+          if (globalSnap.exists()) secretKey = globalSnap.data()?.stripeSecretKey || '';
+        }
+      }
+
+      if (secretKey) {
+        try {
+          const stripe = new Stripe(secretKey, {
+            apiVersion: '2022-11-15' as any,
+          });
+          await stripe.subscriptions.update(subscriptionId, {
+            cancel_at_period_end: true,
+          });
+        } catch (stripeErr) {
+          console.warn('[cancel-stripe-subscription] Stripe API error:', stripeErr);
         }
       }
     }
 
-    if (!secretKey) {
-      return NextResponse.json({ error: 'Stripe Secret Key is not configured' }, { status: 500 });
-    }
+    const newSubStatus = subscriptionId?.startsWith('sub_') ? 'cancelling' : 'cancelled';
 
-    const stripe = new Stripe(secretKey, {
-      apiVersion: '2022-11-15' as any,
-    });
-
-    // Schedule cancellation at end of current billing period (NOT immediate).
-    // This means:
-    //   - If payment was already taken for this week (Saturday midnight cutoff),
-    //     the current week's delivery continues as normal.
-    //   - Stripe will stop charging after the current period ends.
-    //   - Stripe will fire `customer.subscription.deleted` at period end, which
-    //     is where we finalize the cancellation in Firestore.
-    const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: true,
-    });
-
-    // Mark all Firestore orders for this subscription as 'cancelling'.
-    // We do NOT change `status` (Order Received / Delivered / etc.) so the
-    // current week's order is still fulfilled normally by the kitchen.
     if (dbAdmin) {
-      const snap = await dbAdmin
-        .collection('orders')
-        .where('stripeSubscriptionId', '==', subscriptionId)
-        .get();
-
-      for (const d of snap.docs) {
-        await dbAdmin.collection('orders').doc(d.id).update({
-          subscriptionStatus: 'cancelling',
-          // Do NOT update `status` — current week's delivery must proceed
-        });
+      if (subscriptionId) {
+        const snap = await dbAdmin
+          .collection('orders')
+          .where('stripeSubscriptionId', '==', subscriptionId)
+          .get();
+        for (const d of snap.docs) {
+          await dbAdmin.collection('orders').doc(d.id).update({
+            subscriptionStatus: newSubStatus,
+            cancelledAt: new Date().toISOString(),
+          });
+          if (!targetOrderId) targetOrderId = d.id;
+          if (!orderData) orderData = d.data();
+        }
       }
-
-      // Also ensure the specific orderId passed is updated (in case it's a
-      // guest-order that doesn't have stripeSubscriptionId set yet)
-      if (orderId) {
-        await dbAdmin.collection('orders').doc(orderId).update({
-          subscriptionStatus: 'cancelling',
+      if (targetOrderId) {
+        await dbAdmin.collection('orders').doc(targetOrderId).update({
+          subscriptionStatus: newSubStatus,
+          cancelledAt: new Date().toISOString(),
         });
       }
     } else {
       try {
-        const ordersRef = collection(db, 'orders');
-        const q = query(ordersRef, where('stripeSubscriptionId', '==', subscriptionId));
-        const querySnapshot = await getDocs(q);
-
-        for (const docSnap of querySnapshot.docs) {
-          await updateDoc(doc(db, 'orders', docSnap.id), {
-            subscriptionStatus: 'cancelling',
-            // Do NOT update `status` — current week's delivery must proceed
-          });
+        if (subscriptionId) {
+          const ordersRef = collection(db, 'orders');
+          const q = query(ordersRef, where('stripeSubscriptionId', '==', subscriptionId));
+          const querySnapshot = await getDocs(q);
+          for (const docSnap of querySnapshot.docs) {
+            await updateDoc(doc(db, 'orders', docSnap.id), {
+              subscriptionStatus: newSubStatus,
+              cancelledAt: new Date().toISOString(),
+            });
+            if (!targetOrderId) targetOrderId = docSnap.id;
+            if (!orderData) orderData = docSnap.data();
+          }
         }
-
-        if (orderId) {
-          const orderRef = doc(db, 'orders', orderId);
+        if (targetOrderId) {
+          const orderRef = doc(db, 'orders', targetOrderId);
           await updateDoc(orderRef, {
-            subscriptionStatus: 'cancelling',
+            subscriptionStatus: newSubStatus,
+            cancelledAt: new Date().toISOString(),
           });
         }
       } catch (e) {
@@ -97,10 +102,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (targetOrderId) {
+      try {
+        await sendSubscriptionCancelledEmail(targetOrderId, orderData);
+      } catch (e) {
+        console.error('Failed to send subscription cancelled email:', e);
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      status: updatedSubscription.status,
-      cancel_at_period_end: updatedSubscription.cancel_at_period_end,
+      subscriptionStatus: newSubStatus,
     });
   } catch (err: any) {
     console.error('Error scheduling subscription cancellation:', err);
