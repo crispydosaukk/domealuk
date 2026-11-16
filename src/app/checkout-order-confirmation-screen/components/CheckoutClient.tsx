@@ -296,8 +296,19 @@ function CheckoutClientContent({
         }
       };
       verifyOrderPayment();
-    } else if (urlStatus === 'cancel') {
-      toast.warning('Payment was cancelled. You can try checking out again.');
+    } else if (urlStatus === 'failure' || urlStatus === 'cancel') {
+      if (urlOrderId) {
+        updateDoc(doc(db, 'orders', urlOrderId), {
+          status: urlStatus === 'failure' ? 'Payment Failed' : 'Cancelled',
+          paymentStatus: 'failed',
+          subscriptionStatus: 'payment_failed',
+        }).catch((err) => console.warn('Could not mark order status:', err));
+      }
+      if (urlStatus === 'failure') {
+        toast.error('Transaction was declined by Worldpay or your bank. No money has been debited. Please try again with a valid card.');
+      } else {
+        toast.warning('Payment was cancelled. You can try checking out again.');
+      }
       router.replace('/checkout-order-confirmation-screen');
     }
   }, [urlStatus, sessionId, urlOrderId]);

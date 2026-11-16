@@ -880,17 +880,6 @@ exports.sendOrderStatusUpdateNotification = onDocumentWritten(
     const afterOrder = snapshot.after.data();
     const orderId = event.params.orderId;
 
-    const oldStatus = beforeOrder.status;
-    const newStatus = afterOrder.status;
-
-    if (!newStatus || oldStatus === newStatus) return;
-
-    const NOTIFY_STATUSES = ['Preparing', 'Out for Delivery', 'Delivered', 'Cancelled'];
-    if (!NOTIFY_STATUSES.includes(newStatus)) return;
-
-    // Avoid sending duplicate status email for the same status transition
-    if (afterOrder.lastNotifiedStatus === newStatus) return;
-
     let customerEmail = afterOrder.customerEmail || afterOrder.email || (afterOrder.address && afterOrder.address.email);
     if (!customerEmail && afterOrder.userId && afterOrder.userId !== 'guest-user') {
       try {
@@ -903,6 +892,104 @@ exports.sendOrderStatusUpdateNotification = onDocumentWritten(
         console.error('Error resolving customer email for status update:', err);
       }
     }
+
+    // Handle Subscription Plan Cancellation Email to Customer & Admin
+    const oldSubStatus = beforeOrder.subscriptionStatus;
+    const newSubStatus = afterOrder.subscriptionStatus;
+    const isSubCancelled = (newSubStatus === 'cancelled' || newSubStatus === 'cancelling') && oldSubStatus !== newSubStatus;
+
+    if (isSubCancelled && !afterOrder.subCancelEmailSent) {
+      const frequency = afterOrder.subscriptionFrequency || 'Weekly Subscription';
+      const customerName = (afterOrder.address && afterOrder.address.fullName) || 'Valued Customer';
+      const cancelSubject = `DoMeal Subscription Cancelled - Order #${orderId}`;
+      const cancelHtml = `
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f5; margin: 0; padding: 30px 15px; color: #1f2937;">
+          <table align="center" width="600" cellpadding="0" cellspacing="0" style="background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
+            <tr>
+              <td style="background-color: #1E3B2B; padding: 26px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px;">Subscription Autopay Cancelled</h1>
+                <p style="color: #C39B54; margin: 6px 0 0 0; font-size: 13px; font-weight: 600;">Order #${orderId}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 28px;">
+                <p style="font-size: 16px; margin-top: 0;">Hi ${customerName},</p>
+                <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+                  We are writing to confirm that your <strong>${frequency}</strong> auto-debit subscription (Order #${orderId}) has been successfully <strong>cancelled</strong>.
+                </p>
+
+                <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 6px; padding: 14px 16px; margin: 20px 0;">
+                  <h4 style="margin: 0 0 4px 0; color: #991b1b; font-size: 14px; font-weight: 700;">🛑 Future Auto-Debits Stopped</h4>
+                  <p style="margin: 0; font-size: 13px; color: #7f1d1d; line-height: 1.5;">
+                    No future recurring payments will be debited from your card. Your auto-pay schedule has been permanently halted.
+                  </p>
+                </div>
+
+                <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; border-radius: 6px; padding: 14px 16px; margin: 20px 0;">
+                  <h4 style="margin: 0 0 4px 0; color: #065f46; font-size: 14px; font-weight: 700;">📦 Current Cycle Deliveries Proceed As Normal</h4>
+                  <p style="margin: 0; font-size: 13px; color: #047857; line-height: 1.5;">
+                    Any meal deliveries already scheduled and paid for this current cycle will still arrive as planned. You will receive all meals you've already paid for!
+                  </p>
+                </div>
+
+                <div style="background: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                  <p style="margin: 0 0 6px 0; font-size: 14px;"><strong>Order ID:</strong> ${orderId}</p>
+                  <p style="margin: 0 0 6px 0; font-size: 14px;"><strong>Plan:</strong> ${frequency}</p>
+                  <p style="margin: 0 0 6px 0; font-size: 14px;"><strong>Autopay Status:</strong> <span style="color: #ef4444; font-weight: 700;">Cancelled</span></p>
+                </div>
+
+                <p style="font-size: 14px; color: #475569;">
+                  We're sorry to see you go! You can restart your meal plan anytime at <a href="https://domeal.co.uk/menu" style="color: #1E3B2B; font-weight: 700;">domeal.co.uk/menu</a>.
+                </p>
+                <p style="font-size: 14px; color: #475569; margin-bottom: 0;">Warmly,<br/><strong style="color: #1E3B2B;">The DoMeal Team</strong></p>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      try {
+        const transporter = getTransporter();
+        if (customerEmail && !customerEmail.includes('@domeal.co.uk')) {
+          await transporter.sendMail({
+            from: `"DoMeal" <${process.env.SMTP_USER || 'domealuk@gmail.com'}>`,
+            to: customerEmail,
+            subject: cancelSubject,
+            html: cancelHtml,
+          });
+          console.log(`✅ Subscription cancellation email sent to customer: ${customerEmail}`);
+        }
+
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@vegchennaisrilalitha.co.uk';
+        await transporter.sendMail({
+          from: `"DoMeal Alerts" <${process.env.SMTP_USER || 'domealuk@gmail.com'}>`,
+          to: adminEmail,
+          subject: `🛑 [ADMIN ALERT] Subscription Cancelled - #${orderId} (${customerName})`,
+          html: cancelHtml,
+        }).catch(() => {});
+
+        await snapshot.after.ref.update({
+          subCancelEmailSent: true,
+          subCancelEmailSentAt: new Date().toISOString(),
+        });
+      } catch (subErr) {
+        console.error('Failed sending sub cancel email from Cloud Function:', subErr);
+      }
+    }
+
+    const oldStatus = beforeOrder.status;
+    const newStatus = afterOrder.status;
+
+    if (!newStatus || oldStatus === newStatus) return;
+
+    const NOTIFY_STATUSES = ['Preparing', 'Out for Delivery', 'Delivered', 'Cancelled'];
+    if (!NOTIFY_STATUSES.includes(newStatus)) return;
+
+    // Avoid sending duplicate status email for the same status transition
+    if (afterOrder.lastNotifiedStatus === newStatus) return;
 
     if (!customerEmail || customerEmail.includes('@domeal.co.uk')) return;
 

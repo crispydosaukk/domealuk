@@ -7,6 +7,8 @@ import {
   CheckCircle,
   Truck,
   XCircle,
+  AlertCircle,
+  Trash2,
   ChevronDown,
   ChevronUp,
   RotateCcw,
@@ -50,6 +52,18 @@ const statusConfig: Record<
   },
   Preparing: { icon: Clock, color: 'text-amber-700', bg: 'bg-amber-100', label: 'Preparing' },
   Confirmed: { icon: Package, color: 'text-purple-700', bg: 'bg-purple-100', label: 'Confirmed' },
+  'Pending Payment': {
+    icon: Clock,
+    color: 'text-amber-700',
+    bg: 'bg-amber-100',
+    label: 'Payment Pending',
+  },
+  'Payment Failed': {
+    icon: AlertCircle,
+    color: 'text-red-700',
+    bg: 'bg-red-100',
+    label: 'Payment Declined',
+  },
   Cancelled: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100', label: 'Cancelled' },
 };
 
@@ -313,17 +327,46 @@ export default function OrderHistoryClient() {
                       >
                         {cfg.label}
                       </span>
-                      {order.paymentMethod && (
-                        <span
-                          className={`text-[10px] font-700 px-2 py-0.5 rounded-md border ${
-                            order.paymentMethod === 'pay-cod'
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-green-50 text-green-700 border-green-200'
-                          }`}
-                        >
-                          {order.paymentMethod === 'pay-cod' ? 'COD' : 'Paid'}
-                        </span>
-                      )}
+                      {order.paymentMethod && (() => {
+                        const isFailed = order.status === 'Payment Failed' || order.paymentStatus === 'failed';
+                        const isPending = order.status === 'Pending Payment' || order.subscriptionStatus === 'pending_payment';
+                        const isCod = order.paymentMethod === 'pay-cod';
+                        const isPaid = order.paymentStatus === 'paid' || ['Order Received', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered'].includes(order.status);
+
+                        if (isFailed) {
+                          return (
+                            <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-red-50 text-red-700 border-red-200">
+                              Payment Declined
+                            </span>
+                          );
+                        }
+                        if (isPending) {
+                          return (
+                            <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-amber-50 text-amber-700 border-amber-200">
+                              Unpaid / Pending
+                            </span>
+                          );
+                        }
+                        if (isCod) {
+                          return (
+                            <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-amber-50 text-amber-700 border-amber-200">
+                              COD
+                            </span>
+                          );
+                        }
+                        if (isPaid) {
+                          return (
+                            <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-green-50 text-green-700 border-green-200">
+                              Paid
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-gray-50 text-gray-700 border-gray-200">
+                            Unpaid
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="text-xs text-muted-foreground font-500">
                       Placed:{' '}
@@ -468,7 +511,7 @@ export default function OrderHistoryClient() {
                               </div>
                             )}
                             <div className="flex justify-between font-800 text-sm border-t border-border/40 pt-1.5">
-                              <span>Total Paid</span>
+                              <span>Total {order.paymentStatus === 'paid' || ['Order Received', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered'].includes(order.status) ? 'Paid' : 'Due'}</span>
                               <span className="text-primary tabular-nums">
                                 £{(order.total || 0).toFixed(2)}
                               </span>
@@ -499,7 +542,15 @@ export default function OrderHistoryClient() {
                             <div>
                               <p className="font-700 text-foreground">Status</p>
                               <div className="mt-1">
-                                {order.paymentMethod === 'pay-cod' ? (
+                                {order.status === 'Payment Failed' || order.paymentStatus === 'failed' ? (
+                                  <span className="inline-flex items-center text-[10px] font-700 bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-200">
+                                    Payment Declined (No charge)
+                                  </span>
+                                ) : order.status === 'Pending Payment' || order.subscriptionStatus === 'pending_payment' ? (
+                                  <span className="inline-flex items-center text-[10px] font-700 bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                                    Awaiting Payment Confirmation
+                                  </span>
+                                ) : order.paymentMethod === 'pay-cod' ? (
                                   <span className="inline-flex items-center text-[10px] font-700 bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
                                     Pending Cash Delivery
                                   </span>
@@ -624,6 +675,36 @@ export default function OrderHistoryClient() {
                     </div>
 
                     <div className="flex flex-wrap gap-3 mt-6 pt-5 border-t border-border">
+                      {(order.status === 'Pending Payment' || order.status === 'Payment Failed') && (
+                        <>
+                          <Link
+                            href="/menu"
+                            className="flex items-center gap-2 bg-primary text-white text-sm font-700 px-5 py-2.5 rounded-xl hover:bg-red-900 transition-all active:scale-95 shadow-sm shadow-red-200"
+                          >
+                            <RotateCcw size={14} />
+                            Try Checkout Again
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await updateDoc(doc(db, 'orders', order.id), {
+                                  status: 'Cancelled',
+                                  subscriptionStatus: 'cancelled',
+                                });
+                                toast.success('Unpaid order dismissed.');
+                              } catch (e) {
+                                toast.error('Could not remove order.');
+                              }
+                            }}
+                            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-600 px-4 py-2.5 rounded-xl transition-all active:scale-95"
+                          >
+                            <Trash2 size={14} />
+                            Dismiss Unpaid
+                          </button>
+                        </>
+                      )}
+
                       {order.status === 'Delivered' && (
                         <Link
                           href="/menu"

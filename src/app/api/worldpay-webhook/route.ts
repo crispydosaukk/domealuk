@@ -55,6 +55,34 @@ export async function POST(req: NextRequest) {
       paymentStatus === 'SUCCESS' ||
       paymentStatus === 'Y';
 
+    const isFailure =
+      paymentStatus === 'payment.refused' ||
+      paymentStatus === 'payment.failed' ||
+      paymentStatus === 'payment.cancelled' ||
+      paymentStatus === 'REFUSED' ||
+      paymentStatus === 'FAILED' ||
+      paymentStatus === 'DECLINED' ||
+      paymentStatus === 'C';
+
+    if (isFailure) {
+      if (dbAdmin) {
+        await dbAdmin.collection('orders').doc(orderId).update({
+          status: 'Payment Failed',
+          paymentStatus: 'failed',
+          subscriptionStatus: 'payment_failed',
+          updatedAt: AdminFieldValue.serverTimestamp(),
+        }).catch(() => {});
+      } else {
+        await updateDoc(doc(db, 'orders', orderId), {
+          status: 'Payment Failed',
+          paymentStatus: 'failed',
+          subscriptionStatus: 'payment_failed',
+          updatedAt: serverTimestamp(),
+        }).catch(() => {});
+      }
+      return NextResponse.json({ received: true, status: 'marked_failed' });
+    }
+
     if (isSuccess) {
       let orderData: any = null;
       if (dbAdmin) {
