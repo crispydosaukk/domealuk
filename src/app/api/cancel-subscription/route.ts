@@ -82,13 +82,37 @@ export async function POST(req: NextRequest) {
 
     // 3. Update Firestore order(s) to cancelled/cancelling
     const newSubscriptionStatus = effectiveStripeSubId?.startsWith('sub_') ? 'cancelling' : 'cancelled';
+    const nowIso = new Date().toISOString();
 
     if (dbAdmin) {
       if (foundOrderId) {
         await dbAdmin.collection('orders').doc(foundOrderId).update({
           subscriptionStatus: newSubscriptionStatus,
-          cancelledAt: new Date().toISOString(),
+          cancelledAt: nowIso,
         });
+
+        // If this order is a renewal child, also cancel its parent base order so the scheduler stops renewing it!
+        if (orderData?.parentOrderId) {
+          await dbAdmin.collection('orders').doc(orderData.parentOrderId).update({
+            subscriptionStatus: newSubscriptionStatus,
+            cancelledAt: nowIso,
+          }).catch(() => {});
+        }
+
+        // Also cancel any child renewal orders under this parent
+        const childrenSnap = await dbAdmin
+          .collection('orders')
+          .where('parentOrderId', '==', foundOrderId)
+          .get()
+          .catch(() => null);
+        if (childrenSnap && !childrenSnap.empty) {
+          for (const cDoc of childrenSnap.docs) {
+            await cDoc.ref.update({
+              subscriptionStatus: newSubscriptionStatus,
+              cancelledAt: nowIso,
+            }).catch(() => {});
+          }
+        }
       }
       if (effectiveStripeSubId) {
         const snap = await dbAdmin
@@ -98,7 +122,7 @@ export async function POST(req: NextRequest) {
         for (const d of snap.docs) {
           await dbAdmin.collection('orders').doc(d.id).update({
             subscriptionStatus: newSubscriptionStatus,
-            cancelledAt: new Date().toISOString(),
+            cancelledAt: nowIso,
           });
         }
       }
@@ -106,8 +130,28 @@ export async function POST(req: NextRequest) {
       if (foundOrderId) {
         await updateDoc(doc(db, 'orders', foundOrderId), {
           subscriptionStatus: newSubscriptionStatus,
-          cancelledAt: new Date().toISOString(),
+          cancelledAt: nowIso,
         });
+
+        // If this order is a renewal child, also cancel its parent base order
+        if (orderData?.parentOrderId) {
+          await updateDoc(doc(db, 'orders', orderData.parentOrderId), {
+            subscriptionStatus: newSubscriptionStatus,
+            cancelledAt: nowIso,
+          }).catch(() => {});
+        }
+
+        // Also cancel any child renewal orders under this parent
+        try {
+          const childrenQuery = query(collection(db, 'orders'), where('parentOrderId', '==', foundOrderId));
+          const childrenSnap = await getDocs(childrenQuery);
+          for (const cDoc of childrenSnap.docs) {
+            await updateDoc(cDoc.ref, {
+              subscriptionStatus: newSubscriptionStatus,
+              cancelledAt: nowIso,
+            }).catch(() => {});
+          }
+        } catch {}
       }
       if (effectiveStripeSubId) {
         const q = query(
@@ -118,7 +162,7 @@ export async function POST(req: NextRequest) {
         for (const docSnap of snap.docs) {
           await updateDoc(doc(db, 'orders', docSnap.id), {
             subscriptionStatus: newSubscriptionStatus,
-            cancelledAt: new Date().toISOString(),
+            cancelledAt: nowIso,
           });
         }
       }
