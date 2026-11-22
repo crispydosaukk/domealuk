@@ -327,6 +327,21 @@ export default function OrderHistoryClient() {
                       >
                         {cfg.label}
                       </span>
+                      {(Boolean(order.subscriptionFrequency || order.isSubscription || order.stripeSubscriptionId) || order.isRenewal) && (
+                        order.subscriptionStatus === 'cancelled' ? (
+                          <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-gray-100 text-gray-500 border-gray-200">
+                            Plan Cancelled
+                          </span>
+                        ) : order.subscriptionStatus === 'cancelling' ? (
+                          <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-amber-50 text-amber-700 border-amber-200">
+                            Cancellation Scheduled
+                          </span>
+                        ) : (order.status !== 'Payment Failed' && order.status !== 'Cancelled') ? (
+                          <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-emerald-50 text-emerald-800 border-emerald-200">
+                            🔁 Active Plan
+                          </span>
+                        ) : null
+                      )}
                       {order.paymentMethod && (() => {
                         const isFailed = order.status === 'Payment Failed' || order.paymentStatus === 'failed';
                         const isPending = order.status === 'Pending Payment' || order.subscriptionStatus === 'pending_payment';
@@ -715,7 +730,11 @@ export default function OrderHistoryClient() {
                         </Link>
                       )}
 
-                      {Boolean(order.stripeSubscriptionId || order.isSubscription || order.subscriptionFrequency) && order.subscriptionStatus === 'active' && order.status !== 'Cancelled' && (
+                      {(Boolean(order.stripeSubscriptionId || order.isSubscription || order.subscriptionFrequency) || order.isRenewal) &&
+                        order.subscriptionStatus !== 'cancelled' &&
+                        order.subscriptionStatus !== 'cancelling' &&
+                        order.status !== 'Cancelled' &&
+                        order.status !== 'Payment Failed' && (
                         <button
                           type="button"
                           disabled={cancellingId === (order.stripeSubscriptionId || order.id)}
@@ -739,14 +758,14 @@ export default function OrderHistoryClient() {
                         </button>
                       )}
 
-                      {Boolean(order.stripeSubscriptionId || order.isSubscription || order.subscriptionFrequency) && order.subscriptionStatus === 'cancelling' && (
+                      {(Boolean(order.stripeSubscriptionId || order.isSubscription || order.subscriptionFrequency) || order.isRenewal) && order.subscriptionStatus === 'cancelling' && (
                         <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-700 px-5 py-2.5 rounded-xl">
                           <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                           Cancellation Scheduled
                         </div>
                       )}
 
-                      {Boolean(order.stripeSubscriptionId || order.isSubscription || order.subscriptionFrequency) && order.subscriptionStatus === 'cancelled' && (
+                      {(Boolean(order.stripeSubscriptionId || order.isSubscription || order.subscriptionFrequency) || order.isRenewal) && order.subscriptionStatus === 'cancelled' && (
                         <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 text-gray-500 text-sm font-700 px-5 py-2.5 rounded-xl">
                           <XCircle size={14} className="text-gray-400" />
                           Plan Cancelled
