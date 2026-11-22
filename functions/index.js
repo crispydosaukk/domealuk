@@ -1137,6 +1137,17 @@ exports.processRecurringSubscriptionsScheduled = onSchedule(
       if (baseOrder.isRenewal) continue;
       if (baseOrder.status === 'Cancelled' || baseOrder.status === 'Pending Payment') continue;
       if (!baseOrder.subscriptionFrequency || baseOrder.subscriptionFrequency === 'none') continue;
+      if (baseOrder.subscriptionStatus !== 'active') continue;
+
+      // DO NOT process Stripe subscriptions — Stripe handles its own billing and webhooks automatically!
+      if (baseOrder.stripeSubscriptionId || baseOrder.paymentMethod === 'stripe') {
+        continue;
+      }
+
+      // We only automate Worldpay recurring subscriptions
+      if (baseOrder.paymentMethod !== 'worldpay') {
+        continue;
+      }
 
       if (!baseOrder.nextBillingDate) {
         // Initialize nextBillingDate to upcoming Saturday midnight
@@ -1159,37 +1170,78 @@ exports.processRecurringSubscriptionsScheduled = onSchedule(
       const newOrderId = `VSL-REC-${Math.floor(10000 + Math.random() * 90000)}`;
       const nextDeliveryDates = calculateNextDeliveryDatesCF(baseOrder.deliveryDates || [], frequency);
 
-      // If tokenHref exists on the order, execute MIT charge via Worldpay Access API
-      if (baseOrder.paymentMethod === 'worldpay' && baseOrder.worldpayTokenHref && wpUser && wpEntity) {
-        try {
-          const endpoint = wpIsLive
-            ? 'https://access.worldpay.com/payments'
-            : 'https://try.access.worldpay.com/payments';
-          const authHeader = `Basic ${Buffer.from(`${wpUser}:${wpPass}`).toString('base64')}`;
-          await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Authorization': authHeader,
-              'Content-Type': 'application/vnd.worldpay.payments-v6+json',
-              'Accept': 'application/vnd.worldpay.payments-v6+json',
-            },
-            body: JSON.stringify({
-              transactionReference: newOrderId,
-              merchant: { entity: wpEntity },
-              instruction: {
-                narrative: { line1: `DoMeal ${newOrderId}`.substring(0, 24) },
-                value: { amount: Math.round(renewalAmount * 100), currency: 'GBP' },
-                customerAgreement: { type: 'subscription', storedCardUsage: 'subsequent' },
-                paymentInstrument: { type: 'card/token', href: baseOrder.worldpayTokenHref },
-              },
-            }),
-          });
-        } catch (wpErr) {
-          console.error(`Worldpay MIT request error for ${orderId}:`, wpErr);
-        }
+      // Verify that a valid Worldpay token exists. If no token, we CANNOT charge the card!
+      if (!baseOrder.worldpayTokenHref) {
+        console.warn(`[Scheduler] Order ${orderId} has no worldpayTokenHref. Cannot auto-charge. Marking past_due.`);
+        await docSnap.ref.update({
+          subscriptionStatus: 'past_due',
+          lastPaymentFailedAt: FieldValue.serverTimestamp(),
+          lastPaymentFailureReason: 'No stored card token for recurring debit',
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        continue; // STOP! DO NOT GENERATE RENEWAL ORDER!
       }
 
-      // Create the new weekly order (this also triggers sendOrderConfirmationEmail automatically!)
+      if (!wpUser || !wpEntity) {
+        console.error(`[Scheduler] Worldpay credentials missing. Cannot charge order ${orderId}.`);
+        continue;
+      }
+
+      // Execute MIT charge via Worldpay Access API
+      let chargeSuccess = false;
+      let failureReason = '';
+
+      try {
+        const endpoint = wpIsLive
+          ? 'https://access.worldpay.com/payments'
+          : 'https://try.access.worldpay.com/payments';
+        const authHeader = `Basic ${Buffer.from(`${wpUser}:${wpPass}`).toString('base64')}`;
+        const wpRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/vnd.worldpay.payments-v6+json',
+            'Accept': 'application/vnd.worldpay.payments-v6+json',
+          },
+          body: JSON.stringify({
+            transactionReference: newOrderId,
+            merchant: { entity: wpEntity },
+            instruction: {
+              narrative: { line1: `DoMeal ${newOrderId}`.substring(0, 24) },
+              value: { amount: Math.round(renewalAmount * 100), currency: 'GBP' },
+              customerAgreement: { type: 'subscription', storedCardUsage: 'subsequent' },
+              paymentInstrument: { type: 'card/token', href: baseOrder.worldpayTokenHref },
+            },
+          }),
+        });
+
+        const wpData = await wpRes.json().catch(() => ({}));
+        const outcome = wpData.outcome || wpData.status;
+
+        if (wpRes.ok && (outcome === 'authorized' || outcome === 'captured' || outcome === 'SETTLED' || outcome === 'SUCCESS' || outcome === 'AUTHORISED')) {
+          chargeSuccess = true;
+        } else {
+          failureReason = wpData.description || wpData.message || outcome || `HTTP ${wpRes.status}`;
+          console.error(`Worldpay MIT charge failed for order ${orderId}:`, wpData);
+        }
+      } catch (wpErr) {
+        failureReason = wpErr.message || 'Worldpay request error';
+        console.error(`Worldpay MIT network error for order ${orderId}:`, wpErr);
+      }
+
+      // CRITICAL SAFETY: IF CHARGE FAILED, NEVER CREATE A PAID ORDER!
+      if (!chargeSuccess) {
+        console.warn(`[Scheduler] Auto-debit failed for order ${orderId}: ${failureReason}. Skipping renewal order creation.`);
+        await docSnap.ref.update({
+          subscriptionStatus: 'past_due',
+          lastPaymentFailedAt: FieldValue.serverTimestamp(),
+          lastPaymentFailureReason: failureReason,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        continue; // STOP! DO NOT GENERATE RENEWAL ORDER!
+      }
+
+      // Only if charge succeeded: Create the new weekly renewal order
       const newOrderPayload = {
         parentOrderId: orderId,
         userId: baseOrder.userId || 'guest-user',
@@ -1207,7 +1259,7 @@ exports.processRecurringSubscriptionsScheduled = onSchedule(
         deliverySlot: baseOrder.deliverySlot || 'Standard Delivery',
         deliverySlotId: baseOrder.deliverySlotId || null,
         notes: baseOrder.notes || '',
-        paymentMethod: baseOrder.paymentMethod || 'worldpay',
+        paymentMethod: 'worldpay',
         subscriptionFrequency: frequency,
         subscriptionStatus: 'active',
         allergiesInfo: baseOrder.allergiesInfo || '',
@@ -1243,7 +1295,7 @@ exports.processRecurringSubscriptionsScheduled = onSchedule(
         updatedAt: FieldValue.serverTimestamp(),
       });
 
-      console.log(`✅ Generated renewal order ${newOrderId} for parent ${orderId}. Next billing: ${nextSaturday.toISOString()}`);
+      console.log(`✅ Worldpay charged £${renewalAmount} successfully. Generated renewal order ${newOrderId} for parent ${orderId}. Next billing: ${nextSaturday.toISOString()}`);
     }
   }
 );

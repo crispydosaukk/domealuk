@@ -100,35 +100,46 @@ async function handleProcessSubscriptions(req: NextRequest) {
       const nextDeliveryDates = calculateNextDeliveryDates(baseOrder.deliveryDates || [], frequency);
 
       // 3. Process payment debit via Worldpay
+      if (baseOrder.stripeSubscriptionId || baseOrder.paymentMethod !== 'worldpay') {
+        results.skippedNotDue.push(orderId);
+        continue; // Stripe handles its own billing and webhooks
+      }
+
+      if (!baseOrder.worldpayTokenHref) {
+        results.failed.push({ orderId, reason: 'No Worldpay token stored on order' });
+        if (dbAdmin) {
+          await dbAdmin.collection('orders').doc(orderId).update({
+            subscriptionStatus: 'past_due',
+            lastFailedBillingReason: 'No Worldpay token stored on order',
+          });
+        }
+        continue;
+      }
+
       let paymentSuccess = false;
       let paymentStatus = 'paid';
       let failureReason = '';
 
-      if (baseOrder.paymentMethod === 'worldpay') {
-        try {
-          const debitRes = await chargeWorldpayRecurringPayment({
-            transactionReference: newOrderId,
-            amount: renewalAmount,
-            currencyCode: 'GBP',
-            customerEmail,
-            description: `DoMeal Subscription ${newOrderId}`,
-            tokenHref: baseOrder.worldpayTokenHref,
-          });
+      try {
+        const debitRes = await chargeWorldpayRecurringPayment({
+          transactionReference: newOrderId,
+          amount: renewalAmount,
+          currencyCode: 'GBP',
+          customerEmail,
+          description: `DoMeal Subscription ${newOrderId}`,
+          tokenHref: baseOrder.worldpayTokenHref,
+        });
 
-          if (debitRes.success) {
-            paymentSuccess = true;
-            paymentStatus = 'paid';
-          } else {
-            paymentSuccess = false;
-            failureReason = debitRes.error || debitRes.status || 'Worldpay recurring charge declined';
-          }
-        } catch (payErr: any) {
+        if (debitRes.success) {
+          paymentSuccess = true;
+          paymentStatus = 'paid';
+        } else {
           paymentSuccess = false;
-          failureReason = payErr.message || 'Payment execution error';
+          failureReason = debitRes.error || debitRes.status || 'Worldpay recurring charge declined';
         }
-      } else {
-        // For other methods (legacy Stripe / pay-online)
-        paymentSuccess = true;
+      } catch (payErr: any) {
+        paymentSuccess = false;
+        failureReason = payErr.message || 'Payment execution error';
       }
 
       if (!paymentSuccess) {
