@@ -7,6 +7,8 @@ import {
   CheckCircle,
   Truck,
   XCircle,
+  AlertCircle,
+  Trash2,
   ChevronDown,
   ChevronUp,
   RotateCcw,
@@ -50,6 +52,18 @@ const statusConfig: Record<
   },
   Preparing: { icon: Clock, color: 'text-amber-700', bg: 'bg-amber-100', label: 'Preparing' },
   Confirmed: { icon: Package, color: 'text-purple-700', bg: 'bg-purple-100', label: 'Confirmed' },
+  'Pending Payment': {
+    icon: Clock,
+    color: 'text-amber-700',
+    bg: 'bg-amber-100',
+    label: 'Payment Pending',
+  },
+  'Payment Failed': {
+    icon: AlertCircle,
+    color: 'text-red-700',
+    bg: 'bg-red-100',
+    label: 'Payment Declined',
+  },
   Cancelled: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100', label: 'Cancelled' },
 };
 
@@ -80,9 +94,10 @@ export default function OrderHistoryClient() {
   const confirmCancelSubscription = async () => {
     if (!pendingCancelData) return;
     const { subscriptionId, orderId } = pendingCancelData;
-    setCancellingId(subscriptionId);
+    const cancelKey = subscriptionId || orderId;
+    setCancellingId(cancelKey);
     try {
-      const res = await fetch(getApiUrl('/api/cancel-stripe-subscription'), {
+      const res = await fetch(getApiUrl('/api/cancel-subscription'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscriptionId, orderId }),
@@ -91,13 +106,14 @@ export default function OrderHistoryClient() {
       if (data.success) {
         try {
           await updateDoc(doc(db, 'orders', orderId), {
-            subscriptionStatus: 'cancelling',
-            // Do NOT set status: 'Cancelled' — current week's delivery must still proceed
+            subscriptionStatus: data.subscriptionStatus || 'cancelled',
           });
         } catch (e) {
           console.error('Failed to update order status client-side:', e);
         }
-        toast.success('Cancellation scheduled. Your current week\'s delivery will still arrive, and no further payments will be taken after this cycle. 🎉');
+        toast.success(
+          'Your subscription autopay has been cancelled. Confirmation email has been sent. No further payments will be debited. 🎉'
+        );
         setShowCancelModal(false);
         setPendingCancelData(null);
       } else {
@@ -311,17 +327,61 @@ export default function OrderHistoryClient() {
                       >
                         {cfg.label}
                       </span>
-                      {order.paymentMethod && (
-                        <span
-                          className={`text-[10px] font-700 px-2 py-0.5 rounded-md border ${
-                            order.paymentMethod === 'pay-cod'
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-green-50 text-green-700 border-green-200'
-                          }`}
-                        >
-                          {order.paymentMethod === 'pay-cod' ? 'COD' : 'Paid'}
-                        </span>
+                      {(Boolean(order.subscriptionFrequency || order.isSubscription || order.stripeSubscriptionId) || order.isRenewal) && (
+                        order.subscriptionStatus === 'cancelled' ? (
+                          <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-gray-100 text-gray-500 border-gray-200">
+                            Plan Cancelled
+                          </span>
+                        ) : order.subscriptionStatus === 'cancelling' ? (
+                          <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-amber-50 text-amber-700 border-amber-200">
+                            Cancellation Scheduled
+                          </span>
+                        ) : (order.status !== 'Payment Failed' && order.status !== 'Cancelled') ? (
+                          <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-emerald-50 text-emerald-800 border-emerald-200">
+                            🔁 Active Plan
+                          </span>
+                        ) : null
                       )}
+                      {order.paymentMethod && (() => {
+                        const isFailed = order.status === 'Payment Failed' || order.paymentStatus === 'failed';
+                        const isPending = order.status === 'Pending Payment' || order.subscriptionStatus === 'pending_payment';
+                        const isCod = order.paymentMethod === 'pay-cod';
+                        const isPaid = order.paymentStatus === 'paid' || ['Order Received', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered'].includes(order.status);
+
+                        if (isFailed) {
+                          return (
+                            <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-red-50 text-red-700 border-red-200">
+                              Payment Declined
+                            </span>
+                          );
+                        }
+                        if (isPending) {
+                          return (
+                            <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-amber-50 text-amber-700 border-amber-200">
+                              Unpaid / Pending
+                            </span>
+                          );
+                        }
+                        if (isCod) {
+                          return (
+                            <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-amber-50 text-amber-700 border-amber-200">
+                              COD
+                            </span>
+                          );
+                        }
+                        if (isPaid) {
+                          return (
+                            <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-green-50 text-green-700 border-green-200">
+                              Paid
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="text-[10px] font-700 px-2 py-0.5 rounded-md border bg-gray-50 text-gray-700 border-gray-200">
+                            Unpaid
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="text-xs text-muted-foreground font-500">
                       Placed:{' '}
@@ -466,7 +526,7 @@ export default function OrderHistoryClient() {
                               </div>
                             )}
                             <div className="flex justify-between font-800 text-sm border-t border-border/40 pt-1.5">
-                              <span>Total Paid</span>
+                              <span>Total {order.paymentStatus === 'paid' || ['Order Received', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered'].includes(order.status) ? 'Paid' : 'Due'}</span>
                               <span className="text-primary tabular-nums">
                                 £{(order.total || 0).toFixed(2)}
                               </span>
@@ -485,7 +545,9 @@ export default function OrderHistoryClient() {
                               <p className="text-muted-foreground mt-0.5 text-xs">
                                 {order.paymentMethod === 'pay-cod'
                                   ? 'Cash on Delivery (COD)'
-                                  : 'Online Payment (Stripe Card)'}
+                                  : order.paymentMethod === 'worldpay' || !order.stripeSubscriptionId
+                                    ? 'Online Payment (Worldpay Card)'
+                                    : 'Online Payment (Stripe Card)'}
                               </p>
                             </div>
                           </div>
@@ -495,7 +557,15 @@ export default function OrderHistoryClient() {
                             <div>
                               <p className="font-700 text-foreground">Status</p>
                               <div className="mt-1">
-                                {order.paymentMethod === 'pay-cod' ? (
+                                {order.status === 'Payment Failed' || order.paymentStatus === 'failed' ? (
+                                  <span className="inline-flex items-center text-[10px] font-700 bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-200">
+                                    Payment Declined (No charge)
+                                  </span>
+                                ) : order.status === 'Pending Payment' || order.subscriptionStatus === 'pending_payment' ? (
+                                  <span className="inline-flex items-center text-[10px] font-700 bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                                    Awaiting Payment Confirmation
+                                  </span>
+                                ) : order.paymentMethod === 'pay-cod' ? (
                                   <span className="inline-flex items-center text-[10px] font-700 bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
                                     Pending Cash Delivery
                                   </span>
@@ -540,6 +610,11 @@ export default function OrderHistoryClient() {
                                   {order.subscriptionStatus === 'active' && (
                                     <span className="inline-flex items-center text-[10px] font-700 bg-green-50 text-green-700 px-2.5 py-0.5 rounded border border-green-200">
                                       Active Subscription
+                                    </span>
+                                  )}
+                                  {order.subscriptionStatus === 'cancelling' && (
+                                    <span className="inline-flex items-center text-[10px] font-700 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded border border-amber-200">
+                                      Cancellation Scheduled
                                     </span>
                                   )}
                                   {order.subscriptionStatus === 'cancelled' && (
@@ -615,6 +690,36 @@ export default function OrderHistoryClient() {
                     </div>
 
                     <div className="flex flex-wrap gap-3 mt-6 pt-5 border-t border-border">
+                      {(order.status === 'Pending Payment' || order.status === 'Payment Failed') && (
+                        <>
+                          <Link
+                            href="/menu"
+                            className="flex items-center gap-2 bg-primary text-white text-sm font-700 px-5 py-2.5 rounded-xl hover:bg-red-900 transition-all active:scale-95 shadow-sm shadow-red-200"
+                          >
+                            <RotateCcw size={14} />
+                            Try Checkout Again
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await updateDoc(doc(db, 'orders', order.id), {
+                                  status: 'Cancelled',
+                                  subscriptionStatus: 'cancelled',
+                                });
+                                toast.success('Unpaid order dismissed.');
+                              } catch (e) {
+                                toast.error('Could not remove order.');
+                              }
+                            }}
+                            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-600 px-4 py-2.5 rounded-xl transition-all active:scale-95"
+                          >
+                            <Trash2 size={14} />
+                            Dismiss Unpaid
+                          </button>
+                        </>
+                      )}
+
                       {order.status === 'Delivered' && (
                         <Link
                           href="/menu"
@@ -625,34 +730,45 @@ export default function OrderHistoryClient() {
                         </Link>
                       )}
 
-                      {order.stripeSubscriptionId && order.subscriptionStatus === 'active' && (
+                      {(Boolean(order.stripeSubscriptionId || order.isSubscription || order.subscriptionFrequency) || order.isRenewal) &&
+                        order.subscriptionStatus !== 'cancelled' &&
+                        order.subscriptionStatus !== 'cancelling' &&
+                        order.status !== 'Cancelled' &&
+                        order.status !== 'Payment Failed' && (
                         <button
                           type="button"
-                          disabled={cancellingId === order.stripeSubscriptionId}
+                          disabled={cancellingId === (order.stripeSubscriptionId || order.id)}
                           onClick={() => {
                             setPendingCancelData({
-                              subscriptionId: order.stripeSubscriptionId,
+                              subscriptionId: order.stripeSubscriptionId || '',
                               orderId: order.id,
                             });
                             setShowCancelModal(true);
                           }}
                           className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm font-700 px-5 py-2.5 rounded-xl hover:bg-red-100 transition-all active:scale-95 disabled:opacity-50"
                         >
-                          {cancellingId === order.stripeSubscriptionId ? (
+                          {cancellingId === (order.stripeSubscriptionId || order.id) ? (
                             <>
                               <span className="w-3.5 h-3.5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                              Scheduling...
+                              Cancelling...
                             </>
                           ) : (
-                            <>Cancel Subscription</>
+                            <>Cancel Autopay / Plan</>
                           )}
                         </button>
                       )}
 
-                      {order.stripeSubscriptionId && order.subscriptionStatus === 'cancelling' && (
+                      {(Boolean(order.stripeSubscriptionId || order.isSubscription || order.subscriptionFrequency) || order.isRenewal) && order.subscriptionStatus === 'cancelling' && (
                         <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-700 px-5 py-2.5 rounded-xl">
                           <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                           Cancellation Scheduled
+                        </div>
+                      )}
+
+                      {(Boolean(order.stripeSubscriptionId || order.isSubscription || order.subscriptionFrequency) || order.isRenewal) && order.subscriptionStatus === 'cancelled' && (
+                        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 text-gray-500 text-sm font-700 px-5 py-2.5 rounded-xl">
+                          <XCircle size={14} className="text-gray-400" />
+                          Plan Cancelled
                         </div>
                       )}
 

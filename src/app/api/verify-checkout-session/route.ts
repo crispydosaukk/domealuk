@@ -5,6 +5,7 @@ import Stripe from 'stripe';
 import { FieldValue as AdminFieldValue } from 'firebase-admin/firestore';
 import { doc, getDoc, updateDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { sendOrderConfirmationEmails } from '@/lib/emailService';
+import { getNextSaturdayMidnight } from '@/lib/subscriptionScheduler';
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,11 +38,15 @@ export async function POST(req: NextRequest) {
             orderData = orderSnap.data();
 
             if (orderData.status === 'Pending Payment') {
+              const nextBillingDateIso = getNextSaturdayMidnight().toISOString();
               transaction.update(orderRef, {
                 status: 'Order Received',
                 subscriptionStatus: 'active',
                 paymentStatus: 'paid',
                 paymentMethod: 'worldpay',
+                billingCycle: 1,
+                nextBillingDate: nextBillingDateIso,
+                lastBilledAt: AdminFieldValue.serverTimestamp(),
                 updatedAt: AdminFieldValue.serverTimestamp(),
               });
 
@@ -66,11 +71,15 @@ export async function POST(req: NextRequest) {
             orderData = orderSnap.data();
 
             if (orderData.status === 'Pending Payment') {
+              const nextBillingDateIso = getNextSaturdayMidnight().toISOString();
               transaction.update(orderRef, {
                 status: 'Order Received',
                 subscriptionStatus: 'active',
                 paymentStatus: 'paid',
                 paymentMethod: 'worldpay',
+                billingCycle: 1,
+                nextBillingDate: nextBillingDateIso,
+                lastBilledAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
               });
             }

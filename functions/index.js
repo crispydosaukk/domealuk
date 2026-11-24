@@ -1,7 +1,8 @@
 const { onDocumentCreated, onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { initializeApp } = require("firebase-admin/app");
 const nodemailer = require("nodemailer");
-const { getFirestore } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 initializeApp();
 
@@ -860,3 +861,535 @@ exports.sendOrderConfirmationEmail = onDocumentWritten(
     }
   }
 );
+
+
+/**
+ * Firebase Cloud Function triggered when an Order status changes (Preparing, Out for Delivery, Delivered, Cancelled).
+ */
+exports.sendOrderStatusUpdateNotification = onDocumentWritten(
+  {
+    document: 'orders/{orderId}',
+  },
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot || !snapshot.before || !snapshot.before.exists || !snapshot.after || !snapshot.after.exists) {
+      return;
+    }
+
+    const beforeOrder = snapshot.before.data();
+    const afterOrder = snapshot.after.data();
+    const orderId = event.params.orderId;
+
+    let customerEmail = afterOrder.customerEmail || afterOrder.email || (afterOrder.address && afterOrder.address.email);
+    if (!customerEmail && afterOrder.userId && afterOrder.userId !== 'guest-user') {
+      try {
+        const db = getFirestore();
+        const userDoc = await db.collection('users').doc(afterOrder.userId).get();
+        if (userDoc.exists && userDoc.data().email) {
+          customerEmail = userDoc.data().email;
+        }
+      } catch (err) {
+        console.error('Error resolving customer email for status update:', err);
+      }
+    }
+
+    // Handle Subscription Plan Cancellation Email to Customer & Admin
+    const oldSubStatus = beforeOrder.subscriptionStatus;
+    const newSubStatus = afterOrder.subscriptionStatus;
+    const isSubCancelled = (newSubStatus === 'cancelled' || newSubStatus === 'cancelling') && oldSubStatus !== newSubStatus;
+
+    if (isSubCancelled && !afterOrder.subCancelEmailSent) {
+      const frequency = afterOrder.subscriptionFrequency || 'Weekly Subscription';
+      const customerName = (afterOrder.address && afterOrder.address.fullName) || 'Valued Customer';
+      const cancelSubject = `DoMeal Subscription Cancelled - Order #${orderId}`;
+      const cancelHtml = `
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f5; margin: 0; padding: 30px 15px; color: #1f2937;">
+          <table align="center" width="600" cellpadding="0" cellspacing="0" style="background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
+            <tr>
+              <td style="background-color: #1E3B2B; padding: 26px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px;">Subscription Autopay Cancelled</h1>
+                <p style="color: #C39B54; margin: 6px 0 0 0; font-size: 13px; font-weight: 600;">Order #${orderId}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 28px;">
+                <p style="font-size: 16px; margin-top: 0;">Hi ${customerName},</p>
+                <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+                  We are writing to confirm that your <strong>${frequency}</strong> auto-debit subscription (Order #${orderId}) has been successfully <strong>cancelled</strong>.
+                </p>
+
+                <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 6px; padding: 14px 16px; margin: 20px 0;">
+                  <h4 style="margin: 0 0 4px 0; color: #991b1b; font-size: 14px; font-weight: 700;">🛑 Future Auto-Debits Stopped</h4>
+                  <p style="margin: 0; font-size: 13px; color: #7f1d1d; line-height: 1.5;">
+                    No future recurring payments will be debited from your card. Your auto-pay schedule has been permanently halted.
+                  </p>
+                </div>
+
+                <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; border-radius: 6px; padding: 14px 16px; margin: 20px 0;">
+                  <h4 style="margin: 0 0 4px 0; color: #065f46; font-size: 14px; font-weight: 700;">📦 Current Cycle Deliveries Proceed As Normal</h4>
+                  <p style="margin: 0; font-size: 13px; color: #047857; line-height: 1.5;">
+                    Any meal deliveries already scheduled and paid for this current cycle will still arrive as planned. You will receive all meals you've already paid for!
+                  </p>
+                </div>
+
+                <div style="background: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                  <p style="margin: 0 0 6px 0; font-size: 14px;"><strong>Order ID:</strong> ${orderId}</p>
+                  <p style="margin: 0 0 6px 0; font-size: 14px;"><strong>Plan:</strong> ${frequency}</p>
+                  <p style="margin: 0 0 6px 0; font-size: 14px;"><strong>Autopay Status:</strong> <span style="color: #ef4444; font-weight: 700;">Cancelled</span></p>
+                </div>
+
+                <p style="font-size: 14px; color: #475569;">
+                  We're sorry to see you go! You can restart your meal plan anytime at <a href="https://domeal.co.uk/menu" style="color: #1E3B2B; font-weight: 700;">domeal.co.uk/menu</a>.
+                </p>
+                <p style="font-size: 14px; color: #475569; margin-bottom: 0;">Warmly,<br/><strong style="color: #1E3B2B;">The DoMeal Team</strong></p>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      try {
+        const transporter = getTransporter();
+        if (customerEmail && !customerEmail.includes('@domeal.co.uk')) {
+          await transporter.sendMail({
+            from: `"DoMeal" <${process.env.SMTP_USER || 'domealuk@gmail.com'}>`,
+            to: customerEmail,
+            subject: cancelSubject,
+            html: cancelHtml,
+          });
+          console.log(`✅ Subscription cancellation email sent to customer: ${customerEmail}`);
+        }
+
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@vegchennaisrilalitha.co.uk';
+        await transporter.sendMail({
+          from: `"DoMeal Alerts" <${process.env.SMTP_USER || 'domealuk@gmail.com'}>`,
+          to: adminEmail,
+          subject: `🛑 [ADMIN ALERT] Subscription Cancelled - #${orderId} (${customerName})`,
+          html: cancelHtml,
+        }).catch(() => {});
+
+        await snapshot.after.ref.update({
+          subCancelEmailSent: true,
+          subCancelEmailSentAt: new Date().toISOString(),
+        });
+      } catch (subErr) {
+        console.error('Failed sending sub cancel email from Cloud Function:', subErr);
+      }
+    }
+
+    const oldStatus = beforeOrder.status;
+    const newStatus = afterOrder.status;
+
+    if (!newStatus || oldStatus === newStatus) return;
+
+    const NOTIFY_STATUSES = ['Preparing', 'Out for Delivery', 'Delivered', 'Cancelled'];
+    if (!NOTIFY_STATUSES.includes(newStatus)) return;
+
+    // Avoid sending duplicate status email for the same status transition
+    if (afterOrder.lastNotifiedStatus === newStatus) return;
+
+    if (!customerEmail || customerEmail.includes('@domeal.co.uk')) return;
+
+    const statusConfig = {
+      'Preparing': {
+        emoji: '👨‍🍳',
+        subject: `👨‍🍳 Your DoMeal Order #${orderId} is Being Prepared!`,
+        heading: 'Kitchen is Preparing Your Meal! 👨‍🍳',
+        message: 'Our chefs are freshly cooking your authentic home-style dishes with care.',
+      },
+      'Out for Delivery': {
+        emoji: '🚚',
+        subject: `🚚 Your DoMeal Order #${orderId} is Out for Delivery!`,
+        heading: 'Your Meal is On the Way! 🚚',
+        message: 'Your freshly packed tiffin is out for delivery and heading to your doorstep.',
+      },
+      'Delivered': {
+        emoji: '✅',
+        subject: `✅ Your DoMeal Order #${orderId} Has Been Delivered!`,
+        heading: 'Order Delivered! Enjoy Your Meal 🍱',
+        message: 'Your DoMeal delivery has arrived. We hope you enjoy your fresh, authentic meal!',
+      },
+      'Cancelled': {
+        emoji: '❌',
+        subject: `Order #${orderId} Cancellation Confirmation - DoMeal`,
+        heading: 'Order Cancelled',
+        message: 'Your order has been cancelled as requested. If you have any questions, please reply to this email.',
+      },
+    }[newStatus];
+
+    if (!statusConfig) return;
+
+    const transporter = getTransporter();
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f5; margin: 0; padding: 30px 15px; color: #1f2937;">
+        <table align="center" width="600" cellpadding="0" cellspacing="0" style="background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
+          <tr>
+            <td style="background-color: #1E3B2B; padding: 26px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 22px;">${statusConfig.heading}</h1>
+              <p style="color: #C39B54; margin: 6px 0 0 0; font-size: 13px; font-weight: 600;">Order #${orderId}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 28px;">
+              <p style="font-size: 16px; margin-top: 0;">Hi ${(afterOrder.address && afterOrder.address.fullName) || 'Foodie'},</p>
+              <p style="font-size: 15px; line-height: 1.6; color: #334155;">${statusConfig.message}</p>
+              <div style="background: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <p style="margin: 0 0 6px 0; font-size: 14px;"><strong>Order ID:</strong> ${orderId}</p>
+                <p style="margin: 0; font-size: 14px;"><strong>Current Status:</strong> <span style="color: #1E3B2B; font-weight: 700;">${newStatus}</span></p>
+              </div>
+              <p style="font-size: 14px; color: #475569; margin-bottom: 0;">Warmly,<br/><strong style="color: #1E3B2B;">The DoMeal Team</strong></p>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: `"DoMeal" <${process.env.SMTP_USER || 'domealuk@gmail.com'}>`,
+        to: customerEmail,
+        subject: statusConfig.subject,
+        html,
+      });
+      await snapshot.after.ref.update({
+        lastNotifiedStatus: newStatus,
+        lastStatusEmailSentAt: new Date().toISOString(),
+      });
+      console.log(`✅ Status update email (${newStatus}) sent to ${customerEmail} for order ${orderId}`);
+    } catch (err) {
+      console.error(`❌ Failed sending status update email for ${orderId}:`, err);
+    }
+  }
+);
+
+
+/**
+ * Helper to calculate next delivery dates for a renewed subscription cycle.
+ */
+const calculateNextDeliveryDatesCF = (baseDates = [], frequency = 'Delivery every 1 Week') => {
+  const isBiWeekly = frequency.toLowerCase().includes('2 week');
+  const isMonthly = frequency.toLowerCase().includes('4 week') || frequency.toLowerCase().includes('month');
+  const daysToAdd = isMonthly ? 28 : isBiWeekly ? 14 : 7;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (Array.isArray(baseDates) && baseDates.length > 0) {
+    return baseDates.map((dStr) => {
+      const d = new Date(dStr);
+      if (isNaN(d.getTime())) {
+        const fallback = new Date();
+        fallback.setDate(fallback.getDate() + daysToAdd);
+        return fallback.toISOString().split('T')[0];
+      }
+      d.setDate(d.getDate() + daysToAdd);
+      while (d <= today) {
+        d.setDate(d.getDate() + 7);
+      }
+      return d.toISOString().split('T')[0];
+    });
+  }
+
+  const nextMonday = new Date();
+  const day = nextMonday.getDay();
+  const daysToMon = (1 - day + 7) % 7 || 7;
+  nextMonday.setDate(nextMonday.getDate() + daysToMon);
+  return [nextMonday.toISOString().split('T')[0]];
+};
+
+
+/**
+ * Scheduled Firebase Cloud Function: Runs daily at midnight UK time (especially Saturday midnight)
+ * to process due recurring subscriptions, generate renewal orders, and trigger confirmation emails.
+ */
+exports.processRecurringSubscriptionsScheduled = onSchedule(
+  {
+    schedule: '0 0 * * *',
+    timeZone: 'Europe/London',
+  },
+  async () => {
+    const db = getFirestore();
+    const now = new Date();
+    console.log(`[Cloud Function Scheduler] Checking due recurring subscriptions at ${now.toISOString()}`);
+
+    const snap = await db.collection('orders').where('subscriptionStatus', '==', 'active').get();
+    if (snap.empty) {
+      console.log('No active subscriptions found.');
+      return;
+    }
+
+    const globalSettings = await getGlobalSettings();
+    const wpUser = globalSettings.worldpayUsername || process.env.WORLDPAY_USERNAME || '';
+    const wpPass = globalSettings.worldpayPassword || process.env.WORLDPAY_PASSWORD || '';
+    const wpEntity = globalSettings.worldpayEntityId || process.env.WORLDPAY_ENTITY_ID || '';
+    const wpIsLive = (globalSettings.worldpayEnv || 'live') === 'live';
+
+    for (const docSnap of snap.docs) {
+      const baseOrder = docSnap.data();
+      const orderId = docSnap.id;
+
+      if (baseOrder.isRenewal) continue;
+      if (baseOrder.status === 'Cancelled' || baseOrder.status === 'Pending Payment') continue;
+      if (!baseOrder.subscriptionFrequency || baseOrder.subscriptionFrequency === 'none') continue;
+      if (baseOrder.subscriptionStatus !== 'active') continue;
+
+      // DO NOT process Stripe subscriptions — Stripe handles its own billing and webhooks automatically!
+      if (baseOrder.stripeSubscriptionId || baseOrder.paymentMethod === 'stripe') {
+        continue;
+      }
+
+      // We only automate Worldpay recurring subscriptions
+      if (baseOrder.paymentMethod !== 'worldpay') {
+        continue;
+      }
+
+      if (!baseOrder.nextBillingDate) {
+        // Initialize nextBillingDate to upcoming Saturday midnight
+        const d = new Date();
+        const daysUntilSat = (6 - d.getDay() + 7) % 7 || 7;
+        d.setDate(d.getDate() + daysUntilSat);
+        d.setHours(23, 59, 59, 999);
+        await docSnap.ref.update({ nextBillingDate: d.toISOString() });
+        continue;
+      }
+
+      const nextBilling = new Date(baseOrder.nextBillingDate);
+      if (nextBilling.getTime() > now.getTime() + 60 * 60 * 1000) {
+        continue; // Not due yet
+      }
+
+      const renewalAmount = Number(baseOrder.subtotal || baseOrder.total || 0);
+      const frequency = baseOrder.subscriptionFrequency || 'Delivery every 1 Week';
+      const customerEmail = baseOrder.customerEmail || baseOrder.email || (baseOrder.address && baseOrder.address.email) || '';
+      const newOrderId = `VSL-REC-${Math.floor(10000 + Math.random() * 90000)}`;
+      const nextDeliveryDates = calculateNextDeliveryDatesCF(baseOrder.deliveryDates || [], frequency);
+
+      // Verify that a valid Worldpay token exists. If no token, we CANNOT charge the card!
+      if (!baseOrder.worldpayTokenHref) {
+        console.warn(`[Scheduler] Order ${orderId} has no worldpayTokenHref. Cannot auto-charge. Marking past_due.`);
+        await docSnap.ref.update({
+          subscriptionStatus: 'past_due',
+          lastPaymentFailedAt: FieldValue.serverTimestamp(),
+          lastPaymentFailureReason: 'No stored card token for recurring debit',
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        continue; // STOP! DO NOT GENERATE RENEWAL ORDER!
+      }
+
+      if (!wpUser || !wpEntity) {
+        console.error(`[Scheduler] Worldpay credentials missing. Cannot charge order ${orderId}.`);
+        continue;
+      }
+
+      // Execute MIT charge via Worldpay Access API
+      let chargeSuccess = false;
+      let failureReason = '';
+
+      try {
+        const endpoint = wpIsLive
+          ? 'https://access.worldpay.com/payments'
+          : 'https://try.access.worldpay.com/payments';
+        const authHeader = `Basic ${Buffer.from(`${wpUser}:${wpPass}`).toString('base64')}`;
+        const wpRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/vnd.worldpay.payments-v6+json',
+            'Accept': 'application/vnd.worldpay.payments-v6+json',
+          },
+          body: JSON.stringify({
+            transactionReference: newOrderId,
+            merchant: { entity: wpEntity },
+            instruction: {
+              narrative: { line1: `DoMeal ${newOrderId}`.substring(0, 24) },
+              value: { amount: Math.round(renewalAmount * 100), currency: 'GBP' },
+              customerAgreement: { type: 'subscription', storedCardUsage: 'subsequent' },
+              paymentInstrument: { type: 'card/token', href: baseOrder.worldpayTokenHref },
+            },
+          }),
+        });
+
+        const wpData = await wpRes.json().catch(() => ({}));
+        const outcome = wpData.outcome || wpData.status;
+
+        if (wpRes.ok && (outcome === 'authorized' || outcome === 'captured' || outcome === 'SETTLED' || outcome === 'SUCCESS' || outcome === 'AUTHORISED')) {
+          chargeSuccess = true;
+        } else {
+          failureReason = wpData.description || wpData.message || outcome || `HTTP ${wpRes.status}`;
+          console.error(`Worldpay MIT charge failed for order ${orderId}:`, wpData);
+        }
+      } catch (wpErr) {
+        failureReason = wpErr.message || 'Worldpay request error';
+        console.error(`Worldpay MIT network error for order ${orderId}:`, wpErr);
+      }
+
+      // CRITICAL SAFETY: IF CHARGE FAILED, NEVER CREATE A PAID ORDER!
+      if (!chargeSuccess) {
+        console.warn(`[Scheduler] Auto-debit failed for order ${orderId}: ${failureReason}. Skipping renewal order creation.`);
+        await docSnap.ref.update({
+          subscriptionStatus: 'past_due',
+          lastPaymentFailedAt: FieldValue.serverTimestamp(),
+          lastPaymentFailureReason: failureReason,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        continue; // STOP! DO NOT GENERATE RENEWAL ORDER!
+      }
+
+      // Only if charge succeeded: Create the new weekly renewal order
+      const newOrderPayload = {
+        parentOrderId: orderId,
+        userId: baseOrder.userId || 'guest-user',
+        customerEmail,
+        email: customerEmail,
+        items: baseOrder.items || [],
+        total: renewalAmount,
+        subtotal: renewalAmount,
+        walletApplied: 0,
+        discountApplied: 0,
+        studentDiscountApplied: 0,
+        studentDiscountPercent: 0,
+        address: baseOrder.address || null,
+        deliveryDates: nextDeliveryDates,
+        deliverySlot: baseOrder.deliverySlot || 'Standard Delivery',
+        deliverySlotId: baseOrder.deliverySlotId || null,
+        notes: baseOrder.notes || '',
+        paymentMethod: 'worldpay',
+        subscriptionFrequency: frequency,
+        subscriptionStatus: 'active',
+        allergiesInfo: baseOrder.allergiesInfo || '',
+        createdAt: FieldValue.serverTimestamp(),
+        status: 'Order Received',
+        paymentStatus: 'paid',
+        dabbaFeeApplied: false,
+        dabbaFee: 0,
+        deliveryFee: baseOrder.deliveryFee ?? 0,
+        isRenewal: true,
+        billingCycle: (Number(baseOrder.billingCycle) || 1) + 1,
+        confirmationEmailSent: false,
+      };
+
+      await db.collection('orders').doc(newOrderId).set(newOrderPayload);
+
+      // Advance nextBillingDate on parent order
+      const isBiWeekly = frequency.toLowerCase().includes('2 week');
+      const isMonthly = frequency.toLowerCase().includes('4 week');
+      const daysToAdd = isMonthly ? 28 : isBiWeekly ? 14 : 7;
+
+      const nextSaturday = new Date(nextBilling);
+      while (nextSaturday <= now) {
+        nextSaturday.setDate(nextSaturday.getDate() + daysToAdd);
+      }
+      nextSaturday.setHours(23, 59, 59, 999);
+
+      await docSnap.ref.update({
+        lastBilledAt: FieldValue.serverTimestamp(),
+        lastRenewalOrderId: newOrderId,
+        nextBillingDate: nextSaturday.toISOString(),
+        billingCycle: (Number(baseOrder.billingCycle) || 1) + 1,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      console.log(`✅ Worldpay charged £${renewalAmount} successfully. Generated renewal order ${newOrderId} for parent ${orderId}. Next billing: ${nextSaturday.toISOString()}`);
+    }
+  }
+);
+
+
+/**
+ * Scheduled Firebase Cloud Function: Runs daily at 10:00 AM UK time to send 48-hour advance
+ * Pre-Debit Reminder emails before Saturday midnight auto-debit.
+ */
+exports.sendPreDebitRemindersScheduled = onSchedule(
+  {
+    schedule: '0 10 * * *',
+    timeZone: 'Europe/London',
+  },
+  async () => {
+    const db = getFirestore();
+    const now = new Date();
+    const threshold = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
+    const snap = await db.collection('orders').where('subscriptionStatus', '==', 'active').get();
+    if (snap.empty) return;
+
+    const transporter = getTransporter();
+
+    for (const docSnap of snap.docs) {
+      const order = docSnap.data();
+      const orderId = docSnap.id;
+
+      if (order.isRenewal || !order.nextBillingDate) continue;
+      if (order.status === 'Cancelled' || order.status === 'Pending Payment') continue;
+
+      const nextBilling = new Date(order.nextBillingDate);
+      if (nextBilling <= now || nextBilling > threshold) continue;
+
+      const cycleKey = nextBilling.toISOString().split('T')[0];
+      if (order.lastPreDebitReminderCycle === cycleKey) continue;
+
+      const customerEmail = order.customerEmail || order.email || (order.address && order.address.email);
+      if (!customerEmail || customerEmail.includes('@domeal.co.uk')) continue;
+
+      const totalAmount = Number(order.subtotal || order.total || 0).toFixed(2);
+      const nextDates = calculateNextDeliveryDatesCF(order.deliveryDates || [], order.subscriptionFrequency);
+      const renewalDateStr = nextBilling.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'short',
+      }) + ' at 11:59 PM';
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f5; margin: 0; padding: 30px 15px; color: #1f2937;">
+          <table align="center" width="600" cellpadding="0" cellspacing="0" style="background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
+            <tr>
+              <td style="background-color: #1E3B2B; padding: 26px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px;">Upcoming Renewal Reminder ⏰</h1>
+                <p style="color: #C39B54; margin: 6px 0 0 0; font-size: 13px; font-weight: 600;">Your DoMeal subscription renews on ${renewalDateStr}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 28px;">
+                <p style="font-size: 16px; margin-top: 0;">Hi ${(order.address && order.address.fullName) || 'Valued Subscriber'},</p>
+                <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+                  This is a friendly reminder that your upcoming DoMeal subscription plan (${order.subscriptionFrequency || 'Weekly Plan'}) will automatically renew on <strong>${renewalDateStr}</strong> for <strong>£${totalAmount}</strong>.
+                </p>
+                <div style="background: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                  <p style="margin: 0 0 6px 0; font-size: 14px;"><strong>Upcoming Delivery Dates:</strong> ${nextDates.join(', ')}</p>
+                  <p style="margin: 0; font-size: 14px;"><strong>Renewal Amount:</strong> <span style="color: #1E3B2B; font-weight: 700;">£${totalAmount}</span></p>
+                </div>
+                <p style="font-size: 13px; color: #64748b;">Need to pause or update your plan? Visit your account dashboard before Saturday midnight.</p>
+                <p style="font-size: 14px; color: #475569; margin-bottom: 0;">Warmly,<br/><strong style="color: #1E3B2B;">The DoMeal Team</strong></p>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      try {
+        await transporter.sendMail({
+          from: `"DoMeal Subscriptions" <${process.env.SMTP_USER || 'domealuk@gmail.com'}>`,
+          to: customerEmail,
+          subject: `⏰ Reminder: Your DoMeal Subscription Renews ${renewalDateStr} (£${totalAmount})`,
+          html,
+        });
+        await docSnap.ref.update({
+          lastPreDebitReminderCycle: cycleKey,
+          lastPreDebitReminderSentAt: FieldValue.serverTimestamp(),
+        });
+        console.log(`✅ Pre-debit reminder sent to ${customerEmail} for order ${orderId}`);
+      } catch (err) {
+        console.error(`❌ Error sending pre-debit reminder for ${orderId}:`, err);
+      }
+    }
+  }
+);
+

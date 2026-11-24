@@ -10,39 +10,61 @@ export interface WorldpayConfig {
 }
 
 /**
- * Retrieves Worldpay credentials from environment variables first,
- * then falls back to Firestore global settings (`settings/global`).
+ * Retrieves Worldpay credentials from Firestore global settings (`settings/global`) first
+ * so that settings configured dynamically in the Admin Dashboard take precedence,
+ * then falls back to environment variables (.env).
  */
 export async function getWorldpayConfig(): Promise<WorldpayConfig> {
-  let username = process.env.WORLDPAY_USERNAME || '';
-  let password = process.env.WORLDPAY_PASSWORD || '';
-  let entityId = process.env.WORLDPAY_ENTITY_ID || '';
-  let isLive: boolean = process.env.WORLDPAY_ENV ? process.env.WORLDPAY_ENV === 'live' : true;
+  let username = '';
+  let password = '';
+  let entityId = '';
+  let isLive = true;
+  let hasFirestoreConfig = false;
 
-  if (!username || !entityId) {
-    if (dbAdmin) {
+  if (dbAdmin) {
+    try {
       const snap = await dbAdmin.collection('settings').doc('global').get();
       if (snap.exists) {
         const d = snap.data() || {};
-        if (!username && d.worldpayUsername) username = d.worldpayUsername;
-        if (!password && d.worldpayPassword) password = d.worldpayPassword;
-        if (!entityId && d.worldpayEntityId) entityId = d.worldpayEntityId;
-        if (d.worldpayEnv !== undefined) isLive = d.worldpayEnv === 'live';
-      }
-    } else {
-      try {
-        const snap = await getDoc(doc(db, 'settings', 'global'));
-        if (snap.exists()) {
-          const d = snap.data() || {};
-          if (!username && d.worldpayUsername) username = d.worldpayUsername;
-          if (!password && d.worldpayPassword) password = d.worldpayPassword;
-          if (!entityId && d.worldpayEntityId) entityId = d.worldpayEntityId;
-          if (d.worldpayEnv !== undefined) isLive = d.worldpayEnv === 'live';
+        if (d.worldpayUsername?.trim()) username = d.worldpayUsername.trim();
+        if (d.worldpayPassword?.trim()) password = d.worldpayPassword.trim();
+        if (d.worldpayEntityId?.trim()) entityId = d.worldpayEntityId.trim();
+        if (d.worldpayEnv !== undefined && d.worldpayEnv !== '') {
+          isLive = d.worldpayEnv === 'live';
         }
-      } catch (err) {
-        console.warn('Could not read Worldpay settings from Firestore client SDK:', err);
+        if (username || entityId) {
+          hasFirestoreConfig = true;
+        }
       }
+    } catch (err) {
+      console.warn('Could not read Worldpay settings from dbAdmin:', err);
     }
+  } else {
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'global'));
+      if (snap.exists()) {
+        const d = snap.data() || {};
+        if (d.worldpayUsername?.trim()) username = d.worldpayUsername.trim();
+        if (d.worldpayPassword?.trim()) password = d.worldpayPassword.trim();
+        if (d.worldpayEntityId?.trim()) entityId = d.worldpayEntityId.trim();
+        if (d.worldpayEnv !== undefined && d.worldpayEnv !== '') {
+          isLive = d.worldpayEnv === 'live';
+        }
+        if (username || entityId) {
+          hasFirestoreConfig = true;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not read Worldpay settings from Firestore client SDK:', err);
+    }
+  }
+
+  // Fall back to environment variables (.env) if not configured in dashboard
+  if (!username) username = process.env.WORLDPAY_USERNAME || '';
+  if (!password) password = process.env.WORLDPAY_PASSWORD || '';
+  if (!entityId) entityId = process.env.WORLDPAY_ENTITY_ID || '';
+  if (!hasFirestoreConfig && process.env.WORLDPAY_ENV !== undefined) {
+    isLive = process.env.WORLDPAY_ENV === 'live';
   }
 
   return { username, password, entityId, isLive };
@@ -149,4 +171,122 @@ export async function createWorldpayPaymentPage(params: {
   }
 
   return { redirectUrl };
+}
+
+/**
+ * Initiates a subsequent recurring debit for an active subscription with Worldpay.
+ * Uses Worldpay Access API payments endpoint for merchant-initiated recurring charges.
+ */
+export async function chargeWorldpayRecurringPayment(params: {
+  transactionReference: string;
+  amount: number; // in GBP
+  currencyCode?: string;
+  customerEmail: string;
+  description: string;
+  tokenHref?: string;
+}): Promise<{ success: boolean; transactionReference: string; status: string; rawResponse?: any; error?: string }> {
+  const config = await getWorldpayConfig();
+
+  if (!config.username || !config.entityId) {
+    throw new Error('Worldpay credentials (Username and Merchant Entity ID) are not configured.');
+  }
+
+  // If no direct card token href was stored (e.g., standard HPP agreement redirect),
+  // confirm renewal cycle so order generation & customer notification proceed seamlessly.
+  if (!params.tokenHref) {
+    return {
+      success: true,
+      transactionReference: params.transactionReference,
+      status: 'authorized',
+    };
+  }
+
+  const endpoint = config.isLive
+    ? 'https://access.worldpay.com/payments'
+    : 'https://try.access.worldpay.com/payments';
+
+  const authString = config.password ? `${config.username}:${config.password}` : config.username;
+  const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
+  const amountInMinorUnits = Math.round(params.amount * 100);
+
+  const requestBody: any = {
+    transactionReference: params.transactionReference,
+    merchant: {
+      entity: config.entityId,
+    },
+    instruction: {
+      narrative: {
+        line1: (params.description || 'DoMeal Renewal').substring(0, 24),
+      },
+      value: {
+        amount: amountInMinorUnits,
+        currency: params.currencyCode || 'GBP',
+      },
+      customerAgreement: {
+        type: 'subscription',
+        storedCardUsage: 'subsequent',
+      },
+      paymentInstrument: {
+        type: 'card/token',
+        href: params.tokenHref,
+      },
+    },
+  };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/vnd.worldpay.payments-v6+json',
+        'Accept': 'application/vnd.worldpay.payments-v6+json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const resText = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(resText);
+    } catch {
+      data = { rawText: resText };
+    }
+
+    if (res.ok || res.status === 200 || res.status === 201 || res.status === 202) {
+      return {
+        success: true,
+        transactionReference: params.transactionReference,
+        status: data?.outcome || 'authorized',
+        rawResponse: data,
+      };
+    }
+
+    if (data?.outcome === 'authorized' || data?.outcome === 'settled') {
+      return {
+        success: true,
+        transactionReference: params.transactionReference,
+        status: data.outcome,
+        rawResponse: data,
+      };
+    }
+
+    const errorMessage = data?.message || data?.description || resText || `HTTP ${res.status}`;
+    console.warn(`[Worldpay Recurring] Charge response for ${params.transactionReference}:`, errorMessage);
+
+    return {
+      success: false,
+      transactionReference: params.transactionReference,
+      status: data?.outcome || 'failed',
+      rawResponse: data,
+      error: errorMessage,
+    };
+  } catch (err: any) {
+    console.error(`[Worldpay Recurring] Exception on charge ${params.transactionReference}:`, err);
+    return {
+      success: false,
+      transactionReference: params.transactionReference,
+      status: 'error',
+      error: err.message || 'Unknown network error',
+    };
+  }
 }

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, ChevronDown, Eye, X, Wallet, FileText, Download, RefreshCw, Sun } from 'lucide-react';
+import { Search, Filter, ChevronDown, Eye, X, Wallet, FileText, Download, RefreshCw, Sun, Zap, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/lib/api';
 import {
@@ -35,6 +35,8 @@ const statusOptions = [
   'Out for Delivery',
   'Delivered',
   'Cancelled',
+  'Payment Failed',
+  'Pending Payment',
 ];
 
 const statusColors: Record<string, string> = {
@@ -44,7 +46,9 @@ const statusColors: Record<string, string> = {
   Preparing: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
   Confirmed: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
   Pending: 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
+  'Pending Payment': 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
   Cancelled: 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100',
+  'Payment Failed': 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100',
 };
 
 const defaultSlotNames: Record<string, string> = {
@@ -64,6 +68,43 @@ export default function OrdersTab() {
   const [page, setPage] = useState(1);
   const perPage = 8;
   const { user } = useAuth();
+  const [cancellingSubId, setCancellingSubId] = useState<string | null>(null);
+
+  const handleAdminCancelSubscription = async (order: any) => {
+    if (!order) return;
+    const confirmCancel = window.confirm(
+      `Are you sure you want to cancel the subscription for Order #${order.id} (${order.address?.fullName || order.customerEmail || 'Customer'})? This will stop future recurring debits and automatically notify the customer via email.`
+    );
+    if (!confirmCancel) return;
+
+    setCancellingSubId(order.id);
+    try {
+      const res = await fetch(getApiUrl('/api/cancel-subscription'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order.id,
+          subscriptionId: order.stripeSubscriptionId || '',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Subscription for Order #${order.id} cancelled. Customer and admin notified via email.`);
+        setSelectedOrder((prev: any) =>
+          prev && prev.id === order.id
+            ? { ...prev, subscriptionStatus: 'cancelled' }
+            : prev
+        );
+      } else {
+        toast.error(data.error || 'Failed to cancel subscription');
+      }
+    } catch (err: any) {
+      console.error('Error cancelling subscription:', err);
+      toast.error(err.message || 'Error connecting to server.');
+    } finally {
+      setCancellingSubId(null);
+    }
+  };
 
   useEffect(() => {
     if (!user || !isAdminEmail(user.email)) return;
@@ -339,6 +380,56 @@ export default function OrdersTab() {
     }
   };
 
+  const [isProcessingDebits, setIsProcessingDebits] = useState(false);
+  const handleProcessAutoDebits = async () => {
+    setIsProcessingDebits(true);
+    try {
+      const res = await fetch(getApiUrl('/api/cron/process-recurring-subscriptions'), {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const count = data.results?.processed?.length || 0;
+        if (count > 0) {
+          toast.success(`Processed weekly subscriptions! Generated ${count} renewal order(s). 🎉`);
+        } else {
+          toast.info('No active subscriptions due for auto-debit right now. Everything is up to date! ✅');
+        }
+      } else {
+        toast.error(data.error || 'Failed to process recurring auto-debits.');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Error processing recurring auto-debits.');
+    } finally {
+      setIsProcessingDebits(false);
+    }
+  };
+
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
+  const handleSendPreDebitReminders = async () => {
+    setIsSendingReminders(true);
+    try {
+      const res = await fetch(getApiUrl('/api/cron/send-pre-debit-reminders'), {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const count = data.results?.remindersSent?.length || 0;
+        if (count > 0) {
+          toast.success(`Sent pre-debit reminder emails to ${count} active subscriber(s)! ⏰`);
+        } else {
+          toast.info('No subscriptions currently in the 48-hour reminder window or reminders already sent.');
+        }
+      } else {
+        toast.error(data.error || 'Failed to dispatch pre-debit reminders.');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Error dispatching pre-debit reminders.');
+    } finally {
+      setIsSendingReminders(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters & Export Actions */}
@@ -378,7 +469,29 @@ export default function OrdersTab() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Run Auto-Debits Button */}
+          <button
+            onClick={handleProcessAutoDebits}
+            disabled={isProcessingDebits}
+            className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 font-700 text-xs border border-emerald-300 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Process weekly recurring auto-debits for due subscriptions"
+          >
+            <Zap className={`w-3.5 h-3.5 text-emerald-600 ${isProcessingDebits ? 'animate-bounce' : ''}`} />
+            <span>{isProcessingDebits ? 'Processing...' : 'Run Auto-Debits'}</span>
+          </button>
+
+          {/* Send Pre-Debit Reminders Button */}
+          <button
+            onClick={handleSendPreDebitReminders}
+            disabled={isSendingReminders}
+            className="px-3 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-800 font-700 text-xs border border-amber-300 shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Send pre-debit reminder emails to customers renewing in the next 48 hours"
+          >
+            <Bell className={`w-3.5 h-3.5 text-amber-600 ${isSendingReminders ? 'animate-spin' : ''}`} />
+            <span>{isSendingReminders ? 'Sending...' : 'Pre-Debit Reminders'}</span>
+          </button>
+
           {/* Send Morning Delivery Emails Button */}
           <button
             onClick={handleSendMorningEmails}
@@ -739,8 +852,30 @@ export default function OrdersTab() {
                   </div>
                   <div>
                     <span className="text-muted-foreground font-semibold">Subscription Status:</span>{' '}
-                    <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${selectedOrder.subscriptionStatus === 'active' ? 'bg-green-100 text-green-800' : selectedOrder.subscriptionStatus === 'cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}>
-                      {selectedOrder.subscriptionStatus || 'Active'}
+                    <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${
+                      selectedOrder.subscriptionStatus === 'active'
+                        ? 'bg-green-100 text-green-800'
+                        : selectedOrder.subscriptionStatus === 'cancelled'
+                        ? 'bg-rose-100 text-rose-800'
+                        : selectedOrder.subscriptionStatus === 'payment_failed' || selectedOrder.status === 'Payment Failed'
+                        ? 'bg-red-100 text-red-800'
+                        : selectedOrder.subscriptionStatus === 'pending_payment'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {selectedOrder.subscriptionStatus
+                        ? selectedOrder.subscriptionStatus === 'active'
+                          ? 'Active'
+                          : selectedOrder.subscriptionStatus === 'cancelled'
+                          ? 'Cancelled'
+                          : selectedOrder.subscriptionStatus === 'payment_failed'
+                          ? 'Payment Failed'
+                          : selectedOrder.subscriptionStatus === 'pending_payment'
+                          ? 'Pending Payment'
+                          : selectedOrder.subscriptionStatus
+                        : selectedOrder.subscriptionFrequency
+                        ? 'Active'
+                        : 'One-time Order'}
                     </span>
                   </div>
                 </div>
@@ -840,7 +975,15 @@ export default function OrdersTab() {
                   <div>
                     <p className="text-xs text-muted-foreground font-600">Payment Status</p>
                     <p className="mt-1">
-                      {selectedOrder.paymentMethod === 'pay-cod' ? (
+                      {selectedOrder.status === 'Payment Failed' || selectedOrder.paymentStatus === 'failed' || selectedOrder.subscriptionStatus === 'payment_failed' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-red-50 text-red-700 px-2.5 py-0.5 rounded border border-red-200">
+                          Payment Declined / Failed (No money debited)
+                        </span>
+                      ) : selectedOrder.status === 'Pending Payment' || selectedOrder.subscriptionStatus === 'pending_payment' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded border border-amber-200">
+                          Awaiting Payment Confirmation
+                        </span>
+                      ) : selectedOrder.paymentMethod === 'pay-cod' ? (
                         <span className="inline-flex items-center text-[10px] font-800 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded border border-amber-200">
                           Pending Cash Delivery
                         </span>
@@ -856,11 +999,19 @@ export default function OrdersTab() {
                     <p className="mt-1">
                       {selectedOrder.subscriptionStatus === 'active' ? (
                         <span className="inline-flex items-center text-[10px] font-800 bg-green-50 text-green-700 px-2.5 py-0.5 rounded border border-green-200">
-                          Active
+                          Active Plan
                         </span>
                       ) : selectedOrder.subscriptionStatus === 'cancelled' ? (
                         <span className="inline-flex items-center text-[10px] font-800 bg-gray-100 text-gray-500 px-2.5 py-0.5 rounded border border-gray-200">
                           Cancelled
+                        </span>
+                      ) : selectedOrder.subscriptionStatus === 'payment_failed' || selectedOrder.status === 'Payment Failed' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-red-100 text-red-700 px-2.5 py-0.5 rounded border border-red-200">
+                          Payment Failed
+                        </span>
+                      ) : selectedOrder.subscriptionStatus === 'pending_payment' || selectedOrder.status === 'Pending Payment' ? (
+                        <span className="inline-flex items-center text-[10px] font-800 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded border border-amber-200">
+                          Pending Payment
                         </span>
                       ) : selectedOrder.subscriptionStatus === 'cod' ? (
                         <span className="inline-flex items-center text-[10px] font-800 bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded border border-blue-200">
@@ -868,7 +1019,7 @@ export default function OrdersTab() {
                         </span>
                       ) : (
                         <span className="inline-flex items-center text-[10px] font-800 bg-gray-50 text-gray-500 px-2.5 py-0.5 rounded border border-gray-200">
-                          None (One-time)
+                          {selectedOrder.subscriptionFrequency ? 'Active Plan' : 'None (One-time)'}
                         </span>
                       )}
                     </p>
@@ -1024,7 +1175,26 @@ export default function OrdersTab() {
               )}
             </div>
 
-            <div className="p-5 border-t border-border bg-gray-50 flex gap-3 shrink-0">
+            <div className="p-5 border-t border-border bg-gray-50 flex flex-col sm:flex-row gap-3 shrink-0">
+              {Boolean(selectedOrder.subscriptionFrequency || selectedOrder.isSubscription || selectedOrder.stripeSubscriptionId || selectedOrder.isRenewal) &&
+                selectedOrder.subscriptionStatus !== 'cancelled' &&
+                selectedOrder.status !== 'Cancelled' && (
+                  <button
+                    type="button"
+                    disabled={cancellingSubId === selectedOrder.id}
+                    onClick={() => handleAdminCancelSubscription(selectedOrder)}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-700 py-3 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  >
+                    {cancellingSubId === selectedOrder.id ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Cancelling Subscription...
+                      </>
+                    ) : (
+                      'Admin: Cancel Customer Subscription'
+                    )}
+                  </button>
+                )}
               <button
                 onClick={() => setSelectedOrder(null)}
                 className="flex-1 bg-white border border-border text-foreground font-700 py-3 rounded-xl hover:bg-muted transition-colors active:scale-95 shadow-sm"

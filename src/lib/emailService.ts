@@ -622,6 +622,121 @@ export async function sendPaymentDebitedEmail(
 }
 
 /**
+ * Send Pre-Debit Reminder Email (Sent 24-48 hours before Saturday Midnight Auto-Debit)
+ */
+export async function sendPreDebitReminderEmail(
+  orderId: string,
+  renewalInfo?: {
+    amount?: number;
+    renewalDateStr?: string;
+    deliveryDates?: string[];
+    frequency?: string;
+  },
+  initialOrderData?: any
+) {
+  try {
+    const order = await fetchOrderData(orderId, initialOrderData);
+    if (!order) {
+      console.warn(`[emailService] Order ${orderId} not found for pre-debit reminder.`);
+      return { success: false, error: 'Order not found' };
+    }
+
+    const validCustomerEmail = await resolveCustomerEmail(order);
+    const transporter = getTransporter();
+    const totalAmount = Number(renewalInfo?.amount || order.total || order.amount || 0).toFixed(2);
+    const smtpFromUser = process.env.SMTP_USER || 'domealuk@gmail.com';
+    const formattedDeliverySlot = await resolveDeliverySlot(order.deliverySlot || order.deliverySlotId);
+
+    const deliveryDates = renewalInfo?.deliveryDates || order.deliveryDates || [];
+    const itemsHtml = formatItemsHtml(order.items);
+    const addressHtml = formatAddressHtml(order.address);
+
+    let deliveryDatesHtml = '';
+    if (Array.isArray(deliveryDates) && deliveryDates.length > 0) {
+      deliveryDatesHtml = `
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; width: 140px;">Estimated Delivery Dates:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #1E3B2B; font-size: 15px;">
+            ${deliveryDates.join(', ')}
+          </td>
+        </tr>
+      `;
+    }
+
+    const renewalDateStr = renewalInfo?.renewalDateStr || 'this Saturday at 11:59 PM';
+
+    const userContent = `
+      <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi ${order.address?.fullName || 'Valued Subscriber'},</p>
+      <p style="font-size: 15px; line-height: 1.6;">
+        This is a friendly reminder that your upcoming DoMeal meal plan is scheduled to automatically renew on <strong>${renewalDateStr}</strong> for <strong style="color: #1E3B2B; font-size: 17px;">£${totalAmount}</strong>.
+      </p>
+
+      <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 14px 16px; margin: 20px 0;">
+        <h4 style="margin: 0 0 6px 0; color: #92400e; font-size: 14px; font-weight: 700;">⏰ Upcoming Billing & Cut-Off Notice</h4>
+        <p style="margin: 0; font-size: 13px; color: #78350f; line-height: 1.5;">
+          Our kitchen prepares fresh, authentic meals to order. If you need to <strong>change your meal selections, skip this week, or pause your subscription</strong>, please make updates in your account dashboard before <strong>${renewalDateStr}</strong>.
+        </p>
+      </div>
+
+      <div style="background-color: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
+        <h2 style="margin-top: 0; color: #1E3B2B; font-size: 15px; border-bottom: 2px solid #C39B54; padding-bottom: 8px; margin-bottom: 12px;">
+          Upcoming Subscription Summary
+        </h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748b; width: 140px;">Subscription Plan:</td>
+            <td style="padding: 6px 0; font-weight: 700; color: #111827;">${order.subscriptionFrequency || 'Weekly Meal Plan'}</td>
+          </tr>
+          ${deliveryDatesHtml}
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Delivery Slot:</td>
+            <td style="padding: 6px 0; font-weight: 500; color: #111827;">${formattedDeliverySlot}</td>
+          </tr>
+          ${addressHtml}
+          <tr>
+            <td style="padding: 10px 0; color: #64748b; border-top: 2px solid #e2e8f0;">Renewal Amount:</td>
+            <td style="padding: 10px 0; font-weight: 800; color: #1E3B2B; border-top: 2px solid #e2e8f0; font-size: 18px;">£${totalAmount}</td>
+          </tr>
+        </table>
+        ${itemsHtml}
+      </div>
+
+      <div style="text-align: center; margin: 28px 0 20px 0;">
+        <a href="https://domeal.co.uk/order-history" style="background-color: #1E3B2B; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">
+          Manage Your Subscription
+        </a>
+      </div>
+
+      <p style="font-size: 15px; line-height: 1.6; color: #475569;">Have any questions or need dietary adjustments? Reply directly to this email or reach us at <a href="mailto:admin@vegchennaisrilalitha.co.uk" style="color: #1E3B2B; font-weight: 600;">admin@vegchennaisrilalitha.co.uk</a>.</p>
+      <p style="font-size: 15px; line-height: 1.6; margin-bottom: 0;">Warm regards,<br><strong style="color: #1E3B2B;">The DoMeal Team</strong></p>
+    `;
+
+    const htmlBodyUser = wrapEmailHtml({
+      previewTitle: `Upcoming Subscription Renewal - £${totalAmount} on ${renewalDateStr}`,
+      heading: 'Upcoming Renewal Reminder ⏰',
+      subheading: `Your next meal plan delivery debits ${renewalDateStr}`,
+      bodyContent: userContent,
+    });
+
+    if (validCustomerEmail && transporter) {
+      await transporter.sendMail({
+        from: `"DoMeal Subscriptions" <${smtpFromUser}>`,
+        to: validCustomerEmail,
+        subject: `⏰ Reminder: Your DoMeal Weekly Renewal is Scheduled for ${renewalDateStr} (£${totalAmount})`,
+        html: htmlBodyUser,
+      });
+      console.log(`[emailService] Pre-debit reminder email sent to ${validCustomerEmail} for order ${orderId}`);
+      return { success: true, email: validCustomerEmail };
+    }
+
+    return { success: false, error: 'Could not send email' };
+  } catch (err: any) {
+    console.error(`[emailService] Error sending pre-debit reminder for ${orderId}:`, err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * 3. Send Delivery Day Morning Email
  * Sent to customer in the morning on the scheduled delivery date.
  */
@@ -1075,6 +1190,157 @@ export async function sendCorporateInquiryEmails(inquiry: any) {
     };
   } catch (error: any) {
     console.error('[emailService] Error sending corporate inquiry emails:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Send Subscription Cancelled Email
+ * Triggered when a customer or admin cancels auto-debit / recurring meal plan
+ */
+export async function sendSubscriptionCancelledEmail(orderId: string, initialOrderData?: any) {
+  try {
+    const order = await fetchOrderData(orderId, initialOrderData);
+
+    if (!order) {
+      console.warn(`[emailService] Order ${orderId} not found for cancellation email.`);
+      return { success: false, error: 'Order not found' };
+    }
+
+    const validCustomerEmail = await resolveCustomerEmail(order);
+    const transporter = getTransporter();
+    const adminRecipients = await getAdminRecipients();
+    const smtpFromUser = process.env.SMTP_USER || 'domealuk@gmail.com';
+    const customerName = order.address?.fullName || order.customerName || 'Valued Customer';
+    const frequency = order.subscriptionFrequency || 'Weekly Subscription';
+
+    const itemsHtml = formatItemsHtml(order.items);
+
+    const userContent = `
+      <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi ${customerName},</p>
+      <p style="font-size: 15px; line-height: 1.6;">
+        We are writing to confirm that your <strong>${frequency}</strong> auto-debit subscription (Order #${orderId}) has been successfully <strong>cancelled</strong>.
+      </p>
+
+      <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 6px; padding: 14px 16px; margin: 20px 0;">
+        <h4 style="margin: 0 0 6px 0; color: #991b1b; font-size: 14px; font-weight: 700;">🛑 Future Auto-Debits Stopped</h4>
+        <p style="margin: 0; font-size: 13px; color: #7f1d1d; line-height: 1.5;">
+          No future recurring payments will be debited from your card. Your auto-pay schedule has been permanently halted.
+        </p>
+      </div>
+
+      <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; border-radius: 6px; padding: 14px 16px; margin: 20px 0;">
+        <h4 style="margin: 0 0 6px 0; color: #065f46; font-size: 14px; font-weight: 700;">📦 Current Cycle Deliveries Proceed As Normal</h4>
+        <p style="margin: 0; font-size: 13px; color: #047857; line-height: 1.5;">
+          Any meal deliveries already scheduled and paid for this current cycle will still arrive as planned. You will receive all meals you've already paid for!
+        </p>
+      </div>
+
+      <div style="background-color: #f8faf9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0;">
+        <h2 style="margin-top: 0; color: #1E3B2B; font-size: 15px; border-bottom: 2px solid #C39B54; padding-bottom: 8px; margin-bottom: 12px;">
+          Subscription Details
+        </h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748b; width: 140px;">Order ID:</td>
+            <td style="padding: 6px 0; font-weight: 700; color: #111827;">${orderId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Plan:</td>
+            <td style="padding: 6px 0; font-weight: 500; color: #111827;">${frequency}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Status:</td>
+            <td style="padding: 6px 0; font-weight: 700; color: #ef4444;">Cancelled</td>
+          </tr>
+        </table>
+        ${itemsHtml}
+      </div>
+
+      <p style="font-size: 15px; line-height: 1.6; color: #475569;">
+        We're sorry to see you go! You can reactivate your tiffin subscription anytime by visiting our <a href="https://domeal.co.uk/menu" style="color: #1E3B2B; font-weight: 700; text-decoration: underline;">Menu</a>.
+      </p>
+      <p style="font-size: 15px; line-height: 1.6; color: #475569;">Questions or feedback? Reply directly to this email or reach us at <a href="mailto:admin@vegchennaisrilalitha.co.uk" style="color: #1E3B2B; font-weight: 600;">admin@vegchennaisrilalitha.co.uk</a>.</p>
+      <p style="font-size: 15px; line-height: 1.6; margin-bottom: 0;">Warm regards,<br><strong style="color: #1E3B2B;">The DoMeal Team</strong></p>
+    `;
+
+    const htmlBodyUser = wrapEmailHtml({
+      previewTitle: `DoMeal Subscription Cancelled - Order #${orderId}`,
+      heading: 'Subscription Autopay Cancelled',
+      subheading: `Order #${orderId} • Future recurring payments stopped`,
+      bodyContent: userContent,
+    });
+
+    const adminContent = `
+      <p style="font-size: 16px; line-height: 1.6; margin-top: 0;"><strong>Admin Alert:</strong> A customer has cancelled their subscription autopay.</p>
+      <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 18px; margin: 20px 0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748b; width: 140px;">Order ID:</td>
+            <td style="padding: 6px 0; font-weight: 700; color: #111827;">${orderId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Customer:</td>
+            <td style="padding: 6px 0; font-weight: 600; color: #111827;">${customerName} (${validCustomerEmail || 'No email'})</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Phone:</td>
+            <td style="padding: 6px 0; font-weight: 500; color: #111827;">${order.address?.phone || order.phone || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Payment Method:</td>
+            <td style="padding: 6px 0; font-weight: 500; color: #111827;">${order.paymentMethod || 'worldpay'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;">Plan:</td>
+            <td style="padding: 6px 0; font-weight: 500; color: #111827;">${frequency}</td>
+          </tr>
+        </table>
+      </div>
+    `;
+
+    const htmlBodyAdmin = wrapEmailHtml({
+      previewTitle: `[ADMIN ALERT] Subscription Cancelled - #${orderId}`,
+      heading: 'Subscription Autopay Cancelled 🛑',
+      subheading: `Customer: ${customerName} • Order #${orderId}`,
+      bodyContent: adminContent,
+    });
+
+    let customerSent = false;
+    let adminSent = false;
+
+    if (validCustomerEmail) {
+      try {
+        await transporter.sendMail({
+          from: `"DoMeal" <${smtpFromUser}>`,
+          to: validCustomerEmail,
+          subject: `DoMeal Subscription Cancelled - Order #${orderId}`,
+          html: htmlBodyUser,
+        });
+        customerSent = true;
+        console.log(`[emailService] ✅ Subscription cancellation email sent to ${validCustomerEmail}`);
+      } catch (e) {
+        console.error(`[emailService] ❌ Failed to send cancellation email to customer (${validCustomerEmail}):`, e);
+      }
+    }
+
+    if (adminRecipients.length > 0) {
+      try {
+        await transporter.sendMail({
+          from: `"DoMeal Subscriptions" <${smtpFromUser}>`,
+          to: adminRecipients,
+          subject: `🛑 [ADMIN] Subscription Cancelled - Order #${orderId} (${customerName})`,
+          html: htmlBodyAdmin,
+        });
+        adminSent = true;
+      } catch (e) {
+        console.error('[emailService] ❌ Failed to send cancellation email to admins:', e);
+      }
+    }
+
+    return { success: true, customerSent, adminSent };
+  } catch (error: any) {
+    console.error('[emailService] Error sending subscription cancelled email:', error);
     return { success: false, error: error.message };
   }
 }
