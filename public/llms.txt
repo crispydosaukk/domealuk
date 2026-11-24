@@ -1,0 +1,33 @@
+# DoMeal — Home Food Away From Home
+
+> Authentic, homestyle Indian meal delivery and daily tiffin subscription service in London, United Kingdom.
+
+## Overview
+DoMeal (https://domeal.co.uk) delivers freshly cooked, authentic home-style Indian meals to homes, student accommodations, and offices across London. We specialize in rotating daily menus, flexible weekly & monthly subscriptions, pure vegetarian specialties, and corporate Indian catering.
+
+## Services & Meal Plans
+- **Daily Tiffin Service:** Hot/chilled authentic homestyle meals delivered with rotating daily menus (dal, sabji, roti, fragrant rice, raita, and dessert).
+- **Flexible Subscriptions:** 5-day weekday meal plans (Monday to Friday) and monthly subscription plans with pause, cancel, and modify anytime options.
+- **Dietary Categories:** 100% Pure Vegetarian, Vegan selections, Jain-friendly options (no onion/garlic on request), and Halal-friendly preparations.
+- **Corporate Catering:** Executive lunch boxes, buffet spreads, and live 4ft Jumbo Dosa stations for corporate events across Greater London.
+- **Student Deals:** Special student discounts offering nutritious, budget-friendly tiffins for university students.
+
+## Delivery Locations
+- **City of London & Central London:** EC1, EC2, EC3, EC4, WC1, WC2, W1.
+- **East London:** E1 (Whitechapel, Aldgate), E14 (Canary Wharf, Isle of Dogs), E15 (Stratford), E6 (East Ham), E7 (Forest Gate), E12 (Manor Park), E13 (Plaistow), E16 (Docklands).
+- **North & North-West London:** NW9 (Colindale, Kingsbury), NW10 (Wembley, Park Royal), HA0, HA9 (Wembley, Harrow).
+- **South & South-West London:** SE1 (Southwark, London Bridge), SW19 (Wimbledon), CR0 (Croydon).
+
+## Heating & Storage Guidelines
+- **Delivery Condition:** Ice-packed and cold to maintain maximum freshness and hygiene.
+- **Shelf Life:** Best consumed within 48 hours when kept refrigerated at 2°C to 5°C.
+- **Microwave:** Pierce or loosen container lid and heat at 800W for 2–3 minutes until piping hot.
+- **Oven:** Transfer to an oven-safe dish and bake at 180°C for 25–35 minutes.
+- **Stovetop:** Warm curry, dal, and sabzi in a saucepan over medium heat for 4–5 minutes, stirring occasionally.
+
+## Key Links
+- **Menu & Daily Ordering:** https://domeal.co.uk/menu
+- **Corporate Catering:** https://domeal.co.uk/corporate-catering
+- **Student Discounts:** https://domeal.co.uk/student-discounts
+- **How to Heat:** https://domeal.co.uk/how-to-heat
+- **Customer Support:** support@domeal.co.uk

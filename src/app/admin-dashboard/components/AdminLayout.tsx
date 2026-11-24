@@ -21,6 +21,7 @@ import {
   Building,
   FileText,
   X,
+  Globe,
 } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -49,6 +50,7 @@ const baseNavItems = [
   { id: 'nav-analytics', label: 'Analytics', href: '/admin-analytics', icon: TrendingUp },
   { id: 'nav-menu', label: 'Menu Management', href: '/admin-menu', icon: UtensilsCrossed },
   { id: 'nav-cms', label: 'CMS & Page Content', href: '/admin-cms', icon: FileText },
+  { id: 'nav-seo', label: 'SEO & AI Ranking', href: '/admin-seo', icon: Globe },
   { id: 'nav-settings', label: 'Settings', href: '/admin-settings', icon: Settings },
 ];
 

@@ -117,22 +117,22 @@ export default function UserFooter() {
           </div>
 
           {/* Quick Links */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-1">
             <h4 className="font-700 text-sm uppercase tracking-wider text-gray-400 mb-4">
               Quick Links
             </h4>
-            <ul className="grid grid-cols-2 gap-y-2 gap-x-4">
+            <ul className="space-y-2">
               {[
                 { label: 'Home', href: '/' },
                 { label: 'Menu', href: '/menu' },
                 { label: 'Refer a Friend', href: '/refer-a-friend' },
                 { label: 'How to Heat', href: '/how-to-heat' },
                 { label: 'Student Discounts', href: '/student-discounts' },
-                { label: 'Gift', href: '/gift' },
-                { label: 'Reviews', href: '/#reviews' },
-                { label: 'FAQ', href: '/#faq' },
-                { label: 'Sign In', href: '/sign-up-login-screen' },
-                { label: 'Admin', href: '/admin-dashboard' },
+                { label: 'Gift Vouchers', href: '/gift' },
+                { label: 'Customer Reviews', href: '/#reviews' },
+                { label: 'Frequently Asked', href: '/#faq' },
+                { label: 'Sign In / Register', href: '/sign-up-login-screen' },
+                { label: 'Admin Portal', href: '/admin-dashboard' },
               ]?.map((link) => (
                 <li key={`footer-${link?.label}`}>
                   <Link
@@ -140,6 +140,28 @@ export default function UserFooter() {
                     className="text-sm text-gray-300 hover:text-secondary transition-colors"
                   >
                     {link?.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* London Delivery Areas */}
+          <div className="lg:col-span-1">
+            <h4 className="font-700 text-sm uppercase tracking-wider text-[#C39B54] mb-4">
+              London Delivery Areas
+            </h4>
+            <ul className="space-y-2">
+              {[
+                { label: 'West London Tiffins', href: '/locations/west-london', postcodes: 'W1–W14 (Now Live)' },
+              ].map((loc) => (
+                <li key={`footer-loc-${loc.label}`}>
+                  <Link
+                    href={loc.href}
+                    className="group text-sm text-gray-300 hover:text-[#C39B54] transition-colors flex flex-col"
+                  >
+                    <span className="font-600 group-hover:underline">{loc.label}</span>
+                    <span className="text-[11px] text-gray-400 font-mono">{loc.postcodes}</span>
                   </Link>
                 </li>
               ))}

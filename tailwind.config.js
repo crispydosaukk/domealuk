@@ -26,6 +26,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['var(--font-plus-jakarta-sans)', 'sans-serif'],
+        serif: ['Fraunces', 'Georgia', 'serif'],
       },
     },
   },

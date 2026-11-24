@@ -25,8 +25,22 @@ export function getZoneFromPostcode(postcode: string): { area: string; available
   return null;
 }
 
-export default function PostcodeSearch() {
-  const [postcode, setPostcode] = useState('');
+interface PostcodeSearchProps {
+  initialPostcode?: string;
+  regionName?: string;
+  regionBadge?: string;
+  subheadingText?: string;
+  className?: string;
+}
+
+export default function PostcodeSearch({
+  initialPostcode = '',
+  regionName,
+  regionBadge,
+  subheadingText,
+  className = '',
+}: PostcodeSearchProps = {}) {
+  const [postcode, setPostcode] = useState(initialPostcode);
   const [result, setResult] = useState<{ area: string; available: boolean } | null | 'unknown'>(
     null
   );
@@ -39,7 +53,7 @@ export default function PostcodeSearch() {
 
   return (
     <section
-      className="py-10"
+      className={`py-10 ${className}`}
       style={{ background: 'linear-gradient(135deg, #1E3B2B 0%, #10261A 50%, #1E3B2B 100%)' }}
     >
       <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10">
@@ -48,11 +62,18 @@ export default function PostcodeSearch() {
             <div className="flex items-center gap-2 justify-center lg:justify-start mb-1">
               <MapPin size={18} className="text-[#C39B54]" />
               <span className="text-sm font-700 uppercase tracking-widest text-[#C39B54]">
-                Delivery Checker
+                {regionBadge || 'Delivery Checker'}
               </span>
             </div>
-            <h3 className="text-xl font-extrabold">Do we deliver to you?</h3>
-            <p className="text-blue-200 text-sm mt-1">Enter your London postcode to find out</p>
+            <h3 className="text-xl font-extrabold">
+              {regionName ? `Do we deliver to your ${regionName} address?` : 'Do we deliver to you?'}
+            </h3>
+            <p className="text-blue-200 text-sm mt-1">
+              {subheadingText ||
+                (regionName
+                  ? `Enter your ${regionName} postcode to verify delivery availability`
+                  : 'Enter your London postcode to find out')}
+            </p>
           </div>
 
           <div className="flex-1 w-full max-w-md">
@@ -66,7 +87,11 @@ export default function PostcodeSearch() {
                   value={postcode}
                   onChange={(e) => setPostcode(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
-                  placeholder="e.g. E1 6RF, N1 9GU..."
+                  placeholder={
+                    regionName && initialPostcode
+                      ? `e.g. ${initialPostcode}, ${initialPostcode.split(' ')[0]} 4PL...`
+                      : 'e.g. E1 6RF, N1 9GU...'
+                  }
                   className="w-full pl-9 pr-4 py-3 rounded-xl border border-white/20 bg-white/10 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-[#C39B54] focus:bg-white/20 text-sm"
                 />
               </div>

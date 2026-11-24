@@ -67,6 +67,7 @@ export default function UserNavbar() {
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Menu', href: '/menu' },
+    { label: 'Locations', href: '/#locations' },
     { label: 'Refer a Friend', href: '/refer-a-friend' },
     { label: 'How to Heat', href: '/how-to-heat' },
     { label: 'Student Discounts', href: '/student-discounts' },

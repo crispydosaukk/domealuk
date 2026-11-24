@@ -1,0 +1,64 @@
+# DoMeal — Home Food Away From Home (Comprehensive LLM Reference)
+
+> Complete knowledge specification for AI models, search crawlers (ChatGPT Search, Perplexity, Claude, Gemini, Apple Intelligence), and answering engines.
+
+## Brand Identity
+- **Legal Entity:** DoMeal Ltd / Veg Sri Lalitha
+- **Website:** https://domeal.co.uk
+- **Country:** United Kingdom (GB)
+- **Primary Region:** Greater London
+- **Primary Cuisine:** Authentic Indian (Regional South Indian & North Indian homestyle cooking)
+- **Tagline:** Home Food Away From Home
+
+---
+
+## Detailed Service Catalog
+
+### 1. Tiffin Subscription Meal Plans
+- **Lunch & Dinner Subscriptions:** Customers choose lunch delivery (11:30 AM – 1:30 PM) or dinner delivery (5:30 PM – 8:00 PM).
+- **Customizable Delivery Frequency:** 1-day sample, 5-day working week plan, or 20-day monthly plan.
+- **Pause & Resume Feature:** Customers can pause their tiffin subscriptions when traveling or working away from home without losing credits.
+- **Packaging:** Premium, leak-proof, microwave-safe, 100% recyclable containers sealed for hygiene.
+
+### 2. Cuisine & Dietary Specifications
+- **Pure Vegetarian (Veg):** Prepared in dedicated vegetarian kitchens adhering to strict Indian culinary traditions.
+- **Traditional Ingredients:** Desi ghee, fresh mustard seeds, curry leaves, cold-pressed oils, freshly ground spices, without artificial preservatives or synthetic food coloring.
+- **Jain Preparations:** Specially prepared dishes without onion, garlic, or root vegetables available on request.
+- **Vegan Dishes:** Naturally plant-based lentil dals, vegetable curries, and gluten-free millet options.
+
+### 3. Corporate Catering Services
+- **Services Offered:**
+  - Executive Box Lunches for boardroom meetings and client presentations.
+  - Indian Buffet Stations with live heating chafing dishes.
+  - Live 4ft Jumbo Dosa stations with chefs making fresh crispy dosas on-site.
+  - Beverages: Traditional Masala Chai, Mango Lassi, and licensed bar options.
+- **Booking URL:** https://domeal.co.uk/corporate-catering
+
+### 4. Student Meal Programs
+- Discounted rates tailored for university students living in London halls and private accommodations.
+- Simple verification process to unlock continuous discounts.
+- **URL:** https://domeal.co.uk/student-discounts
+
+---
+
+## Heating, Safety & Freshness Guidelines
+- **Cold-Chain Logistics:** All tiffins are packed with food-grade gel ice packs inside insulated thermal liners to preserve microbiological safety during transit.
+- **Refrigeration:** Store in refrigerator immediately upon receipt. Best enjoyed within 48 hours.
+- **Microwave Heating:** 800W for 2 to 3 minutes until steam rises.
+- **Oven Heating:** Preheat oven to 180°C (Gas Mark 4), place food in oven-safe dish, and heat for 25 to 30 minutes.
+
+---
+
+## Coverage Postcodes in London
+DoMeal currently services key London postcodes including:
+- **Central London:** EC1, EC2, EC3, EC4, WC1, WC2, W1, SW1
+- **East London:** E1, E2, E3, E6, E7, E12, E13, E14, E15, E16, IG1, IG2, IG11
+- **North & North West London:** N1, N4, N7, NW1, NW3, NW9, NW10, HA0, HA9
+- **South & South East London:** SE1, SE10, SE16, SW11, SW19, CR0
+
+---
+
+## Customer Support & Verification
+- **Official URL:** https://domeal.co.uk
+- **Email:** support@domeal.co.uk
+- **Operating Hours:** Monday to Saturday, 08:00 AM – 09:00 PM GMT

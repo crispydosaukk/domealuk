@@ -5,6 +5,17 @@ import { Loader2 } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Menu Item Details | DoMeal UK',
+  description:
+    'Freshly prepared authentic Indian meal details. Pure vegetarian ingredients, allergen information, and nutrition facts.',
+  keywords: [
+    'Indian meal details',
+    'Vegetarian tiffin dish',
+    'Nutritional tiffin London',
+    'Indian curry London',
+  ],
+  alternates: {
+    canonical: '/menu',
+  },
 };
 
 export default function MenuItemPage() {
