@@ -9,6 +9,8 @@ export const ADMIN_EMAILS: string[] = Array.from(
   new Set([
     'superadmin@vegchennaisrilalitha.co.uk',
     'admin@vegchennaisrilalitha.co.uk',
+    'superadmin@domeal.co.uk',
+    'admin@domeal.co.uk',
     ...(envAdmin ? [envAdmin] : []),
     'domealuk79812@gmail.com',
   ])
@@ -17,6 +19,7 @@ export const ADMIN_EMAILS: string[] = Array.from(
 export const SUPER_ADMIN_EMAILS: string[] = Array.from(
   new Set([
     'superadmin@vegchennaisrilalitha.co.uk',
+    'superadmin@domeal.co.uk',
     'domealuk79812@gmail.com',
     ...(envSuperAdmin ? [envSuperAdmin] : []),
   ])
@@ -57,8 +60,8 @@ export function isAdminEmail(email?: string | null): boolean {
 export function isSuperAdminEmail(email?: string | null): boolean {
   if (!email) return false;
   const normalized = email.trim().toLowerCase();
-  // admin@vegchennaisrilalitha.co.uk is the operational admin, never super admin
-  if (normalized === 'admin@vegchennaisrilalitha.co.uk') return false;
+  // Operational admins are never super admin
+  if (normalized === 'admin@vegchennaisrilalitha.co.uk' || normalized === 'admin@domeal.co.uk') return false;
   if (SUPER_ADMIN_EMAILS.some((superAdmin) => superAdmin.toLowerCase() === normalized)) return true;
   if (dynamicSuperAdminEmails.has(normalized)) return true;
   return false;
