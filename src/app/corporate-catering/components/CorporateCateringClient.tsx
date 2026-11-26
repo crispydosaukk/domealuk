@@ -58,16 +58,22 @@ export default function CorporateCateringClient() {
 
     let unsub = () => {};
     try {
-      unsub = onSnapshot(doc(db, 'settings', 'corporateConfig'), (docSnap) => {
-        if (docSnap.exists()) {
-          const remoteData = docSnap.data();
-          const merged = { ...DEFAULT_CORPORATE_CONFIG, ...remoteData };
-          setConfig(merged);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('domeal_corporate_menu_config', JSON.stringify(merged));
+      unsub = onSnapshot(
+        doc(db, 'settings', 'corporateConfig'),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const remoteData = docSnap.data();
+            const merged = { ...DEFAULT_CORPORATE_CONFIG, ...remoteData };
+            setConfig(merged);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('domeal_corporate_menu_config', JSON.stringify(merged));
+            }
           }
+        },
+        (err) => {
+          console.warn('CorporateConfig client snapshot handled:', err.message);
         }
-      });
+      );
     } catch (_err) {}
 
     return () => {

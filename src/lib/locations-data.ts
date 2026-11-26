@@ -43,7 +43,136 @@ export interface LocationData {
   }[];
   featuredDishes: LocationDish[];
   faqs: LocationFAQ[];
+  footer?: LocationFooterConfig;
+  promoBarItems?: string[];
+  storyConfig?: LocationStoryConfig;
+  howItWorksSteps?: LocationHowItWorksStep[];
+  dabbaTiers?: LocationDabbaTier[];
+  ecoComparison?: LocationEcoComparisonConfig;
+  reviews?: LocationReview[];
+  finalCTA?: LocationFinalCTAConfig;
+  howItWorksBadge?: string;
+  howItWorksTitle?: string;
+  howItWorksSubtitle?: string;
+  dabbaTitle?: string;
+  dabbaBadge?: string;
+  dishesBadge?: string;
+  dishesTitle?: string;
+  dishesSubtitle?: string;
+  neighbourhoodsBadge?: string;
+  neighbourhoodsTitle?: string;
+  neighbourhoodsSubtitle?: string;
+  reviewsBadge?: string;
+  reviewsTitle?: string;
+  reviewsSubtitle?: string;
+  faqsBadge?: string;
+  faqsTitle?: string;
+  faqsSubtitle?: string;
+  heroPostcodeTitle?: string;
+  heroPostcodeBadge?: string;
+  heroPostcodeBtnText?: string;
+  heroPostcodeNote?: string;
+  heroPrimaryBtnText?: string;
+  heroPrimaryBtnLink?: string;
+  heroSecondaryBtnText?: string;
+  heroSecondaryBtnLink?: string;
+  heroRatingText?: string;
+  heroHygieneText?: string;
+  heroDishBadge?: string;
+  heroDishSubBadge?: string;
+  heroFloat1Title?: string;
+  heroFloat1Sub?: string;
+  heroFloat2Title?: string;
+  heroFloat2Sub?: string;
   active: boolean;
+}
+
+export interface LocationHowItWorksStep {
+  stepNumber: string;
+  badge: string;
+  title: string;
+  description: string;
+  highlightPill: string;
+  image: string;
+}
+
+export interface LocationDabbaTier {
+  tierNumber: string;
+  title: string;
+  subtitle: string;
+  desc: string;
+  highlight: string;
+  badge: string;
+}
+
+export interface LocationReview {
+  author: string;
+  neighbourhood: string;
+  plan: string;
+  rating: number;
+  quote: string;
+}
+
+export interface LocationEcoComparisonConfig {
+  badge?: string;
+  title?: string;
+  subtitle?: string;
+  takeawayBadge?: string;
+  takeawayTitle?: string;
+  takeawayPoints?: string[];
+  domealTopBadge?: string;
+  domealBadge?: string;
+  domealTitle?: string;
+  domealPoints?: string[];
+  ctaButtonText?: string;
+}
+
+export interface LocationFinalCTAConfig {
+  badge?: string;
+  heading?: string;
+  subheadline?: string;
+  primaryButtonText?: string;
+  primaryButtonLink?: string;
+  secondaryButtonText?: string;
+  secondaryButtonLink?: string;
+  guarantees?: string[];
+}
+
+export interface LocationStoryConfig {
+  badge?: string;
+  quote?: string;
+  quoteSub?: string;
+  paragraphs?: string[];
+}
+
+export interface LocationFooterLink {
+  label: string;
+  href: string;
+  sub?: string;
+}
+
+export interface LocationFooterConfig {
+  tagline?: string;
+  aboutText?: string;
+  contactAddress?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  quickLinksHeading?: string;
+  quickLinks?: LocationFooterLink[];
+  deliveryAreasHeading?: string;
+  deliveryAreas?: LocationFooterLink[];
+  contactHeading?: string;
+  copyrightText?: string;
+  privacyPolicyText?: string;
+  privacyPolicyUrl?: string;
+  termsOfServiceText?: string;
+  termsOfServiceUrl?: string;
+  termsOfBusinessText?: string;
+  termsOfBusinessUrl?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  pinterestUrl?: string;
+  tiktokUrl?: string;
 }
 
 export const LONDON_LOCATIONS: LocationData[] = [
@@ -54,9 +183,9 @@ export const LONDON_LOCATIONS: LocationData[] = [
     regionCode: 'W',
     samplePostcode: 'W2 1NY',
     badge: 'West London Tiffin Route',
-    headline: 'Authentic Indian Tiffin Delivery in West London',
+    headline: 'Handcrafted Indian Curry Feasts, Delivered in Reusable Dabbas Across West London.',
     subheadline:
-      'Nutritious, traditional home-cooked vegetarian meals delivered in reusable eco-dabbas to homes, student flats, and offices across West London.',
+      'Freshly cooked in small batches by 21-year culinary masters. Cold-packed in authentic 3-tier stainless steel containers to lock in nutrition. Delivered directly to your door or concierge every Monday & Thursday.',
     introParagraphs: [
       'Craving genuine home-cooked Indian meals without the endless shopping, chopping, and cooking? DoMeal delivers hot, authentic vegetarian and vegan tiffins across West London every Monday and Thursday.',
       'Drawing on over 21 years of traditional culinary heritage, our home-cooks craft rotating menus of freshly rolled rotis, comforting lentil dals, rich vegetable curries, and aromatic rice. Whether you reside in leafy Ealing, vibrant Notting Hill, riverside Hammersmith, or Kensington, our zero-waste stainless steel tiffins bring home-cooked warmth directly to your doorstep.',
@@ -170,9 +299,9 @@ export const LONDON_LOCATIONS: LocationData[] = [
     regionCode: 'E',
     samplePostcode: 'E14 5AB',
     badge: 'East London Tiffin Route',
-    headline: 'Fresh Home-Cooked Indian Tiffins in East London',
+    headline: 'Handcrafted Indian Curry Feasts, Delivered in Reusable Dabbas Across East London.',
     subheadline:
-      'Authentic homestyle Indian tiffin delivery serving Canary Wharf, Stratford, Whitechapel, Hackney, and Ilford. 100% vegetarian & freshly prepared.',
+      'Freshly cooked in small batches by 21-year culinary masters. Cold-packed in authentic 3-tier stainless steel containers to lock in nutrition. Delivered directly to your door or concierge every Monday & Thursday.',
     introParagraphs: [
       'East London is home to one of the UK’s most vibrant South Asian culinary communities, yet finding everyday healthy, home-style vegetarian food without excess oil or restaurant cream can be difficult.',
       'DoMeal provides genuine ghar ka khana (home-cooked food) delivered to your apartment or corporate office across East London. From Canary Wharf’s banking high-rises to student accommodations around Stratford and tech hubs in Shoreditch, our traditional tiffins give you delicious, balanced nutrition every week.',
@@ -276,7 +405,7 @@ export const LONDON_LOCATIONS: LocationData[] = [
           'To ensure our chefs source fresh market ingredients, please place or amend your order at least 24 hours prior to your chosen Monday or Thursday delivery date.',
       },
     ],
-    active: false,
+    active: true,
   },
   {
     slug: 'north-london',
@@ -285,9 +414,9 @@ export const LONDON_LOCATIONS: LocationData[] = [
     regionCode: 'N',
     samplePostcode: 'N1 9GU',
     badge: 'North London Tiffin Route',
-    headline: 'Nutritious Indian Tiffin Delivery in North London',
+    headline: 'Handcrafted Indian Curry Feasts, Delivered in Reusable Dabbas Across North London.',
     subheadline:
-      'Home-cooked vegetarian Indian meals delivered to Islington, Camden, Highbury, Finchley, and Muswell Hill. Made fresh, delivered sustainably.',
+      'Freshly cooked in small batches by 21-year culinary masters. Cold-packed in authentic 3-tier stainless steel containers to lock in nutrition. Delivered directly to your door or concierge every Monday & Thursday.',
     introParagraphs: [
       'From the busy cultural streets of Camden and Islington to quiet family avenues in Finchley and Highbury, North Londoners value nutritious, conscious eating. DoMeal brings the wholesome goodness of traditional Indian home cooking straight to your kitchen table.',
       'Our plant-powered tiffins are prepared daily in hygienic commercial kitchens without artificial additives or excessive oils. Packed inside insulated carriers, your dabbas arrive ready to be heated and enjoyed whenever you are ready.',
@@ -391,7 +520,7 @@ export const LONDON_LOCATIONS: LocationData[] = [
           'Yes! There are no long-term contracts. You can order for a single week or subscribe and cancel whenever you wish.',
       },
     ],
-    active: false,
+    active: true,
   },
   {
     slug: 'south-london',
@@ -400,9 +529,9 @@ export const LONDON_LOCATIONS: LocationData[] = [
     regionCode: 'SW/SE',
     samplePostcode: 'SW4 7UL',
     badge: 'South London Tiffin Route',
-    headline: 'Authentic Indian Meal Delivery in South London',
+    headline: 'Handcrafted Indian Curry Feasts, Delivered in Reusable Dabbas Across South London.',
     subheadline:
-      'Home-style Indian tiffin deliveries across Clapham, Battersea, Wandsworth, Greenwich, Southwark, and Wimbledon. Pure vegetarian goodness.',
+      'Freshly cooked in small batches by 21-year culinary masters. Cold-packed in authentic 3-tier stainless steel containers to lock in nutrition. Delivered directly to your door or concierge every Monday & Thursday.',
     introParagraphs: [
       'South London is home to thriving residential neighborhoods filled with busy commuters, families, and young professionals. Between busy schedules and long tube rides, finding time to cook healthy Indian food from scratch is tough.',
       'DoMeal brings nutritious vegetarian meal subscriptions across South West and South East London. From modern flats in Battersea and riverside apartments in Greenwich to family Victorian terraces in Clapham and Dulwich, our authentic tiffins ensure you never have to settle for greasy takeaways again.',
@@ -506,7 +635,7 @@ export const LONDON_LOCATIONS: LocationData[] = [
           'There is no minimum order item count! Whether you want a single dinner tiffin or a full week of family meals, we deliver.',
       },
     ],
-    active: false,
+    active: true,
   },
   {
     slug: 'central-london',
@@ -620,9 +749,24 @@ export const LONDON_LOCATIONS: LocationData[] = [
           'Yes, every order automatically generates a downloadable PDF receipt and VAT-ready invoice accessible in your Order History.',
       },
     ],
-    active: false,
+    active: true,
   },
 ];
+
+export const LOCATION_ALIASES: Record<string, string> = {
+  'canary-wharf': 'east-london',
+  'stratford': 'east-london',
+  'wembley': 'west-london',
+  'ealing': 'west-london',
+  'kensington': 'west-london',
+  'islington': 'north-london',
+  'camden': 'north-london',
+  'clapham': 'south-london',
+  'battersea': 'south-london',
+  'greenwich': 'south-london',
+  'the-city': 'central-london',
+  'westminster': 'central-london',
+};
 
 /**
  * Returns all active London regional landing page configurations.
@@ -639,11 +783,17 @@ export function getAllConfiguredLocations(): LocationData[] {
 }
 
 /**
- * Retrieve a specific location configuration by URL slug.
+ * Retrieve a specific location configuration by URL slug (or alias).
  */
 export function getLocationBySlug(slug: string): LocationData | undefined {
   const normalized = slug.trim().toLowerCase();
-  return LONDON_LOCATIONS.find((l) => l.slug.toLowerCase() === normalized);
+  const direct = LONDON_LOCATIONS.find((l) => l.slug.toLowerCase() === normalized);
+  if (direct) return direct;
+  const targetSlug = LOCATION_ALIASES[normalized];
+  if (targetSlug) {
+    return LONDON_LOCATIONS.find((l) => l.slug.toLowerCase() === targetSlug);
+  }
+  return undefined;
 }
 
 /**

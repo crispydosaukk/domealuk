@@ -56,6 +56,18 @@ export async function POST(req: NextRequest) {
       await setDoc(doc(db, 'settings', 'global'), { seo: newSettings }, { merge: true });
     }
 
+    // Safely sync to public/llms.txt on disk if customLlmsTxt was updated
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      if (newSettings.customLlmsTxt) {
+        const llmsPath = path.join(process.cwd(), 'public', 'llms.txt');
+        await fs.promises.writeFile(llmsPath, newSettings.customLlmsTxt, 'utf-8');
+      }
+    } catch {
+      // Serverless environments with read-only file systems safely fall back to Firestore/route handler
+    }
+
     return NextResponse.json({ success: true, message: 'SEO settings saved successfully', settings: newSettings });
   } catch (err: any) {
     console.error('Error saving SEO settings:', err);

@@ -71,11 +71,11 @@ export default function LocationAreas({ location }: LocationAreasProps) {
         </div>
 
         {/* Verified Neighbourhood Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-wrap justify-center gap-6">
           {location.neighbourhoods.map((area, idx) => (
             <div
               key={idx}
-              className="bg-white p-6 sm:p-7 rounded-3xl border border-gray-200 hover:border-[#C39B54] hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
+              className="w-full sm:w-[calc(50%_-_12px)] lg:w-[calc(33.333%_-_16px)] max-w-md bg-white p-6 sm:p-7 rounded-3xl border border-gray-200 hover:border-[#C39B54] hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
             >
               <div>
                 <div className="flex items-center justify-between mb-3">

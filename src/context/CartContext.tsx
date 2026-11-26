@@ -85,40 +85,52 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     } catch(e) {}
 
-    const unsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
-      if (docSnap.exists()) {
-        const userData = docSnap.data();
-        if (guestCart && guestCart.length > 0) {
-          // Found a guest cart after login! Merge/overwrite to Firestore
-          setDoc(doc(db, 'users', user.uid), { cart: guestCart }, { merge: true }).catch(console.error);
-          setCart(guestCart);
-          guestCart = null; // Only merge once
-        } else if (userData.cart) {
-          setCart(userData.cart);
+    const unsub = onSnapshot(
+      doc(db, 'users', user.uid),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          if (guestCart && guestCart.length > 0) {
+            // Found a guest cart after login! Merge/overwrite to Firestore
+            setDoc(doc(db, 'users', user.uid), { cart: guestCart }, { merge: true }).catch(console.error);
+            setCart(guestCart);
+            guestCart = null; // Only merge once
+          } else if (userData.cart) {
+            setCart(userData.cart);
+          }
+          
+          if (userData.checkoutData) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const validDates = Array.isArray(userData.checkoutData.deliveryDates)
+              ? userData.checkoutData.deliveryDates.filter((d: string) => d >= todayStr)
+              : [];
+            setCheckoutData({
+              ...userData.checkoutData,
+              deliveryDates: validDates,
+            });
+          }
         }
-        
-        if (userData.checkoutData) {
-          const todayStr = new Date().toISOString().split('T')[0];
-          const validDates = Array.isArray(userData.checkoutData.deliveryDates)
-            ? userData.checkoutData.deliveryDates.filter((d: string) => d >= todayStr)
-            : [];
-          setCheckoutData({
-            ...userData.checkoutData,
-            deliveryDates: validDates,
-          });
-        }
+      },
+      (err) => {
+        console.warn('CartContext user snapshot listener handled:', err.message);
       }
-    });
+    );
 
     // Listen to successful/placed orders to compute completedOrdersCount
     const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
-    const unsubOrders = onSnapshot(q, (snap) => {
-      const ordersData = snap.docs.map((doc) => doc.data());
-      const successfulOrders = ordersData.filter(
-        (o) => o.status !== 'Cancelled' && o.status !== 'Pending Payment'
-      );
-      setCompletedOrdersCount(successfulOrders.length);
-    });
+    const unsubOrders = onSnapshot(
+      q,
+      (snap) => {
+        const ordersData = snap.docs.map((doc) => doc.data());
+        const successfulOrders = ordersData.filter(
+          (o) => o.status !== 'Cancelled' && o.status !== 'Pending Payment'
+        );
+        setCompletedOrdersCount(successfulOrders.length);
+      },
+      (err) => {
+        console.warn('CartContext orders snapshot listener handled:', err.message);
+      }
+    );
 
     return () => {
       unsub();

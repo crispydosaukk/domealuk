@@ -1,3 +1,8 @@
+# DoMeal Official Robots.txt
+# Comprehensive web crawler and Search AI engine permissions policy
+# Domain: https://domeal.co.uk
+
+# Default Crawlers (Google, Bing, Yahoo, DuckDuckGo)
 User-agent: *
 Allow: /
 Allow: /menu
@@ -10,6 +15,7 @@ Allow: /gift
 Allow: /privacy-policy
 Allow: /terms-of-service
 Allow: /terms-of-business
+Allow: /locations
 Allow: /locations/*
 Allow: /locations/west-london
 Allow: /locations/east-london
@@ -19,8 +25,19 @@ Allow: /locations/central-london
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /admin-*
+Disallow: /admin-analytics
+Disallow: /admin-cms
+Disallow: /admin-corporate
+Disallow: /admin-customers
 Disallow: /admin-dashboard
+Disallow: /admin-history
+Disallow: /admin-login
 Disallow: /admin-menu
+Disallow: /admin-payments
+Disallow: /admin-seo
+Disallow: /admin-settings
+Disallow: /admin-student-approvals
+Disallow: /api/*
 Disallow: /basket
 Disallow: /checkout-order-confirmation-screen
 Disallow: /debug-menu
@@ -30,4 +47,116 @@ Disallow: /reset-password
 Disallow: /sign-up-login-screen
 Disallow: /wallet
 
+# ========================================================
+# SEARCH AI ENGINES & LARGE LANGUAGE MODELS (WHITELISTED)
+# ========================================================
+
+# OpenAI: SearchGPT & ChatGPT Web Citations
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# OpenAI: ChatGPT Live User Browsing
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# Perplexity AI: Perplexity Sonar & Source Citations
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# Anthropic: Claude Web Scraping & Q&A
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+User-agent: anthropic-ai
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# Google: Gemini, Vertex AI & Google AI Overviews (SGE)
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# Apple: Apple Intelligence & Siri Spotlight
+User-agent: Applebot-Extended
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# Microsoft: Copilot & Bing AI Search
+User-agent: Bingbot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# Meta: Meta AI, WhatsApp & Instagram Search (Llama)
+User-agent: Meta-ExternalAgent
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# DeepSeek: DeepSeek-R1 Web Search & Reasoning
+User-agent: DeepSeek-AI
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# Mistral AI: Le Chat & European Open-Weight RAG
+User-agent: MistralAI
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# ByteDance: TikTok & Doubao Conversational AI
+User-agent: Bytespider
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# Amazon: Rufus Shopping AI & AWS Bedrock
+User-agent: Amazonbot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin-*
+Disallow: /api/*
+
+# ========================================================
+# LLM Knowledge Grounding Endpoints & Sitemaps
+# ========================================================
+# AI Reference Spec: https://domeal.co.uk/llms.txt
+# Comprehensive Spec: https://domeal.co.uk/llms-full.txt
 Sitemap: https://domeal.co.uk/sitemap.xml

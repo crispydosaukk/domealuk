@@ -154,7 +154,7 @@ export default function HeroSection() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <h2 className="text-white text-2xl font-extrabold text-center mb-1">DoMeal</h2>
+                <p className="text-white text-2xl font-extrabold text-center mb-1 font-sans">DoMeal</p>
                 <p className="text-[#C39B54] text-xs font-600 text-center tracking-widest uppercase mb-6">
                   Home Food Away From Home
                 </p>

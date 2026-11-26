@@ -67,14 +67,21 @@ export default function AdminDashboardClient() {
     fetchSlots();
 
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
-    const unsub = onSnapshot(q, (snap) => {
-      const fetched = snap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setLiveOrders(fetched);
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const fetched = snap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setLiveOrders(fetched);
+        setLoading(false);
+      },
+      (err) => {
+        console.warn('AdminDashboardClient orders snapshot handled:', err.message);
+        setLoading(false);
+      }
+    );
     return () => unsub();
   }, [user]);
 

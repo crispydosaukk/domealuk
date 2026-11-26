@@ -7,9 +7,12 @@ import { ChevronDown, HelpCircle, Mail, Phone } from 'lucide-react';
 interface LocationFAQsProps {
   locationName: string;
   faqs: LocationFAQ[];
+  title?: string;
+  badge?: string;
+  subtitle?: string;
 }
 
-export default function LocationFAQs({ locationName, faqs }: LocationFAQsProps) {
+export default function LocationFAQs({ locationName, faqs, title, badge, subtitle }: LocationFAQsProps) {
   // Initialized to null so all questions are closed by default
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
@@ -23,14 +26,14 @@ export default function LocationFAQs({ locationName, faqs }: LocationFAQsProps) 
         <div className="text-center mb-12 space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#142A1E]/10 text-[#142A1E] text-xs font-black uppercase tracking-widest border border-[#142A1E]/15">
             <HelpCircle size={13} className="text-[#C39B54]" />
-            <span>Local Questions &amp; Answers</span>
+            <span>{badge || 'Local Questions & Answers'}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#142A1E] tracking-tight leading-[1.15] font-sans">
-            {locationName} Tiffin Delivery FAQs
+            {title || `${locationName} Tiffin Delivery FAQs`}
           </h2>
           <p className="text-stone-600 text-sm max-w-xl mx-auto leading-relaxed">
-            Everything you need to know about our home-cooked meal subscriptions, delivery days, and
-            reusable packaging in {locationName}.
+            {subtitle ||
+              `Everything you need to know about our home-cooked meal subscriptions, delivery days, and reusable packaging in ${locationName}.`}
           </p>
         </div>
 

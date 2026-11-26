@@ -121,16 +121,22 @@ export default function AdminCorporateClient() {
 
     let unsubConfig = () => {};
     try {
-      unsubConfig = onSnapshot(doc(db, 'settings', 'corporateConfig'), (docSnap) => {
-        if (docSnap.exists()) {
-          const remoteData = docSnap.data();
-          const merged = { ...DEFAULT_CORPORATE_CONFIG, ...remoteData };
-          setConfig(merged);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('domeal_corporate_menu_config', JSON.stringify(merged));
+      unsubConfig = onSnapshot(
+        doc(db, 'settings', 'corporateConfig'),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const remoteData = docSnap.data();
+            const merged = { ...DEFAULT_CORPORATE_CONFIG, ...remoteData };
+            setConfig(merged);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('domeal_corporate_menu_config', JSON.stringify(merged));
+            }
           }
+        },
+        (err) => {
+          console.warn('CorporateConfig snapshot handled:', err.message);
         }
-      });
+      );
     } catch (_err) {}
 
     return () => {

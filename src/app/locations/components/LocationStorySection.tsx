@@ -9,6 +9,26 @@ interface LocationStorySectionProps {
 }
 
 export default function LocationStorySection({ location }: LocationStorySectionProps) {
+  const quote =
+    location.storyConfig?.quote ||
+    '“Real Indian home cooking that nurtures your health and respects London’s environment.”';
+  const quoteSub =
+    location.storyConfig?.quoteSub ||
+    `Crafted in London by 21-year culinary masters · Delivered fresh across ${location.name}.`;
+
+  const fallbackParagraphs = [
+    `For generations, traditional tiffin delivery in Mumbai was built on two sacred principles: hot, nourishing home-cooked food and zero packaging waste. DoMeal brings that timeless tradition straight to your doorstep in ${location.name}.`,
+    `Unlike commercial takeaways that rely on heavy restaurant creams, saturated animal fats, and mountains of single-use plastic containers, our kitchen cooks everyday ghar ka khana (homestyle food). We slow-simmer whole yellow and black lentils, press fresh cold-pressed oils, hand-temper whole cumin and mustard seeds, and bake soft, wholesome rotis.`,
+    `Whether you are working from a high-rise in ${location.name}, studying at university, or feeding a busy family, DoMeal ensures you never have to choose between convenience and authentic, nutritious food.`,
+  ];
+
+  const paragraphs =
+    location.storyConfig?.paragraphs && location.storyConfig.paragraphs.length > 0
+      ? location.storyConfig.paragraphs
+      : location.introParagraphs && location.introParagraphs.length > 0
+      ? location.introParagraphs
+      : fallbackParagraphs;
+
   return (
     <section className="py-20 lg:py-28 bg-[#FBF8F3] text-gray-900 border-b border-stone-200">
       <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-12">
@@ -18,40 +38,27 @@ export default function LocationStorySection({ location }: LocationStorySectionP
           <div className="lg:col-span-5 space-y-5">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#1E3B2B]/10 text-[#1E3B2B] text-xs font-black uppercase tracking-widest">
               <Sparkles size={13} className="text-[#C39B54]" />
-              <span>Our Food Philosophy</span>
+              <span>{location.storyConfig?.badge || 'Our Food Philosophy'}</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#142A1E] leading-[1.15] tracking-tight font-sans">
-              &ldquo;Real Indian home cooking that nurtures your health and respects London&apos;s environment.&rdquo;
+              &ldquo;{quote.replace(/^["“]|["”]$/g, '')}&rdquo;
             </h2>
 
             <div className="h-1 w-20 bg-[#C39B54] rounded-full" />
 
             <p className="text-sm text-stone-600 font-medium">
-              Crafted in London by 21-year culinary masters · Delivered fresh across {location.name}.
+              {quoteSub}
             </p>
           </div>
 
           {/* Right Column: Narrative Story & Heritage */}
           <div className="lg:col-span-7 space-y-6 text-stone-700 text-base sm:text-lg leading-relaxed font-normal">
-            <p className="font-medium text-stone-900">
-              For generations, traditional tiffin delivery in Mumbai was built on two sacred principles:{' '}
-              <span className="text-[#1E3B2B] font-bold">hot, nourishing home-cooked food</span> and{' '}
-              <span className="text-[#1E3B2B] font-bold">zero packaging waste</span>. DoMeal brings that timeless
-              tradition straight to your doorstep in {location.name}.
-            </p>
-
-            <p>
-              Unlike commercial takeaways that rely on heavy restaurant creams, saturated animal fats, and mountains of
-              single-use plastic containers, our kitchen cooks everyday ghar ka khana (homestyle food). We slow-simmer
-              whole yellow and black lentils, press fresh cold-pressed oils, hand-temper whole cumin and mustard seeds,
-              and bake soft, wholesome rotis.
-            </p>
-
-            <p>
-              Whether you are working from a high-rise in {location.name}, studying at university, or feeding a busy family,
-              DoMeal ensures you never have to choose between convenience and authentic, nutritious food.
-            </p>
+            {paragraphs.map((p, idx) => (
+              <p key={idx} className={idx === 0 ? 'font-medium text-stone-900' : ''}>
+                {p}
+              </p>
+            ))}
 
             {/* 4 Brand Pillars Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6">

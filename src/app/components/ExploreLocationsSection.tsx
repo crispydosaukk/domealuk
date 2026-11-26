@@ -34,13 +34,13 @@ export default function ExploreLocationsSection() {
           </div>
         </div>
 
-        {/* Active Location Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Active Location Cards Grid - Centered Flex so 1 or 2 cards sit in the center, not left */}
+        <div className="flex flex-wrap justify-center gap-8">
           {locations.map((loc) => (
             <Link
               key={loc.slug}
-              href={`/locations/${loc.slug}`}
-              className="group bg-white rounded-3xl border-2 border-[#1E3B2B]/15 hover:border-[#C39B54] hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden relative"
+              href="/locations"
+              className="w-full sm:w-[calc(50%_-_16px)] lg:w-[calc(33.333%_-_22px)] max-w-md group bg-white rounded-3xl border-2 border-[#1E3B2B]/15 hover:border-[#C39B54] hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden relative"
             >
               <div>
                 {/* Image Header with Badge */}
@@ -92,7 +92,7 @@ export default function ExploreLocationsSection() {
 
               {/* Bottom Action Footer */}
               <div className="px-6 pb-6 pt-3 border-t border-gray-100 flex items-center justify-between text-sm font-extrabold text-[#1E3B2B] group-hover:text-[#C39B54]">
-                <span>Explore West London Menu &amp; Postcodes</span>
+                <span>Explore London Delivery Locations</span>
                 <ArrowRight
                   size={16}
                   className="transition-transform group-hover:translate-x-1.5 text-[#C39B54]"
@@ -101,24 +101,30 @@ export default function ExploreLocationsSection() {
             </Link>
           ))}
 
-          {/* Expansion Notice Card */}
-          <div className="bg-stone-50 rounded-3xl p-8 border border-dashed border-stone-300 flex flex-col justify-between space-y-4">
+          {/* All London Hub Card */}
+          <Link
+            href="/locations"
+            className="w-full sm:w-[calc(50%_-_16px)] lg:w-[calc(33.333%_-_22px)] max-w-md group bg-gradient-to-br from-[#142A1E] to-[#1E3B2B] text-white rounded-3xl p-8 border-2 border-[#C39B54]/40 hover:border-[#C39B54] hover:shadow-2xl transition-all duration-300 flex flex-col justify-between space-y-4"
+          >
             <div className="space-y-3">
-              <span className="inline-block text-xs font-bold uppercase tracking-wider text-stone-500 bg-stone-200/60 px-3 py-1 rounded-full">
-                Upcoming Zones
+              <span className="inline-block text-xs font-bold uppercase tracking-wider text-[#C39B54] bg-white/10 px-3 py-1 rounded-full border border-white/15">
+                All London Zones 1–3
               </span>
-              <h3 className="text-xl font-extrabold text-stone-800">
-                London Expansion Routes
+              <h3 className="text-2xl font-extrabold text-white">
+                View All Delivery Corridors
               </h3>
-              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-                We are currently live across West London. Expansion plans are cooking for East, North, South, and Central London.
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                Discover full postcode lists, delivery schedules, and zero-waste stainless steel tiffins across all 5 London sectors.
               </p>
             </div>
-            <div className="pt-2 text-xs font-bold text-[#1E3B2B] flex items-center gap-1.5">
-              <CheckCircle2 size={15} className="text-emerald-600" />
-              <span>Register interest via Postcode Checker above</span>
+            <div className="pt-2 text-xs font-bold text-[#C39B54] flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 size={15} className="text-emerald-400" />
+                <span>Twice-Weekly Delivery Schedule</span>
+              </div>
+              <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </div>
-          </div>
+          </Link>
         </div>
       </div>
     </section>

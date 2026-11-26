@@ -4,16 +4,31 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, Sparkles, ShieldCheck, Flame, RotateCcw, PackageCheck } from 'lucide-react';
+import { LocationHowItWorksStep } from '@/lib/locations-data';
 
 interface LocationHowItWorksProps {
   locationName: string;
+  customSteps?: LocationHowItWorksStep[];
+  title?: string;
+  subtitle?: string;
+  badge?: string;
 }
 
-export default function LocationHowItWorks({ locationName }: LocationHowItWorksProps) {
+export default function LocationHowItWorks({
+  locationName,
+  customSteps,
+  title,
+  subtitle,
+  badge,
+}: LocationHowItWorksProps) {
+  const displayBadge = badge || 'The Zero-Waste Homestyle Ritual';
+  const displayTitle = title || 'How DoMeal Works';
+  const displaySubtitle =
+    subtitle || 'Authentic homestyle Indian feasting, reusable stainless steel tiffins, and zero single-use plastics.';
   return (
     <section id="how-it-works" className="py-20 lg:py-28 bg-[#FAF7F2] text-stone-900 relative overflow-hidden font-sans">
-      {/* Decorative floating crystal-clear food dishes beside header */}
-      <div className="absolute top-8 left-4 sm:left-8 lg:left-14 w-20 h-20 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden shadow-2xl border-4 border-white pointer-events-none hidden md:block rotate-[-8deg] z-20">
+      {/* Decorative floating crystal-clear food dishes beside header (only on extra wide viewports so they never collide with text) */}
+      <div className="absolute top-8 left-4 sm:left-8 2xl:left-14 w-20 h-20 sm:w-24 sm:h-24 2xl:w-32 2xl:h-32 rounded-full overflow-hidden shadow-2xl border-4 border-white pointer-events-none hidden xl:block rotate-[-8deg] z-0 opacity-80">
         <Image
           src="/Tomato Cucumber Salad_Soya Chaap subzi_Tofu Jalfrezi_Jasmine Rice.png"
           alt="Fresh authentic homestyle Indian feast"
@@ -24,7 +39,7 @@ export default function LocationHowItWorks({ locationName }: LocationHowItWorksP
         />
       </div>
 
-      <div className="absolute top-10 right-4 sm:right-8 lg:right-14 w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-full overflow-hidden shadow-2xl border-4 border-white pointer-events-none hidden md:block rotate-[10deg] z-20">
+      <div className="absolute top-10 right-4 sm:right-8 2xl:right-14 w-20 h-20 sm:w-24 sm:h-24 2xl:w-36 2xl:h-36 rounded-full overflow-hidden shadow-2xl border-4 border-white pointer-events-none hidden xl:block rotate-[10deg] z-0 opacity-80">
         <Image
           src="/chilli garlic broccoli_mix bean subji_methi mutter thadka_fox millet rice.png"
           alt="Steaming curry bowl tiffin selection"
@@ -44,21 +59,82 @@ export default function LocationHowItWorks({ locationName }: LocationHowItWorksP
         <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#142A1E]/10 text-[#142A1E] text-xs font-black uppercase tracking-widest border border-[#142A1E]/15">
             <Sparkles size={13} className="text-[#C39B54]" />
-            <span>The Zero-Waste Homestyle Ritual</span>
+            <span>{displayBadge}</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#142A1E] tracking-tight leading-[1.15] font-sans">
-            How DoMeal Works
+            {displayTitle}
           </h2>
 
           <p className="text-stone-700 text-base sm:text-lg font-medium leading-relaxed max-w-2xl mx-auto">
-            Authentic homestyle Indian feasting, reusable stainless steel tiffins, and zero single-use plastics.
+            {displaySubtitle}
           </p>
         </div>
 
-        {/* 3 Bespoke Alternating Editorial Steps with Refined Visual Continuity */}
-        <div className="space-y-24 lg:space-y-32">
-          {/* STEP 01: Image on Left, Editorial Story on Right */}
+        {/* Dynamic Custom Steps (if configured via CMS) */}
+        {customSteps && customSteps.length > 0 ? (
+          <div className="space-y-24 lg:space-y-32">
+            {customSteps.map((step, idx) => {
+              const isEven = idx % 2 === 1;
+              return (
+                <div
+                  key={idx}
+                  className="relative grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center"
+                >
+                  {/* Image Column */}
+                  <div className={`lg:col-span-7 ${isEven ? 'lg:order-2' : ''}`}>
+                    <div className="relative w-full aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white bg-white group">
+                      <Image
+                        src={step.image || '/banner.png'}
+                        alt={step.title}
+                        fill
+                        quality={95}
+                        sizes="(max-width: 1024px) 100vw, 55vw"
+                        className="object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                      />
+                      {step.highlightPill && (
+                        <div className="absolute bottom-5 left-5 bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg border border-stone-100 flex items-center gap-2.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="text-xs font-black text-[#142A1E] uppercase tracking-wider">
+                            {step.highlightPill}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Story Column */}
+                  <div className={`lg:col-span-5 space-y-5 text-left ${isEven ? 'lg:order-1' : ''}`}>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C39B54]/15 text-[#8C6B28] text-xs font-black uppercase tracking-wider border border-[#C39B54]/30">
+                      <Flame size={13} className="text-[#C39B54]" />
+                      <span>{step.stepNumber ? `Step ${step.stepNumber} • ` : ''}{step.badge}</span>
+                    </div>
+
+                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#142A1E] leading-[1.2] tracking-tight font-sans">
+                      {step.title}
+                    </h3>
+
+                    <p className="text-stone-700 text-base leading-relaxed">
+                      {step.description}
+                    </p>
+
+                    <div className="pt-3">
+                      <a
+                        href="#menu"
+                        className="inline-flex items-center gap-2 text-base font-extrabold text-[#142A1E] hover:text-[#C39B54] group transition-colors"
+                      >
+                        <span className="underline decoration-2 underline-offset-4">Explore Menu</span>
+                        <span className="text-lg transition-transform group-hover:translate-x-1.5">&rarr;</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="space-y-24 lg:space-y-32">
+            {/* STEP 01: Image on Left, Editorial Story on Right */}
           <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
             {/* Step 01 Image Frame */}
             <div className="lg:col-span-7">
@@ -320,6 +396,7 @@ export default function LocationHowItWorks({ locationName }: LocationHowItWorksP
             </div>
           </div>
         </div>
+        )}
 
         {/* Reusable Dabba Swap Guarantee Card */}
         <div className="mt-20 p-8 sm:p-10 rounded-[2.5rem] bg-white border-2 border-[#142A1E]/15 shadow-xl flex flex-col md:flex-row items-center justify-between gap-8 max-w-4xl mx-auto">

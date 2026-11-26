@@ -12,6 +12,7 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { getApiUrl } from '@/lib/api';
+import { isAdminEmail } from '@/lib/adminAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -42,12 +43,16 @@ export const useAuth = () => useContext(AuthContext);
 // Call the server API to atomically claim due gift cards securely using Admin SDK
 const checkAndApplyDueGifts = async (uid: string, email: string) => {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
     const url = getApiUrl('/api/claim-gift-cards');
     await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: uid, email }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
   } catch (err) {
     // Non-blocking background check
     console.warn('Gift card auto-check note:', err);
@@ -59,12 +64,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
 
-      if (firebaseUser && firebaseUser.email) {
-        await checkAndApplyDueGifts(firebaseUser.uid, firebaseUser.email);
+      if (firebaseUser?.email && !isAdminEmail(firebaseUser.email)) {
+        // Fire-and-forget in background, never block auth initialization
+        checkAndApplyDueGifts(firebaseUser.uid, firebaseUser.email).catch(() => {});
       }
     });
     return () => unsubscribe();
@@ -110,7 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       // Automatically run checking for any due gift cards for this newly registered user
-      await checkAndApplyDueGifts(credential.user.uid, email);
+      if (!isAdminEmail(email)) {
+        checkAndApplyDueGifts(credential.user.uid, email).catch(() => {});
+      }
     } catch (err: any) {
       console.error('setDoc /users/ failed:', err);
       throw err;

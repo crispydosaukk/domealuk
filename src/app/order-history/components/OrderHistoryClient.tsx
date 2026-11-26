@@ -154,14 +154,21 @@ export default function OrderHistoryClient() {
     }
 
     const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
-    const unsub = onSnapshot(q, (snap) => {
-      const fetched = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      fetched.sort(
-        (a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
-      );
-      setOrders(fetched);
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const fetched = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        fetched.sort(
+          (a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
+        );
+        setOrders(fetched);
+        setLoading(false);
+      },
+      (err) => {
+        console.warn('OrderHistoryClient snapshot handled:', err.message);
+        setLoading(false);
+      }
+    );
 
     return () => unsub();
   }, [user]);

@@ -90,6 +90,9 @@ export default function StudentApprovalsClient() {
       });
       setStudents(fetched);
       setLoading(false);
+    }, (err) => {
+      console.warn('StudentApprovalsClient snapshot handled:', err.message);
+      setLoading(false);
     });
 
     return () => unsub();

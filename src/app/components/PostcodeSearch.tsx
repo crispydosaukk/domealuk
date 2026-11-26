@@ -65,9 +65,9 @@ export default function PostcodeSearch({
                 {regionBadge || 'Delivery Checker'}
               </span>
             </div>
-            <h3 className="text-xl font-extrabold">
+            <h2 className="text-xl font-extrabold">
               {regionName ? `Do we deliver to your ${regionName} address?` : 'Do we deliver to you?'}
-            </h3>
+            </h2>
             <p className="text-blue-200 text-sm mt-1">
               {subheadingText ||
                 (regionName

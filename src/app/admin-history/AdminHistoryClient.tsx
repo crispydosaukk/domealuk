@@ -48,14 +48,21 @@ export default function AdminHistoryClient() {
 
     // Only fetch Completed/Delivered orders for history
     const q = query(collection(db, 'orders'), where('status', '==', 'Delivered'));
-    const unsub = onSnapshot(q, (snap) => {
-      const fetched = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      fetched.sort(
-        (a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
-      );
-      setOrders(fetched);
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const fetched = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        fetched.sort(
+          (a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
+        );
+        setOrders(fetched);
+        setLoading(false);
+      },
+      (err) => {
+        console.warn('AdminHistoryClient snapshot handled:', err.message);
+        setLoading(false);
+      }
+    );
     return () => unsub();
   }, [user]);
 

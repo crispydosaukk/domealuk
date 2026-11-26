@@ -10,6 +10,7 @@ service cloud.firestore {
     // Admin access granted to new admin email as well as legacy email
     function isAdmin() {
       return isAuthenticated() && (
+        request.auth.token.email == 'superadmin@vegchennaisrilalitha.co.uk' ||
         request.auth.token.email == 'admin@vegchennaisrilalitha.co.uk' ||
         request.auth.token.email == 'domealuk79812@gmail.com'
       );

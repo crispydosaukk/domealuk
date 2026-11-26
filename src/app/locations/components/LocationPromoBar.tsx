@@ -5,21 +5,24 @@ import { Sparkles } from 'lucide-react';
 
 interface LocationPromoBarProps {
   locationName: string;
+  customItems?: string[];
 }
 
-export default function LocationPromoBar({ locationName }: LocationPromoBarProps) {
-  const items = [
-    `🌿 PURE PLANT-POWERED & VEGETARIAN HOMESTYLE FOOD`,
-    `✦ DELIVERED COLD-PACKED TO ${locationName.toUpperCase()} EVERY MONDAY & THURSDAY`,
-    `♻️ REUSABLE STAINLESS STEEL DABBAS · ZERO SINGLE-USE PLASTIC`,
-    `✦ 21+ YEARS AUTHENTIC CULINARY HERITAGE · COUNCIL 5-STAR HYGIENE`,
-    `✦ FREE EMPTY DABBA SWAP ON EVERY DELIVERY`,
+export default function LocationPromoBar({ locationName, customItems }: LocationPromoBarProps) {
+  const defaultItems = [
     `🌿 PURE PLANT-POWERED & VEGETARIAN HOMESTYLE FOOD`,
     `✦ DELIVERED COLD-PACKED TO ${locationName.toUpperCase()} EVERY MONDAY & THURSDAY`,
     `♻️ REUSABLE STAINLESS STEEL DABBAS · ZERO SINGLE-USE PLASTIC`,
     `✦ 21+ YEARS AUTHENTIC CULINARY HERITAGE · COUNCIL 5-STAR HYGIENE`,
     `✦ FREE EMPTY DABBA SWAP ON EVERY DELIVERY`,
   ];
+
+  const activeItems =
+    customItems && customItems.length > 0
+      ? customItems.filter((i) => i.trim().length > 0)
+      : defaultItems;
+
+  const items = activeItems.length > 0 ? [...activeItems, ...activeItems] : defaultItems;
 
   return (
     <aside

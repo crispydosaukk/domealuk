@@ -2,6 +2,11 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Phone, Mail, MapPin } from 'lucide-react';
+import { LocationFooterConfig } from '@/lib/locations-data';
+
+export interface UserFooterProps {
+  footerConfig?: LocationFooterConfig;
+}
 
 function InstagramIcon({ size = 16 }: { size?: number }) {
   return (
@@ -55,13 +60,99 @@ function TiktokIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-export default function UserFooter() {
+export default function UserFooter({ footerConfig }: UserFooterProps = {}) {
+  const tagline = footerConfig?.tagline || '“Home Food Away From Home”';
+  const aboutText =
+    footerConfig?.aboutText ||
+    'Authentic home-cooked Indian tiffin delivered fresh to your door across London. Made with love, just like home.';
+  const address = footerConfig?.contactAddress || 'No 1 Sedgecombe Avenue\nKenton, HA3 0HW';
+  const email = footerConfig?.contactEmail || 'orders@domeal.co.uk';
+  const phone = footerConfig?.contactPhone || '';
+  const deliveryHeading = footerConfig?.deliveryAreasHeading || 'London Delivery Areas';
+  const quickLinksHeading = footerConfig?.quickLinksHeading || 'Quick Links';
+  const contactHeading = footerConfig?.contactHeading || 'Contact Us';
+  const copyright = footerConfig?.copyrightText || '© 2026 DoMeal · domeal.co.uk · All rights reserved.';
+  const facebookUrl = footerConfig?.facebookUrl || '#';
+  const pinterestUrl = footerConfig?.pinterestUrl || '#';
+  const instagramUrl = footerConfig?.instagramUrl || '#';
+  const tiktokUrl = footerConfig?.tiktokUrl || '#';
+
+  const defaultQuickLinks = [
+    { label: 'Home', href: '/' },
+    { label: 'Menu', href: '/menu' },
+    { label: 'How to Heat', href: '/how-to-heat' },
+    { label: 'Student Discounts', href: '/student-discounts' },
+    { label: 'Corporate Catering', href: '/corporate-catering' },
+    { label: 'Refer a Friend', href: '/refer-a-friend' },
+    { label: 'Gift Cards', href: '/gift' },
+    { label: 'Reviews', href: '/#reviews' },
+    { label: 'FAQ', href: '/#faq' },
+    { label: 'Sign In', href: '/sign-up-login-screen' },
+    { label: 'Admin Portal', href: '/admin-login' },
+  ];
+  const rawQuickLinks =
+    Array.isArray(footerConfig?.quickLinks) && footerConfig.quickLinks.length > 0
+      ? footerConfig.quickLinks
+      : defaultQuickLinks;
+
+  // Filter out any location links from quick links as requested
+  const quickLinks = rawQuickLinks.filter(
+    (item) =>
+      item.href !== '/locations' &&
+      !item.href?.startsWith('/locations/') &&
+      !item.label?.toLowerCase().includes('location')
+  );
+
+  const defaultDeliveryAreas = [
+    {
+      label: 'West London Tiffins',
+      sub: 'W1 to W14 Postcodes · Scheduled Routes',
+      href: '/locations/west-london',
+    },
+    {
+      label: 'East London Tiffins',
+      sub: 'E1 to E20, IG & RM Postcodes · Scheduled Routes',
+      href: '/locations/east-london',
+    },
+    {
+      label: 'North London Tiffins',
+      sub: 'N1 to N22, NW1 to NW11 Postcodes · Scheduled Routes',
+      href: '/locations/north-london',
+    },
+    {
+      label: 'South London Tiffins',
+      sub: 'SE1 to SE28, SW1 to SW20 Postcodes · Scheduled Routes',
+      href: '/locations/south-london',
+    },
+    {
+      label: 'Central London Tiffins',
+      sub: 'EC1 to EC4, WC1 to WC2, W1 Postcodes · Scheduled Routes',
+      href: '/locations/central-london',
+    },
+  ];
+  const rawDeliveryAreas =
+    Array.isArray(footerConfig?.deliveryAreas) && footerConfig.deliveryAreas.length > 0
+      ? footerConfig.deliveryAreas
+      : defaultDeliveryAreas;
+
+  // Filter out any general "All London Locations" links to keep only separate regional corridors
+  const deliveryAreas = rawDeliveryAreas.filter(
+    (item) => item.href !== '/locations' && !item.label.toLowerCase().includes('all london locations')
+  );
+
+  const privacyPolicyText = footerConfig?.privacyPolicyText || 'Privacy Policy';
+  const privacyPolicyUrl = footerConfig?.privacyPolicyUrl || '/privacy-policy';
+  const termsOfServiceText = footerConfig?.termsOfServiceText || 'Terms of Service';
+  const termsOfServiceUrl = footerConfig?.termsOfServiceUrl || '/terms-of-service';
+  const termsOfBusinessText = footerConfig?.termsOfBusinessText || 'Terms of Business';
+  const termsOfBusinessUrl = footerConfig?.termsOfBusinessUrl || '/terms-of-business';
+
   return (
     <footer style={{ backgroundColor: '#1E3B2B' }} className="text-white">
       <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12">
           {/* Brand */}
-          <div className="lg:col-span-1">
+          <div className="md:col-span-5 lg:col-span-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 shadow-md flex-shrink-0">
                 <Image
@@ -78,36 +169,43 @@ export default function UserFooter() {
               </div>
             </div>
             <p className="text-sm text-gray-300 leading-relaxed mb-2 italic">
-              &ldquo;Home Food Away From Home&rdquo;
+              &ldquo;{tagline.replace(/^["“]|["”]$/g, '')}&rdquo;
             </p>
-            <p className="text-sm text-gray-400 leading-relaxed mb-4">
-              Authentic home-cooked Indian tiffin delivered fresh to your door across London. Made
-              with love, just like home.
+            <p className="text-sm text-gray-400 leading-relaxed mb-4 max-w-md">
+              {aboutText}
             </p>
             <div className="flex gap-3">
               <a
-                href="#"
+                href={facebookUrl}
+                target={facebookUrl !== '#' ? '_blank' : undefined}
+                rel="noopener noreferrer"
                 aria-label="Facebook"
                 className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
               >
                 <FacebookIcon size={16} />
               </a>
               <a
-                href="#"
+                href={pinterestUrl}
+                target={pinterestUrl !== '#' ? '_blank' : undefined}
+                rel="noopener noreferrer"
                 aria-label="Pinterest"
                 className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
               >
                 <PinterestIcon size={16} />
               </a>
               <a
-                href="#"
+                href={instagramUrl}
+                target={instagramUrl !== '#' ? '_blank' : undefined}
+                rel="noopener noreferrer"
                 aria-label="Instagram"
                 className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
               >
                 <InstagramIcon size={16} />
               </a>
               <a
-                href="#"
+                href={tiktokUrl}
+                target={tiktokUrl !== '#' ? '_blank' : undefined}
+                rel="noopener noreferrer"
                 aria-label="TikTok"
                 className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
               >
@@ -116,98 +214,74 @@ export default function UserFooter() {
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div className="lg:col-span-1">
+          {/* Quick Links with 2 tidy sub-columns */}
+          <div className="md:col-span-4 lg:col-span-4">
             <h4 className="font-700 text-sm uppercase tracking-wider text-gray-400 mb-4">
-              Quick Links
+              {quickLinksHeading}
             </h4>
-            <ul className="space-y-2">
-              {[
-                { label: 'Home', href: '/' },
-                { label: 'Menu', href: '/menu' },
-                { label: 'Refer a Friend', href: '/refer-a-friend' },
-                { label: 'How to Heat', href: '/how-to-heat' },
-                { label: 'Student Discounts', href: '/student-discounts' },
-                { label: 'Gift Vouchers', href: '/gift' },
-                { label: 'Customer Reviews', href: '/#reviews' },
-                { label: 'Frequently Asked', href: '/#faq' },
-                { label: 'Sign In / Register', href: '/sign-up-login-screen' },
-                { label: 'Admin Portal', href: '/admin-dashboard' },
-              ]?.map((link) => (
-                <li key={`footer-${link?.label}`}>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
+              {quickLinks.map((link, idx) => (
+                <div key={`footer-ql-${idx}-${link.label}`}>
                   <Link
-                    href={link?.href}
-                    className="text-sm text-gray-300 hover:text-secondary transition-colors"
+                    href={link.href || '#'}
+                    className="text-sm text-gray-300 hover:text-secondary transition-colors inline-block"
                   >
-                    {link?.label}
+                    {link.label}
                   </Link>
-                </li>
+                </div>
               ))}
-            </ul>
-          </div>
-
-          {/* London Delivery Areas */}
-          <div className="lg:col-span-1">
-            <h4 className="font-700 text-sm uppercase tracking-wider text-[#C39B54] mb-4">
-              London Delivery Areas
-            </h4>
-            <ul className="space-y-2">
-              {[
-                { label: 'West London Tiffins', href: '/locations/west-london', postcodes: 'W1–W14 (Now Live)' },
-              ].map((loc) => (
-                <li key={`footer-loc-${loc.label}`}>
-                  <Link
-                    href={loc.href}
-                    className="group text-sm text-gray-300 hover:text-[#C39B54] transition-colors flex flex-col"
-                  >
-                    <span className="font-600 group-hover:underline">{loc.label}</span>
-                    <span className="text-[11px] text-gray-400 font-mono">{loc.postcodes}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            </div>
           </div>
 
           {/* Contact */}
-          <div>
+          <div className="md:col-span-3 lg:col-span-3">
             <h4 className="font-700 text-sm uppercase tracking-wider text-gray-400 mb-4">
-              Contact Us
+              {contactHeading}
             </h4>
             <ul className="space-y-4">
               <li className="flex items-start gap-2">
                 <MapPin size={16} className="text-secondary mt-1 shrink-0" />
-                <span className="text-sm text-gray-300 leading-relaxed">
-                  No 1 Sedgecombe Avenue
-                  <br />
-                  Kenton, HA3 0HW
+                <span className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+                  {address}
                 </span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail size={16} className="text-secondary shrink-0" />
                 <a
-                  href="mailto:orders@domeal.co.uk"
+                  href={`mailto:${email}`}
                   className="text-sm text-gray-300 hover:text-secondary"
                 >
-                  orders@domeal.co.uk
+                  {email}
                 </a>
               </li>
+              {phone && (
+                <li className="flex items-center gap-2">
+                  <Phone size={16} className="text-secondary shrink-0" />
+                  <a
+                    href={`tel:${phone}`}
+                    className="text-sm text-gray-300 hover:text-secondary"
+                  >
+                    {phone}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
         </div>
 
         <div className="border-t border-white/10 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-gray-500">
-            © 2026 DoMeal · domeal.co.uk · All rights reserved.
+            {copyright}
           </p>
-          <div className="flex gap-4">
-            <Link href="/privacy-policy" className="text-xs text-gray-500 hover:text-gray-300">
-              Privacy Policy
+          <div className="flex flex-wrap gap-4">
+            <Link href={privacyPolicyUrl} className="text-xs text-gray-500 hover:text-gray-300">
+              {privacyPolicyText}
             </Link>
-            <Link href="/terms-of-service" className="text-xs text-gray-500 hover:text-gray-300">
-              Terms of Service
+            <Link href={termsOfServiceUrl} className="text-xs text-gray-500 hover:text-gray-300">
+              {termsOfServiceText}
             </Link>
-            <Link href="/terms-of-business" className="text-xs text-gray-500 hover:text-gray-300">
-              Terms of Business
+            <Link href={termsOfBusinessUrl} className="text-xs text-gray-500 hover:text-gray-300">
+              {termsOfBusinessText}
             </Link>
           </div>
         </div>

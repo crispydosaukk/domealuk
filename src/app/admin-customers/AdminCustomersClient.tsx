@@ -66,19 +66,40 @@ export default function AdminCustomersClient() {
       if (resolved >= 3) setLoading(false);
     };
 
-    const unsub1 = onSnapshot(collection(db, 'users'), (snap) => {
-      setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      trySetLoaded();
-    });
+    const unsub1 = onSnapshot(
+      collection(db, 'users'),
+      (snap) => {
+        setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        trySetLoaded();
+      },
+      (err) => {
+        console.warn('AdminCustomers users snapshot handled:', err.message);
+        trySetLoaded();
+      }
+    );
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const unsub2 = onSnapshot(q, (snap) => {
-      setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      trySetLoaded();
-    });
-    const unsub3 = onSnapshot(collection(db, 'wallet_transactions'), (snap) => {
-      setTransactions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      trySetLoaded();
-    });
+    const unsub2 = onSnapshot(
+      q,
+      (snap) => {
+        setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        trySetLoaded();
+      },
+      (err) => {
+        console.warn('AdminCustomers orders snapshot handled:', err.message);
+        trySetLoaded();
+      }
+    );
+    const unsub3 = onSnapshot(
+      collection(db, 'wallet_transactions'),
+      (snap) => {
+        setTransactions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        trySetLoaded();
+      },
+      (err) => {
+        console.warn('AdminCustomers wallet transactions snapshot handled:', err.message);
+        trySetLoaded();
+      }
+    );
     return () => {
       unsub1();
       unsub2();

@@ -35,39 +35,46 @@ export default function FeaturedMenuSection() {
 
   useEffect(() => {
     const q = query(collection(db, 'menuItems'), where('active', '==', true));
-    const unsub = onSnapshot(q, (snap) => {
-      const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as MenuItem);
-      // Sort client-side by createdAt ascending to keep order
-      items.sort(
-        (a: any, b: any) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0)
-      );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as MenuItem);
+        // Sort client-side by createdAt ascending to keep order
+        items.sort(
+          (a: any, b: any) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0)
+        );
 
-      // Filter out duplicate menu items that have no images if another item with the same name has images
-      const nameGroups: Record<string, MenuItem[]> = {};
-      items.forEach((item) => {
-        const nameKey = item.name.toLowerCase().trim();
-        if (!nameGroups[nameKey]) nameGroups[nameKey] = [];
-        nameGroups[nameKey].push(item);
-      });
+        // Filter out duplicate menu items that have no images if another item with the same name has images
+        const nameGroups: Record<string, MenuItem[]> = {};
+        items.forEach((item) => {
+          const nameKey = item.name.toLowerCase().trim();
+          if (!nameGroups[nameKey]) nameGroups[nameKey] = [];
+          nameGroups[nameKey].push(item);
+        });
 
-      const cleanItems = items.filter((item) => {
-        if (item.category !== 'Menu') return false;
-        const nameKey = item.name.toLowerCase().trim();
-        const group = nameGroups[nameKey];
-        if (group.length > 1) {
-          const hasImages = item.images && item.images.length > 0;
-          const groupHasAnyWithImages = group.some((g) => g.images && g.images.length > 0);
-          if (!hasImages && groupHasAnyWithImages) {
-            return false;
+        const cleanItems = items.filter((item) => {
+          if (item.category !== 'Menu') return false;
+          const nameKey = item.name.toLowerCase().trim();
+          const group = nameGroups[nameKey];
+          if (group.length > 1) {
+            const hasImages = item.images && item.images.length > 0;
+            const groupHasAnyWithImages = group.some((g) => g.images && g.images.length > 0);
+            if (!hasImages && groupHasAnyWithImages) {
+              return false;
+            }
           }
-        }
-        return true;
-      });
+          return true;
+        });
 
-      // Only take the first 8 items for the featured section
-      setFeaturedItems(cleanItems.slice(0, 8));
-      setLoading(false);
-    });
+        // Only take the first 8 items for the featured section
+        setFeaturedItems(cleanItems.slice(0, 8));
+        setLoading(false);
+      },
+      (err) => {
+        console.warn('FeaturedMenuSection snapshot handled:', err.message);
+        setLoading(false);
+      }
+    );
     return () => unsub();
   }, []);
 

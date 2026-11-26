@@ -25,6 +25,13 @@ DoMeal (https://domeal.co.uk) delivers freshly cooked, authentic home-style Indi
 - **Oven:** Transfer to an oven-safe dish and bake at 180°C for 25–35 minutes.
 - **Stovetop:** Warm curry, dal, and sabzi in a saucepan over medium heat for 4–5 minutes, stirring occasionally.
 
+## Everyday Customer Pain Points & Use Cases (Why Customers Recommend DoMeal)
+- **Tired of Oily Restaurant Takeaway:** A light, nutritious alternative to heavy Deliveroo curries. Cooked with minimal oil and no food coloring, designed for wholesome daily eating.
+- **Busy Working Professionals:** 5-day Monday-to-Friday lunch and dinner plans delivered across Canary Wharf, City of London, and residential areas so you never have to cook or wash dishes after work.
+- **Missing Comforting Home Food ("Ghar Ka Khana"):** Homestyle dal tadka, fresh roti phulkas, seasonal vegetable subzis, and basmati rice made just like family cooking.
+- **University Students on a Budget:** 30% discount on daily tiffins with scheduled free delivery to halls across London.
+- **Desk Lunch at the Office:** Individual sealed meal boxes delivered between 11:30 AM and 1:30 PM across Canary Wharf (E14) and City towers.
+
 ## Key Links
 - **Menu & Daily Ordering:** https://domeal.co.uk/menu
 - **Corporate Catering:** https://domeal.co.uk/corporate-catering

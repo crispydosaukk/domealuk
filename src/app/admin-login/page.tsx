@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Lock, Mail, Loader2, AlertCircle, Eye, EyeOff, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Lock, Mail, Loader2, AlertCircle, Eye, EyeOff, CheckCircle, ArrowLeft, Home } from 'lucide-react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
-import { isAdminEmail } from '@/lib/adminAuth';
+import { isAdminEmail, isSuperAdminEmail } from '@/lib/adminAuth';
 
 export default function AdminLoginClient() {
   const [email, setEmail] = useState('');
@@ -22,20 +24,31 @@ export default function AdminLoginClient() {
   const { login, signup, resetPassword, user, loading } = useAuth();
 
   useEffect(() => {
-    // If already logged in as admin, redirect
-    if (!loading && isAdminEmail(user?.email)) {
-      router.push('/admin-dashboard');
+    // If already logged in, redirect to appropriate role portal
+    if (!loading) {
+      const activeUser = user || auth.currentUser;
+      if (activeUser?.email) {
+        if (isSuperAdminEmail(activeUser.email)) {
+          try {
+            sessionStorage.setItem('domeal_superadmin_session', activeUser.email);
+          } catch {}
+          router.push('/super-admin');
+        } else if (isAdminEmail(activeUser.email)) {
+          router.push('/admin-dashboard');
+        }
+      }
     }
   }, [user, loading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !password) {
       setError('Please enter both email and password');
       return;
     }
 
-    if (!isAdminEmail(email)) {
+    if (!isAdminEmail(cleanEmail)) {
       setError('Unauthorized email address. Access denied.');
       return;
     }
@@ -44,18 +57,34 @@ export default function AdminLoginClient() {
     setError('');
 
     try {
-      await login(email, password);
-      toast.success('Login successful');
-      router.push('/admin-dashboard');
+      await login(cleanEmail, password);
+      if (isSuperAdminEmail(cleanEmail)) {
+        try {
+          sessionStorage.setItem('domeal_superadmin_session', cleanEmail);
+        } catch {}
+        toast.success('Super Admin verified — Redirecting to Executive Console');
+        router.push('/super-admin');
+      } else {
+        toast.success('Admin login successful');
+        router.push('/admin-dashboard');
+      }
     } catch (err: any) {
       // If user not found, create it (First time setup for the admin account)
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         try {
-          await signup(email, password, 'DoMeal Admin', '');
-          toast.success('Admin account created and logged in!');
-          router.push('/admin-dashboard');
+          await signup(cleanEmail, password, isSuperAdminEmail(cleanEmail) ? 'Super Admin' : 'DoMeal Admin', '');
+          if (isSuperAdminEmail(cleanEmail)) {
+            try {
+              sessionStorage.setItem('domeal_superadmin_session', cleanEmail);
+            } catch {}
+            toast.success('Super Admin account created and verified!');
+            router.push('/super-admin');
+          } else {
+            toast.success('Admin account created and logged in!');
+            router.push('/admin-dashboard');
+          }
         } catch (signupErr: any) {
-          setError('Invalid credentials');
+          setError('Invalid credentials. Please verify your email and password.');
         }
       } else {
         setError('Failed to log in. Please check your password.');
@@ -289,7 +318,17 @@ export default function AdminLoginClient() {
           </>
         )}
 
-        <p className="text-center text-xs font-500 text-muted-foreground mt-8">
+        <div className="mt-6 pt-4 border-t border-border space-y-3 text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 hover:text-[#1E3B2B] text-xs font-bold transition-all shadow-2xs active:scale-98 cursor-pointer"
+          >
+            <ArrowLeft size={14} className="text-[#1E3B2B]" />
+            <span>Back to Home</span>
+          </Link>
+        </div>
+
+        <p className="text-center text-xs font-500 text-muted-foreground mt-6">
           Secure portal for DoMeal staff only.
           <br />
           Unauthorized access is prohibited.

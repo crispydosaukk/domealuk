@@ -1,8 +1,10 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { getAllLocations, getLocationBySlug } from '@/lib/locations-data';
+import { notFound, redirect } from 'next/navigation';
+import { getAllLocations } from '@/lib/locations-data';
+import { getDynamicLocationBySlug } from '@/lib/dynamic-seo';
 import UserNavbar from '@/components/UserNavbar';
+import UserFooter from '@/components/UserFooter';
 import LocationPromoBar from '../components/LocationPromoBar';
 import LocationEditorialHero from '../components/LocationEditorialHero';
 import LocationStorySection from '../components/LocationStorySection';
@@ -30,7 +32,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const location = getLocationBySlug(slug);
+  const location = await getDynamicLocationBySlug(slug);
 
   if (!location || !location.active) {
     return {
@@ -94,9 +96,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function LocationPage({ params }: PageProps) {
   const { slug } = await params;
-  const location = getLocationBySlug(slug);
+  const rawLocation = await getDynamicLocationBySlug(slug);
+  const location = rawLocation || getAllLocations()[0];
 
-  if (!location || !location.active) {
+  // Consolidate all individual location pages into the single /locations hub page (all code preserved below)
+  if (slug) {
+    redirect('/locations');
+  }
+
+  if (!location) {
     notFound();
   }
 
@@ -188,7 +196,7 @@ export default async function LocationPage({ params }: PageProps) {
 
       <main className="min-h-screen bg-[#FBF8F3]">
         {/* 1. Promotional Announcement Bar */}
-        <LocationPromoBar locationName={location.name} />
+        <LocationPromoBar locationName={location.name} customItems={location.promoBarItems} />
 
         {/* 2. Cinematic Location Hero with Integrated Postcode Checker */}
         <LocationEditorialHero location={location} />
@@ -197,29 +205,47 @@ export default async function LocationPage({ params }: PageProps) {
         <LocationStorySection location={location} />
 
         {/* 4. Illustrated How DoMeal Works (3 Circular Steps) */}
-        <LocationHowItWorks locationName={location.name} />
+        <LocationHowItWorks
+          locationName={location.name}
+          customSteps={location.howItWorksSteps}
+        />
 
         {/* 5. Anatomy of a Feast ("What's in your Dabba?") */}
-        <LocationDabbaAnatomy locationName={location.name} />
+        <LocationDabbaAnatomy
+          locationName={location.name}
+          customTiers={location.dabbaTiers}
+        />
 
         {/* 6. Signature Feasts on This Week's Menu (Single row of 4 real cards) */}
         <LocationSignatureDishes location={location} />
 
         {/* 7. Takeaway vs. DoMeal Sustainability Comparison */}
-        <LocationEcoComparison locationName={location.name} />
+        <LocationEcoComparison
+          locationName={location.name}
+          customConfig={location.ecoComparison}
+        />
 
         {/* 8. Local Delivery Areas & Postcodes Explorer */}
         <LocationBoroughExplorer location={location} />
 
         {/* 9. Curated Editorial Customer Testimonials */}
-        <LocationEditorialReviews locationName={location.name} />
+        <LocationEditorialReviews
+          locationName={location.name}
+          customReviews={location.reviews}
+        />
 
         {/* 10. Frequently Asked Questions */}
         <LocationFAQs locationName={location.name} faqs={location.faqs} />
 
         {/* 11. Premium Full-Width Final Ordering CTA */}
-        <LocationFinalCTA locationName={location.name} />
+        <LocationFinalCTA
+          locationName={location.name}
+          customCTA={location.finalCTA}
+        />
       </main>
+
+      {/* 12. Complete Footer */}
+      <UserFooter footerConfig={location.footer} />
     </div>
   );
 }

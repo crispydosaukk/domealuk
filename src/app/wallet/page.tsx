@@ -1,7 +1,17 @@
 import React, { Suspense } from 'react';
+import type { Metadata } from 'next';
 import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
 import WalletClient from './components/WalletClient';
+
+export const metadata: Metadata = {
+  title: 'My Wallet',
+  description: 'Manage your DoMeal wallet balance, top-ups, and referral rewards.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function WalletPage() {
   return (

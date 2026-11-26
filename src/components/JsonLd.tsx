@@ -95,6 +95,19 @@ export default function JsonLd({ customSchema }: JsonLdProps) {
         },
         inLanguage: 'en-GB',
       },
+      {
+        '@type': 'FAQPage',
+        '@id': `${BASE_URL}/#faq`,
+        name: 'DoMeal Frequently Asked Questions & Brand Knowledge',
+        mainEntity: (DEFAULT_SEO_SETTINGS.aiFaqs || []).map((faq) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: faq.answer,
+          },
+        })),
+      },
     ],
   };
 

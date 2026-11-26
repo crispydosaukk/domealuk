@@ -212,10 +212,17 @@ export default function MenuTab() {
     if (!user || !isAdminEmail(user.email)) return;
 
     const q = query(collection(db, 'menuItems'), orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snap) => {
-      setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as MenuItem));
-      setLoading(false);
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as MenuItem));
+        setLoading(false);
+      },
+      (err) => {
+        console.warn('MenuTab snapshot handled:', err.message);
+        setLoading(false);
+      }
+    );
   }, [user]);
 
   const filtered = items.filter((i) => {

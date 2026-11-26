@@ -32,6 +32,11 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
     areaName?: string;
   }>({ status: 'idle' });
 
+  React.useEffect(() => {
+    setPostcode(location.samplePostcode || '');
+    setCheckResult({ status: 'idle' });
+  }, [location.slug, location.samplePostcode]);
+
   const handleQuickCheck = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!postcode.trim()) return;
@@ -92,18 +97,33 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
 
             {/* Main Location Heading (Only H1 on page) */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold text-white leading-[1.1] tracking-tight font-sans">
-              Handcrafted Indian Curry Feasts, Delivered in{' '}
-              <span className="text-[#C39B54] font-black block sm:inline">
-                Reusable Dabbas
-              </span>{' '}
-              Across {location.name}.
+              {location.headline ? (
+                location.headline.includes('Reusable Dabbas') ? (
+                  <>
+                    {location.headline.split('Reusable Dabbas')[0]}
+                    <span className="text-[#C39B54] font-black block sm:inline">
+                      Reusable Dabbas
+                    </span>
+                    {location.headline.split('Reusable Dabbas')[1]}
+                  </>
+                ) : (
+                  location.headline
+                )
+              ) : (
+                <>
+                  Handcrafted Indian Curry Feasts, Delivered in{' '}
+                  <span className="text-[#C39B54] font-black block sm:inline">
+                    Reusable Dabbas
+                  </span>{' '}
+                  Across {location.name}.
+                </>
+              )}
             </h1>
 
             {/* Rich Subheadline */}
             <p className="text-base sm:text-lg text-gray-200 leading-relaxed max-w-2xl font-normal">
-              Freshly cooked in small batches by 21-year culinary masters. Cold-packed in authentic 3-tier
-              stainless steel containers to lock in nutrition. Delivered directly to your door or concierge
-              every Monday &amp; Thursday.
+              {location.subheadline ||
+                'Freshly cooked in small batches by 21-year culinary masters. Cold-packed in authentic 3-tier stainless steel containers to lock in nutrition. Delivered directly to your door or concierge every Monday & Thursday.'}
             </p>
 
             {/* Integrated Postcode Verification Bar */}
@@ -111,10 +131,10 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
               <div className="flex items-center justify-between mb-3 text-xs">
                 <span className="font-extrabold text-[#C39B54] uppercase tracking-wider flex items-center gap-1.5">
                   <Search size={14} />
-                  <span>Check {location.name} Postcode Availability</span>
+                  <span>{location.heroPostcodeTitle || `Check ${location.name} Postcode Availability`}</span>
                 </span>
                 <span className="text-gray-400 font-mono text-[11px]">
-                  {location.supportedPostcodes.length}+ Active Postcodes
+                  {location.heroPostcodeBadge || `${location.supportedPostcodes.length}+ Active Postcodes`}
                 </span>
               </div>
 
@@ -126,7 +146,7 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
                   />
                   <input
                     type="text"
-                    value={postcode}
+                    value={postcode || ''}
                     onChange={(e) => {
                       setPostcode(e.target.value);
                       if (checkResult.status !== 'idle') setCheckResult({ status: 'idle' });
@@ -139,7 +159,7 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
                   type="submit"
                   className="bg-[#C39B54] hover:bg-yellow-600 text-[#0C1D13] font-black text-sm px-6 py-3.5 rounded-2xl transition-all duration-150 active:scale-95 shadow-md flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
-                  <span>Check Route</span>
+                  <span>{location.heroPostcodeBtnText || 'Check Route'}</span>
                   <ArrowRight size={15} />
                 </button>
               </form>
@@ -176,7 +196,7 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
 
               {checkResult.status === 'idle' && (
                 <p className="text-[11px] text-gray-300 mt-2.5">
-                  Verified routes in {location.name}: {location.supportedPostcodes.slice(0, 7).join(', ')}...
+                  {location.heroPostcodeNote || `Verified routes in ${location.name}: ${location.supportedPostcodes.slice(0, 7).join(', ')}...`}
                 </p>
               )}
             </div>
@@ -184,17 +204,17 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
             {/* Quick Action Buttons */}
             <div className="flex flex-wrap gap-4 pt-1">
               <a
-                href="#menu"
+                href={location.heroPrimaryBtnLink || '#menu'}
                 className="inline-flex items-center gap-2.5 bg-[#C39B54] hover:bg-yellow-600 text-[#0C1D13] font-black px-8 py-4 rounded-2xl transition-all duration-200 active:scale-95 shadow-xl shadow-yellow-950/50 text-sm tracking-wide cursor-pointer"
               >
-                <span>Order Your {location.shortName} Dabba Feast</span>
+                <span>{location.heroPrimaryBtnText || `Order Your ${location.shortName || location.name} Dabba Feast`}</span>
                 <ArrowRight size={16} />
               </a>
               <a
-                href="#how-it-works"
+                href={location.heroSecondaryBtnLink || '#how-it-works'}
                 className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-6 py-4 rounded-2xl transition-all duration-150 text-sm backdrop-blur-sm"
               >
-                <span>How Dabba Swapping Works</span>
+                <span>{location.heroSecondaryBtnText || 'How Dabba Swapping Works'}</span>
               </a>
             </div>
 
@@ -207,11 +227,11 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
                   ))}
                 </div>
                 <span className="font-bold text-white">4.9 / 5.0</span>
-                <span className="text-gray-400">(1,200+ Londoners Fed)</span>
+                <span className="text-gray-400">({location.heroRatingText || '1,200+ Londoners Fed'})</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck size={16} className="text-[#C39B54]" />
-                <span className="text-gray-300 font-semibold">Council 5-Star Food Hygiene</span>
+                <span className="text-gray-300 font-semibold">{location.heroHygieneText || 'Council 5-Star Food Hygiene'}</span>
               </div>
             </div>
           </div>
@@ -242,9 +262,9 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-white space-y-2.5">
                   <div className="flex items-center gap-2">
                     <span className="px-3 py-1 rounded-full bg-[#C39B54] text-[#0C1D13] text-[10px] font-black uppercase tracking-wider shadow-sm">
-                      Signature Feast in {location.name}
+                      {location.heroDishBadge || `Signature Feast in ${location.name}`}
                     </span>
-                    <span className="text-xs text-gray-300 font-medium">Freshly Cooked Daily</span>
+                    <span className="text-xs text-gray-300 font-medium">{location.heroDishSubBadge || 'Freshly Cooked Daily'}</span>
                   </div>
 
                   <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight drop-shadow-md font-sans">
@@ -270,8 +290,8 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
                   <Clock size={18} />
                 </div>
                 <div className="leading-tight">
-                  <div className="text-xs font-black text-white">Mon &amp; Thu Batches</div>
-                  <div className="text-[11px] text-gray-300">Chilled Cold-Pack</div>
+                  <div className="text-xs font-black text-white">{location.heroFloat1Title || 'Mon & Thu Batches'}</div>
+                  <div className="text-[11px] text-gray-300">{location.heroFloat1Sub || 'Chilled Cold-Pack'}</div>
                 </div>
               </div>
 
@@ -281,8 +301,8 @@ export default function LocationEditorialHero({ location }: LocationEditorialHer
                   <RotateCcw size={18} />
                 </div>
                 <div className="leading-tight">
-                  <div className="text-xs font-black text-gray-900">Zero Plastic Dabbas</div>
-                  <div className="text-[11px] text-emerald-700 font-bold">Free Packaging Swap</div>
+                  <div className="text-xs font-black text-gray-900">{location.heroFloat2Title || 'Zero Plastic Dabbas'}</div>
+                  <div className="text-[11px] text-emerald-700 font-bold">{location.heroFloat2Sub || 'Free Packaging Swap'}</div>
                 </div>
               </div>
             </div>

@@ -23,7 +23,7 @@ interface LocationBoroughExplorerProps {
   location: LocationData;
 }
 
-// Clear London Zones 1 to 3 definitions for West London delivery route
+// Clear London Zones 1 to 3 definitions customizable per location region
 interface DeliveryZoneDef {
   id: string;
   number: number;
@@ -37,44 +37,213 @@ interface DeliveryZoneDef {
   notes: string;
 }
 
-const LONDON_3_ZONES: DeliveryZoneDef[] = [
-  {
-    id: 'zone-1',
-    number: 1,
-    name: 'Zone 1 · Central London Core',
-    shortLabel: 'Zone 1',
-    subtitle: 'Central London Core & Business District',
-    badgeColor: 'bg-emerald-700 text-white',
-    postcodes: ['W1'],
-    keyAreas: ['Mayfair', 'Marylebone', 'Soho', 'Fitzrovia', 'Oxford Circus'],
-    deliverySlot: 'Mon & Thu (Lunch & Dinner)',
-    notes: 'Direct delivery to residential concierge suites, corporate offices, and central townhouses.',
-  },
-  {
-    id: 'zone-2',
-    number: 2,
-    name: 'Zone 2 · Inner London West',
-    shortLabel: 'Zone 2',
-    subtitle: 'Inner London Residential & Heritage Avenues',
-    badgeColor: 'bg-[#C39B54] text-white',
-    postcodes: ['W2', 'W6', 'W8', 'W9', 'W10', 'W11', 'W14'],
-    keyAreas: ['Kensington', 'Notting Hill', 'Bayswater', 'Paddington', 'Hammersmith', 'Maida Vale', 'West Kensington'],
-    deliverySlot: 'Mon & Thu (Lunch & Dinner)',
-    notes: 'Doorstep deliveries to historic mews, leafy avenues, and student residences with free container swap.',
-  },
-  {
-    id: 'zone-3',
-    number: 3,
-    name: 'Zone 3 · Outer London West',
-    shortLabel: 'Zone 3',
-    subtitle: 'Outer London & Family Neighbourhoods',
-    badgeColor: 'bg-[#142A1E] text-white',
-    postcodes: ['W3', 'W4', 'W5', 'W7', 'W12', 'W13'],
-    keyAreas: ['Ealing', 'Acton', 'Chiswick', 'Shepherd’s Bush', 'White City', 'Hanwell', 'West Ealing'],
-    deliverySlot: 'Mon & Thu (Lunch & Dinner)',
-    notes: 'Full coverage of family homes, BBC Media Village, and suburban tech hubs with chilled insulated bags.',
-  },
-];
+function getZonesForLocation(location: LocationData): DeliveryZoneDef[] {
+  const code = location.regionCode;
+
+  if (code === 'E') {
+    return [
+      {
+        id: 'zone-1',
+        number: 1,
+        name: 'Zone 1 · Central & City Fringe',
+        shortLabel: 'Zone 1',
+        subtitle: 'City Fringe & Historic East',
+        badgeColor: 'bg-emerald-700 text-white',
+        postcodes: ['E1'],
+        keyAreas: ['Whitechapel', 'Aldgate', 'Spitalfields', 'Brick Lane'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Prompt doorstep deliveries to residences, corporate offices, and tech studios.',
+      },
+      {
+        id: 'zone-2',
+        number: 2,
+        name: 'Zone 2 · Inner London East',
+        shortLabel: 'Zone 2',
+        subtitle: 'Canary Wharf, Docklands & Creative East',
+        badgeColor: 'bg-[#C39B54] text-white',
+        postcodes: ['E2', 'E3', 'E8', 'E9', 'E14'],
+        keyAreas: ['Canary Wharf', 'Isle of Dogs', 'Shoreditch', 'Hackney', 'Bow', 'Mile End'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Doorstep deliveries to residential towers, concierge desks, and loft apartments.',
+      },
+      {
+        id: 'zone-3',
+        number: 3,
+        name: 'Zone 3 · Greater East London',
+        shortLabel: 'Zone 3',
+        subtitle: 'Stratford, Olympic Park & East Corridors',
+        badgeColor: 'bg-[#142A1E] text-white',
+        postcodes: ['E5', 'E15', 'E16', 'E20', 'IG', 'RM'],
+        keyAreas: ['Stratford', 'East Village', 'UCL East', 'Canning Town', 'Ilford', 'Romford'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Full coverage of student accommodations, residential parks, and Greater East family homes.',
+      },
+    ];
+  }
+
+  if (code === 'N') {
+    return [
+      {
+        id: 'zone-1',
+        number: 1,
+        name: 'Zone 1 · Angel & Kings Cross Edge',
+        shortLabel: 'Zone 1',
+        subtitle: 'Central Islington & Kings Cross Fringe',
+        badgeColor: 'bg-emerald-700 text-white',
+        postcodes: ['N1'],
+        keyAreas: ['Islington', 'Angel', 'Kings Cross Border', 'Old Street Border'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Direct delivery to apartments, tech hubs, and residential mews.',
+      },
+      {
+        id: 'zone-2',
+        number: 2,
+        name: 'Zone 2 · Inner North London',
+        shortLabel: 'Zone 2',
+        subtitle: 'Camden, Highbury & Leafy Avenues',
+        badgeColor: 'bg-[#C39B54] text-white',
+        postcodes: ['N4', 'N5', 'N7', 'NW1', 'NW5'],
+        keyAreas: ['Camden Town', 'Highbury', 'Holloway', 'Finsbury Park', 'Kentish Town'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Popular shared flats, creative studios, and family homes with free dabba exchange.',
+      },
+      {
+        id: 'zone-3',
+        number: 3,
+        name: 'Zone 3 · Suburban North London',
+        shortLabel: 'Zone 3',
+        subtitle: 'Finchley, Muswell Hill & Heights',
+        badgeColor: 'bg-[#142A1E] text-white',
+        postcodes: ['N2', 'N3', 'N6', 'N8', 'N10', 'N12', 'N19', 'N22'],
+        keyAreas: ['Finchley', 'Muswell Hill', 'Highgate', 'Crouch End', 'East Finchley'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Quiet residential family avenues and commuter homes enjoying twice-weekly meals.',
+      },
+    ];
+  }
+
+  if (code === 'SW/SE') {
+    return [
+      {
+        id: 'zone-1',
+        number: 1,
+        name: 'Zone 1 · South Bank & London Bridge',
+        shortLabel: 'Zone 1',
+        subtitle: 'Central Riverside & Southwark Core',
+        badgeColor: 'bg-emerald-700 text-white',
+        postcodes: ['SE1', 'SW1'],
+        keyAreas: ['London Bridge', 'Southwark', 'Waterloo', 'Borough', 'Westminster Edge'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Delivered directly to concierge desks, residential towers, and riverside apartments.',
+      },
+      {
+        id: 'zone-2',
+        number: 2,
+        name: 'Zone 2 · Inner South London',
+        shortLabel: 'Zone 2',
+        subtitle: 'Clapham, Battersea & Greenwich',
+        badgeColor: 'bg-[#C39B54] text-white',
+        postcodes: ['SW4', 'SW8', 'SW9', 'SW11', 'SE5', 'SE10', 'SE16'],
+        keyAreas: ['Clapham', 'Battersea', 'Greenwich', 'Bermondsey', 'Brixton', 'Vauxhall'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Fast-paced young professionals, riverside lofts, and busy families.',
+      },
+      {
+        id: 'zone-3',
+        number: 3,
+        name: 'Zone 3 · South West & South East Parks',
+        shortLabel: 'Zone 3',
+        subtitle: 'Wimbledon, Wandsworth & Dulwich',
+        badgeColor: 'bg-[#142A1E] text-white',
+        postcodes: ['SW12', 'SW15', 'SW18', 'SW19', 'SE21', 'SE22'],
+        keyAreas: ['Wimbledon', 'Wandsworth', 'Putney', 'Balham', 'Dulwich'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Family Victorian terraces, residential parks, and leafy suburban communities.',
+      },
+    ];
+  }
+
+  if (code === 'WC/EC') {
+    return [
+      {
+        id: 'zone-1',
+        number: 1,
+        name: 'Zone 1 · The City & Holborn',
+        shortLabel: 'Zone 1',
+        subtitle: 'The Square Mile & Legal Quarter',
+        badgeColor: 'bg-emerald-700 text-white',
+        postcodes: ['EC1', 'EC2', 'EC3', 'EC4', 'WC1', 'WC2'],
+        keyAreas: ['Bank', 'Liverpool Street', 'Holborn', 'Chancery Lane', 'Farringdon'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Punctual desk and reception drop-offs for corporate executives and law firms.',
+      },
+      {
+        id: 'zone-2',
+        number: 2,
+        name: 'Zone 2 · West End & Westminster',
+        shortLabel: 'Zone 2',
+        subtitle: 'Soho, Mayfair & Government District',
+        badgeColor: 'bg-[#C39B54] text-white',
+        postcodes: ['W1', 'SW1A'],
+        keyAreas: ['Soho', 'Mayfair', 'Fitzrovia', 'Westminster', 'Victoria', 'Covent Garden'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Luxury apartments, creative media offices, and central residences.',
+      },
+      {
+        id: 'zone-3',
+        number: 3,
+        name: 'Zone 3 · Surrounding Central Belt',
+        shortLabel: 'Zone 3',
+        subtitle: 'Connected Central London Districts',
+        badgeColor: 'bg-[#142A1E] text-white',
+        postcodes: ['EC1A', 'EC1M', 'WC1N', 'WC2H'],
+        keyAreas: ['Clerkenwell', 'Bloomsbury', 'St Giles', 'Aldwych'],
+        deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+        notes: 'Design agencies, university quarters, and luxury studios with zero-waste tiffins.',
+      },
+    ];
+  }
+
+  // Default: West London
+  return [
+    {
+      id: 'zone-1',
+      number: 1,
+      name: 'Zone 1 · Central London Core',
+      shortLabel: 'Zone 1',
+      subtitle: 'Central London Core & Business District',
+      badgeColor: 'bg-emerald-700 text-white',
+      postcodes: ['W1'],
+      keyAreas: ['Mayfair', 'Marylebone', 'Soho', 'Fitzrovia', 'Oxford Circus'],
+      deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+      notes: 'Direct delivery to residential concierge suites, corporate offices, and central townhouses.',
+    },
+    {
+      id: 'zone-2',
+      number: 2,
+      name: 'Zone 2 · Inner London West',
+      shortLabel: 'Zone 2',
+      subtitle: 'Inner London Residential & Heritage Avenues',
+      badgeColor: 'bg-[#C39B54] text-white',
+      postcodes: ['W2', 'W6', 'W8', 'W9', 'W10', 'W11', 'W14'],
+      keyAreas: ['Kensington', 'Notting Hill', 'Bayswater', 'Paddington', 'Hammersmith', 'Maida Vale', 'West Kensington'],
+      deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+      notes: 'Doorstep deliveries to historic mews, leafy avenues, and student residences with free container swap.',
+    },
+    {
+      id: 'zone-3',
+      number: 3,
+      name: 'Zone 3 · Outer London West',
+      shortLabel: 'Zone 3',
+      subtitle: 'Outer London & Family Neighbourhoods',
+      badgeColor: 'bg-[#142A1E] text-white',
+      postcodes: ['W3', 'W4', 'W5', 'W7', 'W12', 'W13'],
+      keyAreas: ['Ealing', 'Acton', 'Chiswick', 'Shepherd’s Bush', 'White City', 'Hanwell', 'West Ealing'],
+      deliverySlot: 'Mon & Thu (Lunch & Dinner)',
+      notes: 'Full coverage of family homes, BBC Media Village, and suburban tech hubs with chilled insulated bags.',
+    },
+  ];
+}
 
 // Map postcode to Zone Number (1, 2, or 3)
 function getZoneNumberForPostcode(pc: string): number | null {
@@ -94,6 +263,7 @@ function getZoneNumberForPostcode(pc: string): number | null {
 }
 
 export default function LocationBoroughExplorer({ location }: LocationBoroughExplorerProps) {
+  const zones = getZonesForLocation(location);
   const [selectedZone, setSelectedZone] = useState<'all' | 'zone-1' | 'zone-2' | 'zone-3'>('all');
   const [postcode, setPostcode] = useState<string>(location.samplePostcode || 'W2 1NY');
   const [checkResult, setCheckResult] = useState<{
@@ -101,6 +271,11 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
     areaName?: string;
     zoneNum?: number;
   }>({ status: 'idle' });
+
+  React.useEffect(() => {
+    setPostcode(location.samplePostcode || 'W2 1NY');
+    setCheckResult({ status: 'idle' });
+  }, [location.slug, location.samplePostcode]);
 
   const handleQuickCheck = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -112,7 +287,7 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
     if (zNum) {
       setCheckResult({
         status: 'success',
-        areaName: `West London Zone ${zNum}`,
+        areaName: `${location.name} Zone ${zNum}`,
         zoneNum: zNum,
       });
       setSelectedZone(`zone-${zNum}` as 'zone-1' | 'zone-2' | 'zone-3');
@@ -129,7 +304,7 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
     }
   };
 
-  const activeZoneDef = LONDON_3_ZONES.find((z) => z.id === selectedZone);
+  const activeZoneDef = zones.find((z) => z.id === selectedZone);
 
   return (
     <section id="neighbourhoods" className="py-20 lg:py-28 bg-[#FAF6F0] text-stone-900 border-b border-stone-200 relative overflow-hidden font-sans">
@@ -142,17 +317,16 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#142A1E]/10 text-[#142A1E] text-xs font-black uppercase tracking-widest border border-[#142A1E]/15">
             <Navigation size={13} className="text-[#C39B54]" />
-            <span>Scheduled London Delivery Network</span>
+            <span>{location.neighbourhoodsBadge || 'Scheduled London Delivery Network'}</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#142A1E] tracking-tight leading-[1.15] font-sans lg:whitespace-nowrap">
-            We Deliver to All London Zones 1–3
+            {location.neighbourhoodsTitle || 'We Deliver to All London Zones 1–3'}
           </h2>
 
           <p className="text-stone-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
-            From {location.name}&apos;s historic mews to high-rise concierge suites across London Zones 1, 2, and 3, our chilled
-            delivery fleet brings authentic home-cooked Indian tiffins directly to your doorstep twice weekly with
-            zero single-use plastic.
+            {location.neighbourhoodsSubtitle ||
+              `From ${location.name}'s historic mews to high-rise concierge suites across London Zones 1, 2, and 3, our chilled delivery fleet brings authentic home-cooked Indian tiffins directly to your doorstep twice weekly with zero single-use plastic.`}
           </p>
         </div>
 
@@ -185,7 +359,7 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
                   <span>All Zones 1–3</span>
                 </button>
 
-                {LONDON_3_ZONES.map((zone) => {
+                {zones.map((zone) => {
                   const isActive = selectedZone === zone.id;
                   return (
                     <button
@@ -216,11 +390,11 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
                 <div className="flex items-center gap-2.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                   <h3 className="text-lg font-extrabold text-stone-900 font-sans">
-                    {activeZoneDef ? activeZoneDef.name : 'London Zones 1, 2 & 3 Coverage'}
+                    {activeZoneDef ? activeZoneDef.name : `${location.name} Zones 1, 2 & 3 Coverage`}
                   </h3>
                 </div>
                 <span className="text-xs font-mono font-bold text-[#8C6B28] bg-[#C39B54]/10 px-3 py-1 rounded-full border border-[#C39B54]/25">
-                  {activeZoneDef ? `${activeZoneDef.postcodes.length} Outward Codes` : '14 West Postcodes'}
+                  {activeZoneDef ? `${activeZoneDef.postcodes.length} Outward Codes` : `${location.supportedPostcodes.length} Postcodes`}
                 </span>
               </div>
 
@@ -228,7 +402,7 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
               <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-medium">
                 {activeZoneDef
                   ? activeZoneDef.notes
-                  : 'DoMeal serves all residential mews, corporate offices, and apartment concierge suites throughout West London across Zones 1, 2, and 3.'}
+                  : `DoMeal serves all residential mews, corporate offices, and apartment concierge suites throughout ${location.name} across Zones 1, 2, and 3.`}
               </p>
 
               {/* Postcodes Pill Tags Grouped by Zone */}
@@ -250,7 +424,7 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {LONDON_3_ZONES.map((z) => (
+                    {zones.map((z) => (
                       <div key={z.id} className="flex items-center gap-2 flex-wrap">
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-stone-100 text-stone-800 border border-stone-200">
                           {z.shortLabel}:
@@ -295,7 +469,7 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
                     <MapPin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
                     <input
                       type="text"
-                      value={postcode}
+                      value={postcode || ''}
                       onChange={(e) => {
                         setPostcode(e.target.value);
                         if (checkResult.status !== 'idle') setCheckResult({ status: 'idle' });
@@ -355,7 +529,7 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
                 href="/menu"
                 className="inline-flex items-center gap-2.5 bg-[#142A1E] hover:bg-[#1E3B2B] text-white font-black text-sm px-8 py-4 rounded-2xl transition-all duration-150 active:scale-95 shadow-xl shadow-stone-900/10 cursor-pointer"
               >
-                <span>Order in West London</span>
+                <span>Order in {location.name}</span>
                 <ArrowRight size={16} className="text-[#C39B54]" />
               </Link>
 
@@ -470,24 +644,74 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
                   />
 
                   {/* ==================================================== */}
-                  {/* WEST LONDON ACTIVE CORRIDOR HIGHLIGHT                */}
+                  {/* DYNAMIC REGIONAL ACTIVE CORRIDOR HIGHLIGHT            */}
                   {/* ==================================================== */}
-                  <path
-                    d="M 50 140 C 130 130, 180 150, 240 175 C 240 195, 180 220, 130 240 C 65 220, 40 180, 50 140 Z"
-                    fill="#142A1E"
-                    fillOpacity={selectedZone === 'all' ? '0.92' : '0.85'}
-                    stroke="#C39B54"
-                    strokeWidth="3"
-                    className="transition-all duration-300"
-                  />
+                  <g className="transition-all duration-300">
+                    {location.regionCode === 'E' ? (
+                      <path
+                        d="M 450 140 C 370 130, 320 150, 260 175 C 260 195, 320 220, 370 240 C 435 220, 460 180, 450 140 Z"
+                        fill="#142A1E"
+                        fillOpacity={selectedZone === 'all' ? '0.92' : '0.85'}
+                        stroke="#C39B54"
+                        strokeWidth="3"
+                      />
+                    ) : location.regionCode === 'N' ? (
+                      <path
+                        d="M 170 50 C 160 120, 190 155, 250 160 C 310 155, 340 120, 330 50 C 270 40, 230 40, 170 50 Z"
+                        fill="#142A1E"
+                        fillOpacity={selectedZone === 'all' ? '0.92' : '0.85'}
+                        stroke="#C39B54"
+                        strokeWidth="3"
+                      />
+                    ) : location.regionCode === 'SW/SE' ? (
+                      <path
+                        d="M 170 320 C 160 250, 190 215, 250 210 C 310 215, 340 250, 330 320 C 270 330, 230 330, 170 320 Z"
+                        fill="#142A1E"
+                        fillOpacity={selectedZone === 'all' ? '0.92' : '0.85'}
+                        stroke="#C39B54"
+                        strokeWidth="3"
+                      />
+                    ) : location.regionCode === 'WC/EC' ? (
+                      <ellipse
+                        cx="250"
+                        cy="185"
+                        rx="75"
+                        ry="52"
+                        fill="#142A1E"
+                        fillOpacity={selectedZone === 'all' ? '0.95' : '0.85'}
+                        stroke="#C39B54"
+                        strokeWidth="3.5"
+                      />
+                    ) : (
+                      <path
+                        d="M 50 140 C 130 130, 180 150, 240 175 C 240 195, 180 220, 130 240 C 65 220, 40 180, 50 140 Z"
+                        fill="#142A1E"
+                        fillOpacity={selectedZone === 'all' ? '0.92' : '0.85'}
+                        stroke="#C39B54"
+                        strokeWidth="3"
+                      />
+                    )}
+                  </g>
 
-                  {/* West London Corridor Badge on Map */}
-                  <g transform="translate(60, 175)">
-                    <rect x="0" y="0" width="105" height="28" rx="8" fill="#142A1E" stroke="#C39B54" strokeWidth="1.5" />
-                    <text x="52" y="14" textAnchor="middle" className="text-[10px] font-black fill-white uppercase tracking-wider">
-                      WEST LONDON
+                  {/* Corridor Badge on Map */}
+                  <g
+                    transform={
+                      location.regionCode === 'E'
+                        ? 'translate(330, 175)'
+                        : location.regionCode === 'N'
+                        ? 'translate(195, 65)'
+                        : location.regionCode === 'SW/SE'
+                        ? 'translate(195, 280)'
+                        : location.regionCode === 'WC/EC'
+                        ? 'translate(195, 172)'
+                        : 'translate(60, 175)'
+                    }
+                  >
+                    <rect x="0" y="0" width="115" height="28" rx="8" fill="#142A1E" stroke="#C39B54" strokeWidth="1.5" />
+                    <text x="57" y="14" textAnchor="middle" className="text-[10px] font-black fill-white uppercase tracking-wider">
+                      {location.name.toUpperCase()}
                     </text>
-                    <text x="52" y="24" textAnchor="middle" className="text-[8px] font-bold fill-[#C39B54] uppercase tracking-wider">
+                    <text x="57" y="24" textAnchor="middle" className="text-[8px] font-bold fill-[#C39B54] uppercase tracking-wider">
                       ZONES 1, 2 &amp; 3
                     </text>
                   </g>
@@ -615,7 +839,7 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
 
               {/* 3 Dedicated Zone Status Cards Beneath the Map */}
               <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                {LONDON_3_ZONES.map((zone) => {
+                {zones.map((zone) => {
                   const isSelected = selectedZone === zone.id;
                   return (
                     <button
@@ -665,7 +889,7 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
           <div className="border-b border-stone-200 pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div>
               <h3 className="text-xl sm:text-2xl font-extrabold text-stone-900 font-sans">
-                Key West London Neighbourhoods by Zone
+                Key {location.name} Neighbourhoods by Zone
               </h3>
               <p className="text-xs text-stone-500 mt-0.5">
                 Every neighbourhood across Zones 1, 2, and 3 receives twice-weekly cold-packed tiffin delivery.
@@ -676,20 +900,24 @@ export default function LocationBoroughExplorer({ location }: LocationBoroughExp
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-wrap justify-center gap-6">
             {location.neighbourhoods.map((area, idx) => {
               // Determine which zone this neighbourhood belongs to
+              const p = area.postcode.toUpperCase();
               const zoneNum =
-                area.postcode.includes('W1,') || area.postcode === 'W1'
+                p.includes('W1') || p.includes('WC') || p.includes('EC') || p.includes('SW1') || p.includes('E1,') || p.endsWith('E1') || p.includes('E1 ') || p.includes('N1,') || p.endsWith('N1') || p.includes('SE1')
                   ? 1
-                  : area.postcode.includes('W8') || area.postcode.includes('W2') || area.postcode.includes('W6')
+                  : p.includes('W2') || p.includes('W6') || p.includes('W8') || p.includes('W9') || p.includes('W11') || p.includes('W14') ||
+                    p.includes('E2') || p.includes('E8') || p.includes('E9') || p.includes('E14') ||
+                    p.includes('N5') || p.includes('N7') || p.includes('NW1') || p.includes('NW5') ||
+                    p.includes('SW4') || p.includes('SW8') || p.includes('SW11') || p.includes('SE10') || p.includes('SE16')
                   ? 2
                   : 3;
 
               return (
                 <div
                   key={idx}
-                  className="bg-white p-7 rounded-3xl border border-stone-200 hover:border-[#C39B54] hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
+                  className="w-full sm:w-[calc(50%_-_12px)] lg:w-[calc(33.333%_-_16px)] max-w-md bg-white p-7 rounded-3xl border border-stone-200 hover:border-[#C39B54] hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">

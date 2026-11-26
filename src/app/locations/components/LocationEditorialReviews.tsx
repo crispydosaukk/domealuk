@@ -2,13 +2,24 @@
 
 import React from 'react';
 import { Star, Quote, Heart, CheckCircle2 } from 'lucide-react';
+import { LocationReview } from '@/lib/locations-data';
 
 interface LocationEditorialReviewsProps {
   locationName: string;
+  customReviews?: LocationReview[];
+  title?: string;
+  badge?: string;
+  subtitle?: string;
 }
 
-export default function LocationEditorialReviews({ locationName }: LocationEditorialReviewsProps) {
-  const reviews = [
+export default function LocationEditorialReviews({
+  locationName,
+  customReviews,
+  title,
+  badge,
+  subtitle,
+}: LocationEditorialReviewsProps) {
+  const defaultReviews: LocationReview[] = [
     {
       quote:
         'The reusable dabba system has completely transformed our evenings. The rotis are soft, the dal is rich and comforting, and there is zero plastic waste going into our recycling bin every week.',
@@ -35,6 +46,9 @@ export default function LocationEditorialReviews({ locationName }: LocationEdito
     },
   ];
 
+  const reviews = customReviews && customReviews.length > 0 ? customReviews : defaultReviews;
+  const displayTitle = title || `What ${locationName} Is Saying`;
+
   return (
     <section className="py-20 lg:py-28 bg-[#F5EFE6] text-stone-900 border-b border-stone-200">
       <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-12">
@@ -42,11 +56,11 @@ export default function LocationEditorialReviews({ locationName }: LocationEdito
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#1E3B2B]/10 text-[#1E3B2B] text-xs font-black uppercase tracking-widest">
             <Heart size={14} className="text-[#C39B54]" />
-            <span>Loved Across {locationName}</span>
+            <span>{badge || `Loved Across ${locationName}`}</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#142A1E] tracking-tight leading-tight font-sans">
-            What {locationName} Is Saying
+            {displayTitle}
           </h2>
 
           <div className="flex items-center justify-center gap-2 text-sm text-stone-600 font-medium">
@@ -55,17 +69,16 @@ export default function LocationEditorialReviews({ locationName }: LocationEdito
                 <span key={i} className="text-base">★</span>
               ))}
             </div>
-            <span className="font-bold text-stone-900">4.9 / 5.0 Average</span>
-            <span>· 1,200+ Verified London Orders</span>
+            <span className="font-bold text-stone-900">{subtitle || '4.9 / 5.0 Average · 1,200+ Verified London Orders'}</span>
           </div>
         </div>
 
-        {/* 3 Review Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Review Cards - Centered Flex */}
+        <div className="flex flex-wrap justify-center gap-8">
           {reviews.map((rev, idx) => (
             <div
               key={idx}
-              className="bg-white rounded-3xl p-8 border border-stone-200 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+              className="w-full md:w-[calc(33.333%_-_22px)] max-w-md bg-white rounded-3xl p-8 border border-stone-200 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
             >
               <div>
                 <Quote size={32} className="text-[#C39B54]/40 mb-4" />

@@ -63,10 +63,17 @@ export default function AdminPaymentsClient() {
     fetchSlots();
 
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snap) => {
-      setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      },
+      (err) => {
+        console.warn('AdminPaymentsClient snapshot handled:', err.message);
+        setLoading(false);
+      }
+    );
 
     return () => unsub();
   }, [user]);

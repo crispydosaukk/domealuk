@@ -120,7 +120,7 @@ export default function LocationHero({ location }: LocationHeroProps) {
                   />
                   <input
                     type="text"
-                    value={postcode}
+                    value={postcode || ''}
                     onChange={(e) => {
                       setPostcode(e.target.value);
                       if (checkResult.status !== 'idle') setCheckResult({ status: 'idle' });

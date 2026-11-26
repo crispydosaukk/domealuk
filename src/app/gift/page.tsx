@@ -3,27 +3,11 @@ import type { Metadata } from 'next';
 import UserNavbar from '@/components/UserNavbar';
 import UserFooter from '@/components/UserFooter';
 import GiftClient from './components/GiftClient';
+import { getDynamicPageSeo } from '@/lib/dynamic-seo';
 
-export const metadata: Metadata = {
-  title: 'Gift Cards — Gift Authentic Indian Home Food',
-  description:
-    'Treat your friends and family to authentic home-cooked Indian meals with a DoMeal Gift Card. Delivered straight to their inbox across London.',
-  keywords: [
-    'Indian food gift card London',
-    'Meal delivery voucher London',
-    'Tiffin subscription gift card',
-    'Food gift voucher UK',
-  ],
-  alternates: {
-    canonical: '/gift',
-  },
-  openGraph: {
-    title: 'DoMeal Delivery Gift Card | DoMeal London',
-    description:
-      'The gift of great food. Send delicious, authentic Indian meal deliveries to someone special.',
-    url: '/gift',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getDynamicPageSeo('/gift');
+}
 
 export default function GiftPage() {
   return (

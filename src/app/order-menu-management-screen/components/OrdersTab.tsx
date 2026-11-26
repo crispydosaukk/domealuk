@@ -127,11 +127,18 @@ export default function OrdersTab() {
     fetchSlots();
 
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snap) => {
-      const fetched = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setOrders(fetched);
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const fetched = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setOrders(fetched);
+        setLoading(false);
+      },
+      (err) => {
+        console.warn('OrdersTab orders snapshot handled:', err.message);
+        setLoading(false);
+      }
+    );
     return () => unsub();
   }, [user]);
 

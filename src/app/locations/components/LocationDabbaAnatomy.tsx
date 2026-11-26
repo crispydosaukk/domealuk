@@ -3,15 +3,24 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Sparkles, Utensils, Check, ArrowRight, Layers } from 'lucide-react';
+import { LocationDabbaTier } from '@/lib/locations-data';
 
 interface LocationDabbaAnatomyProps {
   locationName: string;
+  customTiers?: LocationDabbaTier[];
+  title?: string;
+  badge?: string;
 }
 
-export default function LocationDabbaAnatomy({ locationName }: LocationDabbaAnatomyProps) {
+export default function LocationDabbaAnatomy({
+  locationName,
+  customTiers,
+  title,
+  badge,
+}: LocationDabbaAnatomyProps) {
   const [activeTier, setActiveTier] = useState<number>(0);
 
-  const tiers = [
+  const defaultTiers = [
     {
       tierNumber: 'Tier 01',
       title: 'The Signature Subzi & Curry',
@@ -46,6 +55,10 @@ export default function LocationDabbaAnatomy({ locationName }: LocationDabbaAnat
     },
   ];
 
+  const tiers = customTiers && customTiers.length > 0 ? customTiers : defaultTiers;
+  const displayTitle = title || `What's Inside Your ${locationName} Dabba?`;
+  const displayBadge = badge || 'The Anatomy of a DoMeal Feast';
+
   return (
     <section className="py-20 lg:py-28 bg-[#F5EFE6] text-stone-900 border-b border-stone-200">
       <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-12">
@@ -53,11 +66,11 @@ export default function LocationDabbaAnatomy({ locationName }: LocationDabbaAnat
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#1E3B2B]/10 text-[#1E3B2B] text-xs font-black uppercase tracking-widest">
             <Layers size={14} className="text-[#C39B54]" />
-            <span>The Anatomy of a DoMeal Feast</span>
+            <span>{displayBadge}</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#142A1E] tracking-tight leading-tight font-sans">
-            What&apos;s Inside Your {locationName} Dabba?
+            {displayTitle}
           </h2>
 
           <p className="text-base sm:text-lg text-stone-600 leading-relaxed max-w-2xl mx-auto">

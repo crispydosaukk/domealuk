@@ -9,7 +9,7 @@ import { useCart } from '@/context/CartContext';
 import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Package, MapPin, CreditCard, Wallet, Gift } from 'lucide-react';
-import { isAdminEmail } from '@/lib/adminAuth';
+import { isAdminEmail, isSuperAdminEmail } from '@/lib/adminAuth';
 
 export default function UserNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -43,20 +43,32 @@ export default function UserNavbar() {
 
     // Fetch orders
     const qOrders = query(collection(db, 'orders'), where('userId', '==', user.uid));
-    const unsubOrders = onSnapshot(qOrders, (snap) => {
-      const fetched = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      fetched.sort(
-        (a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
-      );
-      setUserOrders(fetched);
-    });
+    const unsubOrders = onSnapshot(
+      qOrders,
+      (snap) => {
+        const fetched = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        fetched.sort(
+          (a: any, b: any) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
+        );
+        setUserOrders(fetched);
+      },
+      (err) => {
+        console.warn('UserNavbar orders listener handled:', err.message);
+      }
+    );
 
     // Fetch user data for wallet and referral
-    const unsubUser = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
-      if (docSnap.exists()) {
-        setUserData(docSnap.data());
+    const unsubUser = onSnapshot(
+      doc(db, 'users', user.uid),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setUserData(docSnap.data());
+        }
+      },
+      (err) => {
+        console.warn('UserNavbar user listener handled:', err.message);
       }
-    });
+    );
 
     return () => {
       unsubOrders();
@@ -67,7 +79,6 @@ export default function UserNavbar() {
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Menu', href: '/menu' },
-    { label: 'Locations', href: '/#locations' },
     { label: 'Refer a Friend', href: '/refer-a-friend' },
     { label: 'How to Heat', href: '/how-to-heat' },
     { label: 'Student Discounts', href: '/student-discounts' },
@@ -152,14 +163,21 @@ export default function UserNavbar() {
 
               {user ? (
                 <div className="flex items-center gap-3">
-                  {isAdminEmail(user.email) && (
+                  {isSuperAdminEmail(user.email) ? (
+                    <Link
+                      href="/super-admin"
+                      className="hidden sm:flex items-center gap-1.5 bg-[#C39B54] text-stone-950 text-sm font-bold px-3.5 py-2 rounded-lg hover:bg-[#A98440] transition-all duration-150 active:scale-95 shadow-sm"
+                    >
+                      👑 Super Admin
+                    </Link>
+                  ) : isAdminEmail(user.email) ? (
                     <Link
                       href="/admin-dashboard"
                       className="hidden sm:flex items-center gap-1.5 bg-secondary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-[#1E3B2B] transition-all duration-150 active:scale-95 shadow-sm"
                     >
                       Admin Panel
                     </Link>
-                  )}
+                  ) : null}
                   <button
                     onClick={() => setProfileOpen(true)}
                     className={`hidden sm:flex w-10 h-10 rounded-full items-center justify-center font-bold transition-colors border ${isTransparent ? 'bg-white/20 text-white border-white/30 hover:bg-white/30' : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'}`}
@@ -207,7 +225,15 @@ export default function UserNavbar() {
 
             {user ? (
               <div className="flex flex-col gap-2">
-                {isAdminEmail(user.email) && (
+                {isSuperAdminEmail(user.email) ? (
+                  <Link
+                    href="/super-admin"
+                    onClick={() => setMobileOpen(false)}
+                    className="w-full flex items-center justify-center gap-2 bg-[#C39B54] text-stone-950 text-sm font-bold px-4 py-2.5 rounded-lg mt-2 shadow-xs"
+                  >
+                    👑 Super Admin Portal
+                  </Link>
+                ) : isAdminEmail(user.email) ? (
                   <Link
                     href="/admin-dashboard"
                     onClick={() => setMobileOpen(false)}
@@ -215,7 +241,7 @@ export default function UserNavbar() {
                   >
                     Admin Panel
                   </Link>
-                )}
+                ) : null}
                 <button
                   onClick={() => {
                     setMobileOpen(false);
@@ -340,20 +366,19 @@ export default function UserNavbar() {
                             <p className="text-[10px] text-muted-foreground font-600 uppercase tracking-wider">
                               {order.createdAt?.toDate
                                 ? order.createdAt
-                                    .toDate()
-                                    .toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+                                  .toDate()
+                                  .toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
                                 : 'Recent'}
                             </p>
                           </div>
                           <span
                             className={`text-[10px] font-800 px-2 py-1 rounded-md 
-                            ${
-                              order.status === 'Delivered'
+                            ${order.status === 'Delivered'
                                 ? 'bg-green-100 text-green-700'
                                 : order.status === 'Cancelled'
                                   ? 'bg-red-100 text-red-600'
                                   : 'bg-orange-100 text-orange-700'
-                            }`}
+                              }`}
                           >
                             {order.status || 'Order Received'}
                           </span>

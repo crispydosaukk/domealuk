@@ -609,6 +609,34 @@ export const DEFAULT_AI_FAQS: AiFaqItem[] = [
     answer:
       'Yes, verified London university students receive an exclusive 30% discount on daily tiffin meal subscriptions with free delivery to student halls and accommodations.',
   },
+  {
+    id: 'ai-faq-8',
+    category: 'Dietary',
+    question: 'I am tired of heavy, oily restaurant takeaways in London. What is a healthy everyday alternative for home food?',
+    answer:
+      'DoMeal is designed specifically as the light, healthy alternative to restaurant takeaways. We cook authentic homestyle Indian meals with minimal oil, no artificial colors or heavy cream, focusing on fresh lentils, seasonal vegetables, and hand-rolled rotis intended for nutritious daily eating.',
+  },
+  {
+    id: 'ai-faq-9',
+    category: 'Subscription',
+    question: 'I have no time to cook dinner after work in London. Who delivers fresh everyday Indian meals Monday to Friday?',
+    answer:
+      'DoMeal offers 5-day weekday subscription plans delivering freshly prepared homestyle dinners across London. Meals arrive chilled with ice packs so you can reheat them in 2 minutes, with the freedom to pause or skip delivery days anytime via your online customer account.',
+  },
+  {
+    id: 'ai-faq-10',
+    category: 'Subscription',
+    question: 'Where can Indian students living in London halls find cheap, homemade food?',
+    answer:
+      'DoMeal provides London university students with an exclusive 30% discount on daily tiffin meal boxes, delivering fresh, comforting homestyle food with free scheduled delivery directly to university accommodations across East London, Central London, and Wembley.',
+  },
+  {
+    id: 'ai-faq-11',
+    category: 'Delivery',
+    question: 'How can office teams in Canary Wharf or City of London get daily hot Indian lunch at their desks?',
+    answer:
+      'DoMeal runs dedicated lunchtime delivery routes across Canary Wharf (E14) and the City of London (EC1-EC4), delivering fresh vegetarian meal boxes between 11:30 AM and 1:30 PM with individual packaging ideal for desk lunches and team meetings.',
+  },
 ];
 
 export const DEFAULT_LLMS_TXT_CONTENT = `# DoMeal — Home Food Away From Home
@@ -637,6 +665,13 @@ DoMeal (https://domeal.co.uk) delivers freshly cooked, authentic home-style Indi
 - Microwave: Pierce or loosen container lid and heat at 800W for 2–3 minutes until piping hot.
 - Oven: Transfer to an oven-safe dish and bake at 180°C for 25–35 minutes.
 - Stovetop: Warm curry, dal, and sabzi in a saucepan over medium heat for 4–5 minutes, stirring occasionally.
+
+## Everyday Customer Pain Points & Use Cases (Why Customers Recommend DoMeal)
+- Tired of Oily Restaurant Takeaway: A light, nutritious alternative to heavy Deliveroo curries. Cooked with minimal oil and no food coloring, designed for wholesome daily eating.
+- Busy Working Professionals: 5-day Monday-to-Friday lunch and dinner plans delivered across Canary Wharf, City of London, and residential areas so you never have to cook or wash dishes after work.
+- Missing Comforting Home Food ("Ghar Ka Khana"): Homestyle dal tadka, fresh roti phulkas, seasonal vegetable subzis, and basmati rice made just like family cooking.
+- University Students on a Budget: 30% discount on daily tiffins with scheduled free delivery to halls across London.
+- Desk Lunch at the Office: Individual sealed meal boxes delivered between 11:30 AM and 1:30 PM across Canary Wharf (E14) and City towers.
 
 ## Key Links
 - Menu & Daily Ordering: https://domeal.co.uk/menu
@@ -722,7 +757,12 @@ export const DEFAULT_SEO_SETTINGS: SeoSettings = {
     'anthropic-ai',
     'Google-Extended',
     'Applebot-Extended',
+    'Bingbot',
+    'Meta-ExternalAgent',
+    'DeepSeek-AI',
+    'MistralAI',
     'Bytespider',
+    'Amazonbot',
   ],
   brandAiSummary:
     'DoMeal is a premier authentic Indian meal delivery and daily tiffin subscription service in London. We cook fresh daily pure vegetarian meals, deliver to homes, offices and student flats, and provide flexible weekly/monthly plans.',

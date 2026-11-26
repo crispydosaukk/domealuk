@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/app/admin-dashboard/components/AdminLayout';
 import { useAuth } from '@/context/AuthContext';
-import { isAdminEmail } from '@/lib/adminAuth';
+import { isAdminEmail, isSuperAdminEmail } from '@/lib/adminAuth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -27,6 +27,8 @@ import {
   ArrowUp,
   ArrowDown,
   RotateCcw,
+  MapPin,
+  ArrowUpRight,
 } from 'lucide-react';
 import {
   DEFAULT_TERMS_BUSINESS,
@@ -428,6 +430,34 @@ export default function AdminCmsPage() {
                 </div>
               </button>
             ))}
+
+            {/* Direct Link to Locations CMS Module (Super Admin Exclusive) */}
+            {isSuperAdminEmail(user?.email) && (
+              <div className="pt-2 border-t border-border">
+                <a
+                  href="/admin-locations"
+                  className="w-full text-left p-3 rounded-xl transition-all flex items-start gap-3 border border-amber-200 bg-amber-50/80 hover:bg-amber-100 text-[#8C6B28] group block"
+                >
+                  <div className="p-2 rounded-lg bg-white border border-amber-200 text-[#8C6B28] shrink-0">
+                    <MapPin size={18} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-bold flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span>Locations CMS</span>
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-800">
+                          Super
+                        </span>
+                      </div>
+                      <ArrowUpRight size={14} className="text-[#8C6B28] group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                    <p className="text-[11px] text-amber-900/70 mt-0.5 leading-snug">
+                      London delivery corridors, postcodes &amp; landing pages
+                    </p>
+                  </div>
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Right Editor Body (9 Columns) */}

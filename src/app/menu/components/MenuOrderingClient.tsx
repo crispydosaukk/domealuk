@@ -157,6 +157,9 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
 
       setMenuItems(cleanItems);
       setLoading(false);
+    }, (err) => {
+      console.warn('MenuOrderingClient snapshot handled:', err.message);
+      setLoading(false);
     });
     return () => unsub();
   }, []);
@@ -197,7 +200,13 @@ export default function MenuOrderingClient({ hideExtras = false }: MenuOrderingC
     <div className="max-w-screen-2xl mx-auto px-4 lg:px-8 xl:px-10 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-extrabold text-foreground">Today&apos;s Menu</h1>
+          {hideExtras ? (
+            <h2 className="text-2xl font-extrabold text-foreground">Featured Daily Menu</h2>
+          ) : (
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground">
+              Today&apos;s Menu &amp; Indian Tiffin Plans
+            </h1>
+          )}
         </div>
       </div>
 

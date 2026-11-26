@@ -22,10 +22,11 @@ import {
   FileText,
   X,
   Globe,
+  MapPin,
 } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { isAdminEmail } from '@/lib/adminAuth';
+import { isAdminEmail, isSuperAdminEmail, getTimeGreeting } from '@/lib/adminAuth';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -50,13 +51,12 @@ const baseNavItems = [
   { id: 'nav-analytics', label: 'Analytics', href: '/admin-analytics', icon: TrendingUp },
   { id: 'nav-menu', label: 'Menu Management', href: '/admin-menu', icon: UtensilsCrossed },
   { id: 'nav-cms', label: 'CMS & Page Content', href: '/admin-cms', icon: FileText },
-  { id: 'nav-seo', label: 'SEO & AI Ranking', href: '/admin-seo', icon: Globe },
   { id: 'nav-settings', label: 'Settings', href: '/admin-settings', icon: Settings },
 ];
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  activeRoute: string;
+  activeRoute?: string;
 }
 
 export default function AdminLayout({ children, activeRoute }: AdminLayoutProps) {
@@ -66,8 +66,17 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
   const [pendingStudents, setPendingStudents] = useState(0);
   const [pendingCorporate, setPendingCorporate] = useState(0);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [greeting, setGreeting] = useState<string>('Good day');
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+
+  React.useEffect(() => {
+    setGreeting(getTimeGreeting());
+    const timer = setInterval(() => {
+      setGreeting(getTimeGreeting());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   React.useEffect(() => {
     if (!loading && (!user || !isAdminEmail(user.email))) {
@@ -81,23 +90,29 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
     // Background check for due recurring subscriptions & pre-debit reminders once per session
     if (typeof window !== 'undefined' && !sessionStorage.getItem('sub_cron_checked')) {
       sessionStorage.setItem('sub_cron_checked', '1');
-      fetch('/api/cron/process-recurring-subscriptions', { method: 'POST' }).catch(() => {});
-      fetch('/api/cron/send-pre-debit-reminders', { method: 'POST' }).catch(() => {});
+      fetch('/api/cron/process-recurring-subscriptions', { method: 'POST' }).catch(() => { });
+      fetch('/api/cron/send-pre-debit-reminders', { method: 'POST' }).catch(() => { });
     }
 
     // Only count orders that are explicitly 'Order Received' or 'Pending' or 'Preparing' or 'Confirmed'
     // Alternatively, just count everything that isn't 'Delivered' or 'Cancelled'
     const q = query(collection(db, 'orders'));
-    const unsub = onSnapshot(q, (snap) => {
-      let count = 0;
-      snap.docs.forEach((doc) => {
-        const data = doc.data();
-        if (data.status !== 'Delivered' && data.status !== 'Cancelled') {
-          count++;
-        }
-      });
-      setPendingOrders(count);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        let count = 0;
+        snap.docs.forEach((doc) => {
+          const data = doc.data();
+          if (data.status !== 'Delivered' && data.status !== 'Cancelled') {
+            count++;
+          }
+        });
+        setPendingOrders(count);
+      },
+      (err) => {
+        console.warn('AdminLayout orders snapshot handled:', err.message);
+      }
+    );
     return () => unsub();
   }, [user]);
 
@@ -105,9 +120,15 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
     if (!user || !isAdminEmail(user.email)) return;
 
     const q = query(collection(db, 'users'), where('studentStatus', '==', 'Pending'));
-    const unsub = onSnapshot(q, (snap) => {
-      setPendingStudents(snap.size);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setPendingStudents(snap.size);
+      },
+      (err) => {
+        console.warn('AdminLayout student approvals snapshot handled:', err.message);
+      }
+    );
     return () => unsub();
   }, [user]);
 
@@ -120,7 +141,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
         const items = getLocalCorporateInquiries();
         const newCount = items.filter((i: any) => i.status === 'New').length;
         setPendingCorporate(newCount);
-      } catch (_e) {}
+      } catch (_e) { }
     };
 
     updateBadgeCount();
@@ -128,7 +149,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
     window.addEventListener('domeal-corporate-updated', updateBadgeCount);
     window.addEventListener('storage', updateBadgeCount);
 
-    let unsub = () => {};
+    let unsub = () => { };
     try {
       const q = query(collection(db, 'corporateInquiries'), where('status', '==', 'New'));
       unsub = onSnapshot(
@@ -142,7 +163,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
           // Graceful fallback to local storage
         }
       );
-    } catch (_err) {}
+    } catch (_err) { }
 
     return () => {
       window.removeEventListener('domeal-corporate-updated', updateBadgeCount);
@@ -206,9 +227,8 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky lg:top-0 h-screen z-40 bg-[#1E3B2B] text-white flex flex-col shrink-0 transition-all duration-300 ${
-          collapsed ? 'w-16' : 'w-60'
-        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`fixed lg:sticky lg:top-0 h-screen z-40 bg-[#1E3B2B] text-white flex flex-col shrink-0 transition-all duration-300 ${collapsed ? 'w-16' : 'w-60'
+          } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-white/10 shrink-0">
@@ -256,11 +276,10 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
                 key={item.id}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${
-                  isActive
-                    ? 'bg-[#C39B54] text-white font-600 shadow-md'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white font-500'
-                } ${collapsed ? 'justify-center' : ''}`}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${isActive
+                  ? 'bg-[#C39B54] text-white font-600 shadow-md'
+                  : 'text-white/70 hover:bg-white/10 hover:text-white font-500'
+                  } ${collapsed ? 'justify-center' : ''}`}
                 title={collapsed ? item.label : undefined}
               >
                 <Icon size={18} className="shrink-0" />
@@ -308,7 +327,7 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
             <Menu size={20} />
           </button>
           <div className="hidden lg:block">
-            <p className="text-sm font-600 text-foreground">Good morning, Admin 👋</p>
+            <p className="text-sm font-600 text-foreground" suppressHydrationWarning>{greeting}, Admin 👋</p>
             <p className="text-xs text-muted-foreground">DoMeal · domeal.co.uk · London</p>
           </div>
           <div className="flex items-center gap-3 ml-auto">
@@ -316,6 +335,14 @@ export default function AdminLayout({ children, activeRoute }: AdminLayoutProps)
               <Bell size={18} className="text-foreground" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-[#C39B54] rounded-full" />
             </button>
+            {isSuperAdminEmail(user?.email) && (
+              <Link
+                href="/super-admin"
+                className="text-xs font-black text-[#142A1E] bg-[#C39B54] hover:bg-[#8C6B28] hover:text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-xs"
+              >
+                <span>👑 Super Admin</span>
+              </Link>
+            )}
             <Link
               href="/"
               className="text-xs font-600 text-primary bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"

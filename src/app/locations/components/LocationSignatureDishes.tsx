@@ -118,16 +118,16 @@ export default function LocationSignatureDishes({ location }: LocationSignatureD
           <div className="space-y-3 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#1E3B2B]/10 text-[#1E3B2B] text-xs font-black uppercase tracking-widest">
               <Sparkles size={13} className="text-[#C39B54]" />
-              <span>Chef&apos;s London Selection</span>
+              <span>{location.dishesBadge || "Chef's London Selection"}</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#142A1E] tracking-tight leading-tight font-sans">
-              Signature Feasts on This Week&apos;s {location.name} Menu
+              {location.dishesTitle || `Signature Feasts on This Week's ${location.name} Menu`}
             </h2>
 
             <p className="text-stone-600 text-base sm:text-lg leading-relaxed">
-              Every dish is prepared fresh on delivery mornings in our commercial kitchen. No commercial
-              pastes, no artificial thickeners, and no single-use plastic takeaway tubs.
+              {location.dishesSubtitle ||
+                'Every dish is prepared fresh on delivery mornings in our commercial kitchen. No commercial pastes, no artificial thickeners, and no single-use plastic takeaway tubs.'}
             </p>
           </div>
 
@@ -141,8 +141,8 @@ export default function LocationSignatureDishes({ location }: LocationSignatureD
           </Link>
         </div>
 
-        {/* Exactly 4 Real Menu Cards in One Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Real Menu Cards - Centered Flex so 1, 2, 3 or 4 cards sit centered */}
+        <div className="flex flex-wrap justify-center gap-6">
           {items.slice(0, 4).map((item, idx) => {
             const assignedDate = getDeliveryDateForIndex(idx);
             const activePrice = item.price > 0 ? item.price : 14.99;
@@ -152,7 +152,7 @@ export default function LocationSignatureDishes({ location }: LocationSignatureD
             return (
               <div
                 key={item.id}
-                className="group bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-xs hover:shadow-xl hover:border-[#C39B54] transition-all duration-300 flex flex-col justify-between"
+                className="w-full sm:w-[calc(50%_-_12px)] lg:w-[calc(25%_-_18px)] max-w-sm group bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-xs hover:shadow-xl hover:border-[#C39B54] transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   {/* Image Frame */}

@@ -1,5 +1,11 @@
 import React, { Suspense } from 'react';
+import type { Metadata } from 'next';
 import AuthClient from '@/app/sign-up-login-screen/components/AuthClient';
+import { getDynamicPageSeo } from '@/lib/dynamic-seo';
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getDynamicPageSeo('/sign-up-login-screen');
+}
 
 export default function SignUpLoginPage() {
   return (
