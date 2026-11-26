@@ -19,6 +19,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { getApiUrl } from '@/lib/api';
+import { toast } from 'sonner';
 
 type Transaction = {
   id: string;
@@ -221,7 +222,7 @@ export default function WalletClient() {
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(referralCode);
-                  alert('Referral code copied to clipboard! 📋');
+                  toast.success('Referral code copied to clipboard! 📋');
                 }}
                 className="text-xs font-800 text-primary hover:underline"
               >

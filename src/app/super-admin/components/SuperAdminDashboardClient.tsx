@@ -945,10 +945,9 @@ export default function SuperAdminDashboardClient() {
                 <div className="pt-2 flex items-center justify-between gap-3 border-t border-border">
                   <button
                     onClick={() => {
-                      if (confirm('Cancel this order? Status will be updated to Cancelled.')) {
-                        handleInlineStatusChange(selectedOrder.id, 'Cancelled');
-                        setSelectedOrder(null);
-                      }
+                      handleInlineStatusChange(selectedOrder.id, 'Cancelled');
+                      toast.success(`Order #${selectedOrder.id.slice(-6).toUpperCase()} marked as Cancelled`);
+                      setSelectedOrder(null);
                     }}
                     className="px-4 py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold transition-all cursor-pointer"
                   >

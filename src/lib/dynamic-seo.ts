@@ -12,6 +12,15 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://domeal.co.uk';
 let cachedSeo: { settings: SeoSettings; timestamp: number } | null = null;
 const CACHE_TTL_MS = 60000; // 1 minute in-memory cache
 
+const fetchWithTimeout = <T>(promise: Promise<T>, ms = 2000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Firestore timeout')), ms)
+    ),
+  ]);
+};
+
 /**
  * Fetch latest dynamic SEO settings from Firestore with fallback to defaults
  */
@@ -23,8 +32,11 @@ export async function getDynamicSeoSettings(): Promise<SeoSettings> {
 
   try {
     if (dbAdmin) {
-      const snap = await dbAdmin.collection('settings').doc('seo').get();
-      if (snap.exists) {
+      const snap: any = await fetchWithTimeout(
+        dbAdmin.collection('settings').doc('seo').get(),
+        2000
+      );
+      if (snap?.exists) {
         const settings = { ...DEFAULT_SEO_SETTINGS, ...snap.data() } as SeoSettings;
         cachedSeo = { settings, timestamp: now };
         return settings;
@@ -119,8 +131,11 @@ export async function getDynamicLocations(): Promise<LocationData[]> {
 
   try {
     if (dbAdmin) {
-      const snap = await dbAdmin.collection('settings').doc('locations_cms').get();
-      if (snap.exists && snap.data()?.locations) {
+      const snap: any = await fetchWithTimeout(
+        dbAdmin.collection('settings').doc('locations_cms').get(),
+        2000
+      );
+      if (snap?.exists && snap.data()?.locations) {
         const savedList = snap.data()?.locations as any[];
         const merged = savedList.map((savedLoc: any) => {
           const fallback = LONDON_LOCATIONS.find((d) => d.slug === savedLoc.slug) || LONDON_LOCATIONS[0];

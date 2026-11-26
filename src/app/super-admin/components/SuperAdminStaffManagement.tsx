@@ -19,9 +19,10 @@ import {
   Check,
   Eye,
   EyeOff,
+  Copy,
 } from 'lucide-react';
 import { SUPER_ADMIN_EMAILS, registerDynamicAdminEmails } from '@/lib/adminAuth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -33,6 +34,7 @@ export interface AdminStaff {
   lastActive: string;
   permissions: string[];
   status?: 'Active' | 'Suspended';
+  initialPassword?: string;
 }
 
 const AVAILABLE_PERMISSIONS = [
@@ -47,19 +49,11 @@ const AVAILABLE_PERMISSIONS = [
 
 const INITIAL_STAFF: AdminStaff[] = [
   {
-    email: 'superadmin@vegchennaisrilalitha.co.uk',
+    email: 'superadmin@domeal.co.uk',
     role: 'Super Admin',
-    addedDate: '2024-01-01',
+    addedDate: '2024-03-10',
     lastActive: 'Just now',
-    permissions: [
-      'Orders & Dispatch',
-      'Menu Management',
-      'Financial Access & Refunds',
-      'System Controls & Settings',
-      'User & Student Approvals',
-      'CMS & Page Content',
-      'Customer Support',
-    ],
+    permissions: AVAILABLE_PERMISSIONS,
     status: 'Active',
   },
   {
@@ -71,33 +65,8 @@ const INITIAL_STAFF: AdminStaff[] = [
       'Orders & Dispatch',
       'Menu Management',
       'User & Student Approvals',
-      'CMS & Page Content',
       'Customer Support',
     ],
-    status: 'Active',
-  },
-  {
-    email: 'domealuk79812@gmail.com',
-    role: 'Super Admin',
-    addedDate: '2024-03-10',
-    lastActive: '10 mins ago',
-    permissions: [
-      'Orders & Dispatch',
-      'Menu Management',
-      'Financial Access & Refunds',
-      'System Controls & Settings',
-      'User & Student Approvals',
-      'CMS & Page Content',
-      'Customer Support',
-    ],
-    status: 'Active',
-  },
-  {
-    email: 'operations@domeal.co.uk',
-    role: 'Operations Admin',
-    addedDate: '2024-06-01',
-    lastActive: '2 hours ago',
-    permissions: ['Orders & Dispatch', 'Customer Support', 'User & Student Approvals'],
     status: 'Active',
   },
 ];
@@ -106,6 +75,10 @@ export default function SuperAdminStaffManagement() {
   const { user } = useAuth();
   const [staffList, setStaffList] = useState<AdminStaff[]>(INITIAL_STAFF);
   const [loading, setLoading] = useState(true);
+
+  // Password visibility state in table
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
   // Add Staff Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -128,32 +101,57 @@ export default function SuperAdminStaffManagement() {
   const [editStatus, setEditStatus] = useState<'Active' | 'Suspended'>('Active');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load staff list from Firestore
+  // Delete Confirmation Modal State
+  const [deletingStaff, setDeletingStaff] = useState<AdminStaff | null>(null);
+
+  const togglePasswordVisibility = (email: string) => {
+    setVisiblePasswords((prev) => ({
+      ...prev,
+      [email]: !prev[email],
+    }));
+  };
+
+  const copyToClipboard = (text: string, email: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedEmail(email);
+    toast.success(`Copied password for ${email}`);
+    setTimeout(() => {
+      setCopiedEmail(null);
+    }, 2000);
+  };
+
+  // Load staff list from API (with Firestore client fallback)
   useEffect(() => {
     const fetchStaff = async () => {
       try {
+        const apiRes = await fetch('/api/super-admin/update-credentials');
+        if (apiRes.ok) {
+          const data = await apiRes.json();
+          if (Array.isArray(data.staff) && data.staff.length > 0) {
+            setStaffList(data.staff);
+            registerDynamicAdminEmails(data.staff);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('API fetch staff fallback to client:', apiErr);
+      }
+
+      try {
         const snap = await getDoc(doc(db, 'settings', 'superAdminStaff'));
-        if (snap.exists() && Array.isArray(snap.data()?.staff) && snap.data().staff.length > 0) {
+        if (snap.exists() && Array.isArray(snap.data()?.staff)) {
           const loadedStaff: AdminStaff[] = snap.data().staff;
-          // Ensure essential super admins exist and standard admin has Operations Admin role
-          const mergedStaff = loadedStaff.map((s) => {
-            if (s.email.toLowerCase() === 'admin@vegchennaisrilalitha.co.uk') {
-              return { ...s, role: 'Operations Admin' as const };
-            }
-            return s;
-          });
-          INITIAL_STAFF.forEach((init) => {
-            if (!mergedStaff.some((s) => s.email.toLowerCase() === init.email.toLowerCase())) {
-              mergedStaff.unshift(init);
-            }
-          });
-          setStaffList(mergedStaff);
-          registerDynamicAdminEmails(mergedStaff);
+          setStaffList(loadedStaff);
+          registerDynamicAdminEmails(loadedStaff);
         } else {
+          setStaffList(INITIAL_STAFF);
           registerDynamicAdminEmails(INITIAL_STAFF);
         }
       } catch (err) {
         console.warn('Using initial staff list fallback:', err);
+        setStaffList(INITIAL_STAFF);
         registerDynamicAdminEmails(INITIAL_STAFF);
       } finally {
         setLoading(false);
@@ -162,34 +160,41 @@ export default function SuperAdminStaffManagement() {
     fetchStaff();
   }, []);
 
-  // Persist staff list to Firestore and update RBAC registry
+  // Persist staff list via backend Admin API directly
   const persistStaffList = async (updated: AdminStaff[]) => {
     setIsSaving(true);
     try {
-      await setDoc(
-        doc(db, 'settings', 'superAdminStaff'),
-        {
-          staff: updated,
-          updatedAt: new Date(),
+      const res = await fetch('/api/super-admin/update-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sync_all',
+          staffList: updated,
           updatedBy: user?.email || 'Super Admin',
-        },
-        { merge: true }
-      );
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Server failed to save staff list');
+      }
+
       setStaffList(updated);
       registerDynamicAdminEmails(updated);
     } catch (err: any) {
       console.error('Error saving staff:', err);
       toast.error('Failed to persist to database: ' + err.message);
+      throw err;
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Open Edit Modal with current email, blank password field, and privileges
+  // Open Edit Modal with current email, password, and privileges
   const handleOpenEditModal = (staff: AdminStaff) => {
     setEditingStaff(staff);
     setEditEmail(staff.email);
-    setEditPassword('');
+    setEditPassword(staff.initialPassword || '');
     setShowEditPassword(false);
     setEditRole(staff.role);
     setEditPermissions(staff.permissions || []);
@@ -229,41 +234,47 @@ export default function SuperAdminStaffManagement() {
     setIsSaving(true);
 
     try {
-      // 1. Call backend API to update Firebase Auth credentials (email and/or password)
-      try {
-        await fetch('/api/super-admin/update-credentials', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            oldEmail: cleanOldEmail,
-            newEmail: cleanNewEmail,
-            password: editPassword.trim() || undefined,
-            role: editRole,
-            permissions: editPermissions,
-            status: editStatus,
-          }),
-        });
-      } catch (apiErr) {
-        console.warn('Backend credentials update note:', apiErr);
-      }
-
-      // 2. Update local staff state and Firestore
-      const updated = staffList.map((s) => {
-        if (s.email.toLowerCase() === cleanOldEmail) {
-          return {
-            ...s,
-            email: cleanNewEmail,
-            role: editRole,
-            permissions: editPermissions,
-            status: editStatus,
-            lastEdited: new Date().toISOString(),
-            ...(editPassword.trim() ? { passwordLastChanged: new Date().toISOString() } : {}),
-          };
-        }
-        return s;
+      const res = await fetch('/api/super-admin/update-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          oldEmail: cleanOldEmail,
+          newEmail: cleanNewEmail,
+          password: editPassword.trim() || undefined,
+          role: editRole,
+          permissions: editPermissions,
+          status: editStatus,
+          updatedBy: user?.email || 'Super Admin',
+        }),
       });
 
-      await persistStaffList(updated);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update credentials');
+      }
+
+      const updated = Array.isArray(data.staff) && data.staff.length > 0
+        ? data.staff
+        : staffList.map((s) => {
+            if (s.email.toLowerCase() === cleanOldEmail) {
+              return {
+                ...s,
+                email: cleanNewEmail,
+                role: editRole,
+                permissions: editPermissions,
+                status: editStatus,
+                lastEdited: new Date().toISOString(),
+                ...(editPassword.trim()
+                  ? { initialPassword: editPassword.trim(), passwordLastChanged: new Date().toISOString() }
+                  : {}),
+              };
+            }
+            return s;
+          });
+
+      setStaffList(updated);
+      registerDynamicAdminEmails(updated);
 
       toast.success(
         editPassword.trim()
@@ -281,7 +292,7 @@ export default function SuperAdminStaffManagement() {
     }
   };
 
-  // Add New Staff (with optional initial password)
+  // Add New Staff (single fast atomic API call)
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmail.trim()) return;
@@ -301,60 +312,98 @@ export default function SuperAdminStaffManagement() {
     setIsSaving(true);
 
     try {
-      // Create in Firebase Auth via API if password provided
-      if (newPassword.trim()) {
-        try {
-          await fetch('/api/super-admin/update-credentials', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              oldEmail: cleanEmail,
-              newEmail: cleanEmail,
-              password: newPassword.trim(),
-              role: newRole,
-              permissions: newPermissions,
-              status: 'Active',
-            }),
-          });
-        } catch (apiErr) {
-          console.warn('API add credentials note:', apiErr);
-        }
+      const res = await fetch('/api/super-admin/update-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add',
+          oldEmail: cleanEmail,
+          newEmail: cleanEmail,
+          password: newPassword.trim() || undefined,
+          role: newRole,
+          permissions: newPermissions,
+          status: 'Active',
+          updatedBy: user?.email || 'Super Admin',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to add administrator');
       }
 
-      const newStaffMember: AdminStaff = {
-        email: cleanEmail,
-        role: newRole,
-        addedDate: new Date().toISOString().split('T')[0],
-        lastActive: 'Never',
-        permissions: newPermissions,
-        status: 'Active',
-      };
+      let updated: AdminStaff[];
+      if (Array.isArray(data.staff) && data.staff.length > 0) {
+        updated = data.staff;
+      } else {
+        const newStaffMember: AdminStaff = {
+          email: cleanEmail,
+          role: newRole,
+          addedDate: new Date().toISOString().split('T')[0],
+          lastActive: 'Never',
+          permissions: newPermissions,
+          status: 'Active',
+          initialPassword: newPassword.trim() || undefined,
+        };
+        updated = [...staffList, newStaffMember];
+      }
 
-      const updated = [...staffList, newStaffMember];
-      await persistStaffList(updated);
-      toast.success(`Added ${newStaffMember.email} as ${newRole}!`);
+      setStaffList(updated);
+      registerDynamicAdminEmails(updated);
+      toast.success(`Added ${cleanEmail} as ${newRole}!`);
       setNewEmail('');
       setNewPassword('');
       setShowNewPassword(false);
       setNewPermissions(['Orders & Dispatch', 'Customer Support']);
       setShowAddModal(false);
     } catch (err: any) {
-      toast.error('Failed to add administrator: ' + err.message);
+      console.error('Error adding administrator:', err);
+      toast.error('Failed to add administrator: ' + (err.message || 'Unknown error'));
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Remove Staff
-  const handleRemoveStaff = async (email: string) => {
-    if (SUPER_ADMIN_EMAILS.includes(email)) {
-      toast.error('Primary Super Administrator accounts cannot be removed from this interface.');
+  // Trigger Staff Deletion Modal
+  const handleRemoveStaff = (staff: AdminStaff) => {
+    if (user?.email && staff.email.toLowerCase() === user.email.toLowerCase()) {
+      toast.error('You cannot delete your own active administrator account.');
       return;
     }
-    if (confirm(`Are you sure you want to revoke administrative access for ${email}?`)) {
-      const updated = staffList.filter((s) => s.email !== email);
-      await persistStaffList(updated);
-      toast.success(`Revoked administrative access for ${email}`);
+    setDeletingStaff(staff);
+  };
+
+  // Permanently Revoke Access & Remove Staff (single fast atomic API call)
+  const confirmDeleteStaff = async () => {
+    if (!deletingStaff) return;
+    const targetEmail = deletingStaff.email;
+    setIsSaving(true);
+
+    try {
+      const res = await fetch('/api/super-admin/update-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', oldEmail: targetEmail }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to revoke access');
+      }
+
+      const updated = Array.isArray(data.staff)
+        ? data.staff
+        : staffList.filter((s) => s.email.toLowerCase() !== targetEmail.toLowerCase());
+
+      setStaffList(updated);
+      registerDynamicAdminEmails(updated);
+      toast.success(`Revoked administrative access for ${targetEmail}`);
+      setDeletingStaff(null);
+    } catch (err: any) {
+      console.error('Error deleting administrator:', err);
+      toast.error('Failed to revoke access: ' + err.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -416,6 +465,7 @@ export default function SuperAdminStaffManagement() {
             <thead className="bg-gray-50 text-gray-600 font-bold uppercase tracking-wider text-[10px] border-b border-border">
               <tr>
                 <th className="py-3 px-4">Administrator Email</th>
+                <th className="py-3 px-4">Password</th>
                 <th className="py-3 px-4">Role</th>
                 <th className="py-3 px-4">Granular Permissions</th>
                 <th className="py-3 px-4">Status</th>
@@ -426,7 +476,10 @@ export default function SuperAdminStaffManagement() {
             <tbody className="divide-y divide-border">
               {staffList.map((staff) => {
                 const isSuper = staff.role === 'Super Admin';
-                const isPrimary = SUPER_ADMIN_EMAILS.includes(staff.email);
+                const isCurrentUser = user?.email
+                  ? staff.email.toLowerCase() === user.email.toLowerCase()
+                  : false;
+                const isPrimary = staff.email.toLowerCase() === 'superadmin@domeal.co.uk';
 
                 return (
                   <tr key={staff.email} className="hover:bg-gray-50/70 transition-colors">
@@ -451,6 +504,39 @@ export default function SuperAdminStaffManagement() {
                           <div className="text-[10px] text-gray-400">Active credentials</div>
                         </div>
                       </div>
+                    </td>
+
+                    {/* Password display with Show/Hide and Copy */}
+                    <td className="py-3.5 px-4">
+                      {staff.initialPassword ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-[11px] bg-gray-100 text-gray-800 px-2 py-0.5 rounded border border-gray-200">
+                            {visiblePasswords[staff.email] ? staff.initialPassword : '••••••••'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => togglePasswordVisibility(staff.email)}
+                            className="p-1 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                            title={visiblePasswords[staff.email] ? 'Hide password' : 'Show password'}
+                          >
+                            {visiblePasswords[staff.email] ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(staff.initialPassword!, staff.email)}
+                            className="p-1 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                            title="Copy password"
+                          >
+                            {copiedEmail === staff.email ? (
+                              <Check size={13} className="text-emerald-600" />
+                            ) : (
+                              <Copy size={13} />
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 italic">Auth Managed</span>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -502,20 +588,24 @@ export default function SuperAdminStaffManagement() {
                         <button
                           onClick={() => handleOpenEditModal(staff)}
                           className="px-2.5 py-1 rounded-lg text-[#1E3B2B] bg-[#1E3B2B]/5 hover:bg-[#1E3B2B] hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
-                          title="Edit Permissions & Role"
+                          title="Edit Administrator"
                         >
                           <Edit size={12} />
                           <span>Edit</span>
                         </button>
 
-                        {!isPrimary && (
+                        {!isCurrentUser ? (
                           <button
-                            onClick={() => handleRemoveStaff(staff.email)}
+                            onClick={() => handleRemoveStaff(staff)}
                             className="p-1 rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-                            title="Revoke Admin Access"
+                            title="Delete Administrator"
                           >
                             <Trash2 size={14} />
                           </button>
+                        ) : (
+                          <span className="text-[10px] text-gray-400 font-semibold px-2 py-0.5 bg-gray-100 rounded">
+                            You
+                          </span>
                         )}
                       </div>
                     </td>
@@ -573,9 +663,9 @@ export default function SuperAdminStaffManagement() {
               {/* 2. Editable Administrator Password */}
               <div>
                 <label className="block text-gray-700 font-bold mb-1 flex items-center justify-between">
-                  <span>Update Password</span>
+                  <span>Password</span>
                   <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                    Leave blank to keep existing
+                    {editingStaff.initialPassword ? 'Current or new password' : 'Leave blank to keep existing'}
                   </span>
                 </label>
                 <div className="relative">
@@ -584,13 +674,18 @@ export default function SuperAdminStaffManagement() {
                     type={showEditPassword ? 'text' : 'password'}
                     value={editPassword}
                     onChange={(e) => setEditPassword(e.target.value)}
-                    placeholder="Enter new password (min. 6 characters) or leave blank..."
+                    placeholder="Enter password (min. 6 characters)..."
                     className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-gray-300 font-mono text-xs focus:ring-2 focus:ring-[#1E3B2B] outline-none"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowEditPassword(!showEditPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 cursor-pointer p-1"
+                    tabIndex={-1}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowEditPassword(!showEditPassword);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 cursor-pointer p-1.5 z-10 select-none"
                     title={showEditPassword ? 'Hide password' : 'Show password'}
                   >
                     {showEditPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -730,8 +825,13 @@ export default function SuperAdminStaffManagement() {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 cursor-pointer p-1"
+                    tabIndex={-1}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowNewPassword(!showNewPassword);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 cursor-pointer p-1.5 z-10 select-none"
                     title={showNewPassword ? 'Hide password' : 'Show password'}
                   >
                     {showNewPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -782,11 +882,53 @@ export default function SuperAdminStaffManagement() {
                   disabled={isSaving}
                   className="px-5 py-2.5 rounded-xl bg-[#1E3B2B] hover:bg-[#284f3a] text-white text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
                 >
-                  <UserPlus size={14} />
-                  <span>Confirm &amp; Add</span>
+                  {isSaving ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Adding...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={14} />
+                      <span>Confirm &amp; Add</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Staff Confirmation Modal */}
+      {deletingStaff && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-xl text-center">
+            <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Are you sure to delete?</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Are you sure you want to permanently delete <span className="font-bold text-gray-900 break-all">{deletingStaff.email}</span>? This will revoke all administrative access to the platform.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingStaff(null)}
+                disabled={isSaving}
+                className="flex-1 py-2.5 rounded-xl border border-border text-gray-700 font-semibold text-xs hover:bg-gray-50 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteStaff}
+                disabled={isSaving}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-semibold text-xs hover:bg-red-700 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {isSaving ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}

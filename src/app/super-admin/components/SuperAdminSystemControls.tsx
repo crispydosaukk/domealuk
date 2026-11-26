@@ -57,13 +57,31 @@ export default function SuperAdminSystemControls() {
   const [revalidating, setRevalidating] = useState(false);
   const [cacheMessage, setCacheMessage] = useState<string | null>(null);
 
-  // Fetch live global settings from Firestore
+  // Fetch live global settings from API / Firestore
   useEffect(() => {
     const fetchGlobalSettings = async () => {
       try {
-        const snap = await getDoc(doc(db, 'settings', 'global'));
-        if (snap.exists()) {
-          const data = snap.data();
+        let data: any = null;
+        try {
+          const apiRes = await fetch('/api/super-admin/system-controls');
+          if (apiRes.ok) {
+            const resJson = await apiRes.json();
+            if (resJson.config) {
+              data = resJson.config;
+            }
+          }
+        } catch (apiErr) {
+          console.warn('API fetch global settings note:', apiErr);
+        }
+
+        if (!data) {
+          const snap = await getDoc(doc(db, 'settings', 'global'));
+          if (snap.exists()) {
+            data = snap.data();
+          }
+        }
+
+        if (data) {
           setSystemConfig((prev) => ({
             ...prev,
             bannerEnabled: Boolean(data.bannerEnabled !== undefined ? data.bannerEnabled : prev.bannerEnabled),
@@ -78,11 +96,11 @@ export default function SuperAdminSystemControls() {
             deliverySlots:
               Array.isArray(data.deliverySlots) && data.deliverySlots.length > 0
                 ? data.deliverySlots.map((s: any, idx: number) => ({
-                    id: s.id || `slot-${idx + 1}`,
-                    label: s.label || '',
-                    time: s.time || '',
-                    active: Boolean(s.active !== undefined ? s.active : true),
-                  }))
+                  id: s.id || `slot-${idx + 1}`,
+                  label: s.label || '',
+                  time: s.time || '',
+                  active: Boolean(s.active !== undefined ? s.active : true),
+                }))
                 : prev.deliverySlots,
           }));
         }
@@ -96,19 +114,40 @@ export default function SuperAdminSystemControls() {
     fetchGlobalSettings();
   }, []);
 
-  // Save All Settings to Firestore
+  // Save All Settings via Admin API and Firestore
   const handleSaveSystemConfig = async () => {
     setSavingSettings(true);
     try {
-      await setDoc(
-        doc(db, 'settings', 'global'),
-        {
-          ...systemConfig,
-          updatedAt: new Date(),
-          lastUpdatedBy: user?.email || 'Super Admin',
-        },
-        { merge: true }
-      );
+      // 1. Save via Admin API route (uses Firebase Admin SDK, bypassing client permission rules)
+      const res = await fetch('/api/super-admin/system-controls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          config: systemConfig,
+          updatedBy: user?.email || 'Super Admin',
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Server failed to save system settings');
+      }
+
+      // 2. Also try direct client Firestore write as secondary fallback
+      try {
+        await setDoc(
+          doc(db, 'settings', 'global'),
+          {
+            ...systemConfig,
+            updatedAt: new Date(),
+            lastUpdatedBy: user?.email || 'Super Admin',
+          },
+          { merge: true }
+        );
+      } catch (clientErr: any) {
+        console.warn('Client Firestore write skipped (Backend Admin SDK already persisted):', clientErr?.message);
+      }
+
       toast.success('System configuration saved & live across platform!');
     } catch (err: any) {
       console.error('Error saving system settings:', err);

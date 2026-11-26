@@ -7,9 +7,12 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Admin access granted to new admin email as well as legacy email
+    // Admin access granted to DoMeal admins as well as legacy emails
     function isAdmin() {
       return isAuthenticated() && (
+        request.auth.token.email == 'superadmin@domeal.co.uk' ||
+        request.auth.token.email == 'admin@domeal.co.uk' ||
+        request.auth.token.email.matches('.*@domeal[.]co[.]uk') ||
         request.auth.token.email == 'superadmin@vegchennaisrilalitha.co.uk' ||
         request.auth.token.email == 'admin@vegchennaisrilalitha.co.uk' ||
         request.auth.token.email == 'domealuk79812@gmail.com'

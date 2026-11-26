@@ -7,26 +7,21 @@ const envSuperAdmin = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL?.trim();
 
 export const ADMIN_EMAILS: string[] = Array.from(
   new Set([
-    'superadmin@vegchennaisrilalitha.co.uk',
-    'admin@vegchennaisrilalitha.co.uk',
     'superadmin@domeal.co.uk',
-    'admin@domeal.co.uk',
+    'admin@vegchennaisrilalitha.co.uk',
     ...(envAdmin ? [envAdmin] : []),
-    'domealuk79812@gmail.com',
   ])
 );
 
 export const SUPER_ADMIN_EMAILS: string[] = Array.from(
   new Set([
-    'superadmin@vegchennaisrilalitha.co.uk',
     'superadmin@domeal.co.uk',
-    'domealuk79812@gmail.com',
     ...(envSuperAdmin ? [envSuperAdmin] : []),
   ])
 );
 
 export const PRIMARY_ADMIN_EMAIL = 'admin@vegchennaisrilalitha.co.uk';
-export const PRIMARY_SUPER_ADMIN_EMAIL = 'superadmin@vegchennaisrilalitha.co.uk';
+export const PRIMARY_SUPER_ADMIN_EMAIL = 'superadmin@domeal.co.uk';
 
 // Dynamic registries synced from settings/superAdminStaff
 const dynamicAdminEmails: Set<string> = new Set();
